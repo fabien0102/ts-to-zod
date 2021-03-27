@@ -2,6 +2,7 @@ import { Command, flags } from "@oclif/command";
 import { readFileSync, outputFileSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
+import ts from "typescript";
 import { generate } from "./core/generate";
 
 class TsToZod extends Command {
@@ -37,21 +38,41 @@ class TsToZod extends Command {
     const outputPath = join(process.cwd(), args.output || args.input);
 
     // Check args/flags file extensions
-    const extErrors: string[] = [];
-    if (!hasTypescriptExtension(args.input)) {
-      extErrors.push(args.input);
+    const extErrors: { path: string; expectedExtensions: string[] }[] = [];
+    if (!hasExtensions(args.input, typescriptExtensions)) {
+      extErrors.push({
+        path: args.input,
+        expectedExtensions: typescriptExtensions,
+      });
     }
-    if (args.output && !hasTypescriptExtension(args.output)) {
-      extErrors.push(args.output);
+    if (
+      args.output &&
+      !hasExtensions(args.output, [
+        ...typescriptExtensions,
+        ...javascriptExtensions,
+      ])
+    ) {
+      extErrors.push({
+        path: args.output,
+        expectedExtensions: [...typescriptExtensions, ...javascriptExtensions],
+      });
     }
-    if (flags.tests && !hasTypescriptExtension(flags.tests)) {
-      extErrors.push(flags.tests);
+    if (flags.tests && !hasExtensions(flags.tests, typescriptExtensions)) {
+      extErrors.push({
+        path: flags.tests,
+        expectedExtensions: typescriptExtensions,
+      });
     }
 
     if (extErrors.length) {
       this.error(
-        `Unexpected file format:\n${extErrors
-          .map((path) => `"${path}" need to have .ts or .tsx extension`)
+        `Unexpected file extension:\n${extErrors
+          .map(
+            ({ path, expectedExtensions }) =>
+              `"${path}" must be ${expectedExtensions
+                .map((i) => `"${i}"`)
+                .join(", ")}`
+          )
           .join("\n")}`
       );
     }
@@ -76,13 +97,32 @@ class TsToZod extends Command {
 
     errors.map(this.warn);
 
-    outputFileSync(
-      outputPath,
-      getZodSchemasFile(getImportPath(outputPath, inputPath))
+    const zodSchemasFile = getZodSchemasFile(
+      getImportPath(outputPath, inputPath)
     );
+
+    if (args.output && hasExtensions(args.output, javascriptExtensions)) {
+      outputFileSync(
+        outputPath,
+        ts.transpileModule(zodSchemasFile, {
+          compilerOptions: {
+            target: ts.ScriptTarget.Latest,
+            module: ts.ModuleKind.ESNext,
+            newLine: ts.NewLineKind.LineFeed,
+          },
+        }).outputText
+      );
+    } else {
+      outputFileSync(outputPath, zodSchemasFile);
+    }
     this.log(`🎉 Zod schemas generated!`);
 
     if (flags.tests) {
+      if (hasExtensions(args.output, javascriptExtensions)) {
+        this.error(
+          "Javascript format for --output is not compatible with --tests"
+        );
+      }
       const testsPath = join(process.cwd(), flags.tests);
       outputFileSync(
         testsPath,
@@ -110,15 +150,19 @@ function getImportPath(from: string, to: string) {
   return `${dir}/${name}`;
 }
 
+const typescriptExtensions = [".ts", ".tsx"];
+const javascriptExtensions = [".js", ".jsx"];
+
 /**
  * Validate if the file extension is ts or tsx.
  *
  * @param path relative path
+ * @param extensions list of allowed extensions
  * @returns true if the extension is valid
  */
-function hasTypescriptExtension(path: string) {
+function hasExtensions(path: string, extensions: string[]) {
   const { ext } = parse(path);
-  return [".ts", ".tsx"].includes(ext);
+  return extensions.includes(ext);
 }
 
 export = TsToZod;
