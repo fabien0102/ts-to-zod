@@ -13,11 +13,8 @@ export const supermanSchema = z.object({
     z.literal("superman"),
     z.literal("clark kent"),
     z.literal("kal-l"),
-
   ]),
 
-
-  
   ennemies: z.record(ennemySchema),
   age: z.number(),
   underKryptonite: z.boolean().optional(),
