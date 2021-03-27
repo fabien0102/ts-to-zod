@@ -191,6 +191,14 @@ ${testCases.map(print).join("\n")}
      */
     getIntegrationTestFile,
 
+    /**
+     * List of generation errors.
+     */
     errors,
+
+    /**
+     * `true` if zodSchemaFile have some resolvable circular dependencies
+     */
+    hasCircularDependencies: imports.length > 0,
   };
 }

@@ -13,6 +13,7 @@ class TsToZod extends Command {
     tests: flags.string({
       char: "t",
       description: "generate integration tests",
+      dependsOn: ["output"],
     }),
     maxRun: flags.integer({
       hidden: true,
@@ -26,25 +27,27 @@ class TsToZod extends Command {
     {
       name: "output",
       description: "output file (zod schemas)",
-      required: true,
+      required: false,
     },
   ];
 
   async run() {
     const { args, flags } = this.parse(TsToZod);
     const inputPath = join(process.cwd(), args.input);
-    const outputPath = join(process.cwd(), args.output);
+    const outputPath = join(process.cwd(), args.output || args.input);
 
     // Check args/flags file extensions
-    const extErrors = [args.input, args.output, flags.tests].reduce<string[]>(
-      (errors, path) => {
-        if (path && !hasTypescriptExtension(path)) {
-          return [...errors, path];
-        }
-        return errors;
-      },
-      []
-    );
+    const extErrors: string[] = [];
+    if (!hasTypescriptExtension(args.input)) {
+      extErrors.push(args.input);
+    }
+    if (args.output && !hasTypescriptExtension(args.output)) {
+      extErrors.push(args.output);
+    }
+    if (flags.tests && !hasTypescriptExtension(flags.tests)) {
+      extErrors.push(flags.tests);
+    }
+
     if (extErrors.length) {
       this.error(
         `Unexpected file format:\n${extErrors
@@ -55,10 +58,21 @@ class TsToZod extends Command {
 
     const sourceText = readFileSync(inputPath, "utf-8");
 
-    const { errors, getZodSchemasFile, getIntegrationTestFile } = generate({
+    const {
+      errors,
+      getZodSchemasFile,
+      getIntegrationTestFile,
+      hasCircularDependencies,
+    } = generate({
       sourceText,
       maxRun: flags.maxRun,
     });
+
+    if (hasCircularDependencies && !args.output) {
+      this.error(
+        "--output= must also be provided when input file have some circular dependencies"
+      );
+    }
 
     errors.map(this.warn);
 
