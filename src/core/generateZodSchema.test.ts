@@ -163,6 +163,26 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should throw on not supported interface extends", () => {
+    const source = `export interface Superman extends Clark extends KalL {
+     withCap: true;
+   };`;
+
+    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
+      `"Only interface with single \`extends T\` are not supported!"`
+    );
+  });
+
+  it("should throw on not supported interface with extends and index signature", () => {
+    const source = `export interface Superman extends Clark {
+     [key: string]: any;
+   };`;
+
+    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
+      `"interface with \`extends\` and index signature are not supported!"`
+    );
+  });
+
   it("should throw on not supported key in omit (union)", () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
@@ -252,6 +272,17 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate an extended schema", () => {
+    const source = `export interface Superman extends Clark {
+     withPower: boolean;
+   }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const supermanSchema = clarkSchema.extend({
+          withPower: z.boolean()
+      });"
+    `);
+  });
+
   it("should deal with literal keys", () => {
     const source = `export interface Vilain {
      "i.will.kill.everybody": true;
@@ -280,7 +311,7 @@ describe("generateZodSchema", () => {
   it("should deal with composed index signature", () => {
     const source = `export type Movies = {
       "Man of Steel": Movie & {title: "Man of Steel"};
-      [title: string]: Movie
+      [title: string]: Movie;
     };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const moviesSchema = z.record(movieSchema).and(z.object({

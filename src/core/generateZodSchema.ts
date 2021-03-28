@@ -59,12 +59,26 @@ export function generateZodSchemaVariableStatement({
   const dependencies: string[] = [];
 
   if (ts.isInterfaceDeclaration(node)) {
+    let baseSchema: string | undefined;
+    if (node.heritageClauses) {
+      if (
+        node.heritageClauses.length > 1 ||
+        node.heritageClauses[0].types.length > 1
+      ) {
+        throw new Error(
+          "Only interface with single `extends T` are not supported!"
+        );
+      }
+      const type = node.heritageClauses[0].types[0];
+      baseSchema = getDependencyName(type.expression.getText(sourceFile));
+    }
     schema = buildZodObject({
       typeNode: node,
       sourceFile,
       z: zodImportValue,
       dependencies,
       getDependencyName,
+      baseSchema,
     });
   }
 
@@ -535,12 +549,14 @@ function buildZodObject({
   dependencies,
   sourceFile,
   getDependencyName,
+  baseSchema,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
+  baseSchema?: string;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -575,17 +591,26 @@ function buildZodObject({
       getDependencyName,
     });
 
-    objectSchema = buildZodSchema(z, "object", [
-      f.createObjectLiteralExpression(
-        Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
-          return f.createPropertyAssignment(key, tsCall);
-        }),
-        true
-      ),
-    ]);
+    objectSchema = buildZodSchema(
+      baseSchema || z,
+      baseSchema ? "extend" : "object",
+      [
+        f.createObjectLiteralExpression(
+          Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
+            return f.createPropertyAssignment(key, tsCall);
+          }),
+          true
+        ),
+      ]
+    );
   }
 
   if (indexSignature) {
+    if (baseSchema) {
+      throw new Error(
+        "interface with `extends` and index signature are not supported!"
+      );
+    }
     const indexSignatureSchema = buildZodSchema(z, "record", [
       // Index signature can't be optional or have validators.
       buildZodPrimitive({

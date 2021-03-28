@@ -30,4 +30,22 @@ describe("transformRecursiveSchema", () => {
       }));"
     `);
   });
+
+  it("should throw if the statement is not valid", () => {
+    const sourceFile = ts.createSourceFile(
+      "index.ts",
+      `export const categorySchema;
+    })`,
+      ts.ScriptTarget.Latest
+    );
+
+    const declaration = findNode(sourceFile, ts.isVariableStatement);
+    if (!declaration) {
+      fail("should have a variable declaration");
+    }
+
+    expect(() =>
+      transformRecursiveSchema("z", declaration, "Category")
+    ).toThrowErrorMatchingInlineSnapshot(`"Unvalid zod statement"`);
+  });
 });

@@ -56,7 +56,10 @@ describe("generate", () => {
         import * as spec from \\"./hero\\";
         import * as generated from \\"hero.zod\\";
 
-        function expectType<T>(_v: T) {}
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        function expectType<T>(_: T) {
+          /* noop */
+        }
 
         export type nameSchemaInferredType = z.infer<typeof generated.nameSchema>;
 
@@ -64,8 +67,11 @@ describe("generate", () => {
 
         export type badassSupermanSchemaInferredType = z.infer<typeof generated.badassSupermanSchema>;
         expectType<spec.Name>({} as nameSchemaInferredType)
+        expectType<nameSchemaInferredType>({} as spec.Name)
         expectType<spec.Superman>({} as supermanSchemaInferredType)
+        expectType<supermanSchemaInferredType>({} as spec.Superman)
         expectType<spec.BadassSuperman>({} as badassSupermanSchemaInferredType)
+        expectType<badassSupermanSchemaInferredType>({} as spec.BadassSuperman)
         "
       `);
     });
@@ -124,10 +130,14 @@ describe("generate", () => {
         import * as spec from \\"./vilain\\";
         import * as generated from \\"vilain.zod\\";
 
-        function expectType<T>(_v: T) {}
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        function expectType<T>(_: T) {
+          /* noop */
+        }
 
         export type vilainSchemaInferredType = z.infer<typeof generated.vilainSchema>;
         expectType<spec.Vilain>({} as vilainSchemaInferredType)
+        expectType<vilainSchemaInferredType>({} as spec.Vilain)
         "
       `);
     });
