@@ -14,5 +14,5 @@
     "noFallthroughCasesInSwitch": true,
     "sourceMap": false
   },
-  "include": ["src/**/*", "example/**/*"]
+  "include": ["src/**/*"]
 }
