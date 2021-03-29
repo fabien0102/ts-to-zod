@@ -12,7 +12,8 @@
     "esModuleInterop": true,
     "downlevelIteration": true,
     "noFallthroughCasesInSwitch": true,
-    "sourceMap": false
+    "sourceMap": false,
+    "declaration": true
   },
   "include": ["src/**/*"]
 }
