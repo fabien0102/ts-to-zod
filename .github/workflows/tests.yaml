@@ -12,3 +12,4 @@ jobs:
           node-version: 12.16.1
       - run: yarn
       - run: yarn test:ci
+      - run: yarn coverage

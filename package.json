@@ -22,7 +22,7 @@
     "prepublishOnly": "yarn test:ci && rimraf lib && yarn build",
     "format": "eslint **/*.{js,jsx,ts,tsx} --fix && prettier **/*.{js,jsx,ts,tsx,json} --write",
     "test": "jest",
-    "test:ci": "jest --ci && yarn example && tsc --noEmit",
+    "test:ci": "jest --ci --coverage && yarn example && tsc --noEmit",
     "example": "./bin/run example/heros.ts example/heros.zod.ts -t example/heros.integration.ts",
     "prepare": "husky install"
   },
@@ -56,6 +56,7 @@
     "@typescript-eslint/eslint-plugin": "^4.17.0",
     "@typescript-eslint/parser": "^4.17.0",
     "auto-changelog": "^2.2.1",
+    "codecov": "^3.8.1",
     "copyfiles": "^2.4.1",
     "eslint": "^7.22.0",
     "eslint-config-prettier": "^8.1.0",
