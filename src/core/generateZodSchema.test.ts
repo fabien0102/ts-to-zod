@@ -322,6 +322,17 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with optional index signature", () => {
+    const source = `export interface Collection {
+      movies?: {[title: string] : Movie}
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const collectionSchema = z.object({
+          movies: z.record(movieSchema).optional()
+      });"
+    `);
+  });
+
   it("should generate an empty object schema", () => {
     const source = `export type Empty = {};`;
     expect(generate(source)).toMatchInlineSnapshot(

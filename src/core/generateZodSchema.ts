@@ -416,13 +416,16 @@ function buildZodPrimitive({
   }
 
   if (ts.isTypeLiteralNode(typeNode)) {
-    return buildZodObject({
-      typeNode,
-      z,
-      sourceFile,
-      dependencies,
-      getDependencyName,
-    });
+    return withZodProperties(
+      buildZodObject({
+        typeNode,
+        z,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+      }),
+      zodProperties
+    );
   }
 
   if (ts.isIntersectionTypeNode(typeNode)) {
@@ -612,7 +615,7 @@ function buildZodObject({
       );
     }
     const indexSignatureSchema = buildZodSchema(z, "record", [
-      // Index signature can't be optional or have validators.
+      // Index signature type can't be optional or have validators.
       buildZodPrimitive({
         z,
         typeNode: indexSignature.type,
