@@ -1,13 +1,13 @@
-<p align="center">
+<div align="center">
   <img src="ts-to-zod-logo.svg" width="200px" align="center" />
   <h1 align="center">ts-to-zod</h1>
-</p>
+</div>
 
 Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript types/interfaces.
 
 [![Version](https://img.shields.io/npm/v/ts-to-zod.svg)](https://npmjs.org/package/ts-to-zod)
 ![Github CI](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml/badge.svg)
-[![Codecov](https://codecov.io/gh/fabien0102/ts-to-zod/branch/master/graph/badge.svg)](https://codecov.io/gh/fabien0102/ts-to-zod)
+[![Codecov](coverage.svg)](https://codecov.io/gh/fabien0102/ts-to-zod)
 [![License](https://img.shields.io/npm/l/ts-to-zod.svg)](https://github.com/fabien0102/ts-to-zod/blob/master/package.json)
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 
@@ -19,6 +19,8 @@ $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
+
+Note: The generated zod schemas have `zod@next` as dependency.
 
 ## Generated integration tests
 
@@ -126,6 +128,12 @@ export const heroContactSchema = z.object({
   age: z.number().min(0).max(500),
 });
 ```
+
+## Advanced configuration
+
+If you want to customized the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
+
+Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of typesafety).
 
 ## Limitation
 
