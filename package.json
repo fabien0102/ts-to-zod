@@ -18,7 +18,7 @@
     "ts-to-zod": "bin/run"
   },
   "scripts": {
-    "build": "tsc -b",
+    "build": "tsc -p tsconfig.package.json",
     "prepublishOnly": "yarn test:ci && rimraf lib && yarn build",
     "format": "eslint **/*.{js,jsx,ts,tsx} --fix && prettier **/*.{js,jsx,ts,tsx,json} --write",
     "test": "jest",
