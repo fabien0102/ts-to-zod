@@ -11,5 +11,6 @@ jobs:
         with:
           node-version: 12.16.1
       - run: yarn
+      - run: chmod +x ./bin/run
       - run: yarn test:ci
       - run: yarn coverage
