@@ -1,10 +1,16 @@
 import { Command, flags } from "@oclif/command";
-import { readFileSync, outputFileSync, existsSync } from "fs-extra";
+import { readFileSync, outputFileSync, existsSync, outputFile } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
 import { generate, GenerateProps } from "./core/generate";
-import { z } from "zod";
+import inquirer from "inquirer";
+import {
+  configSchema,
+  getSchemaNameSchema,
+  nameFilterSchema,
+  TsToZodConfig,
+} from "./config";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -25,45 +31,70 @@ class TsToZod extends Command {
       char: "c",
       description: "Keep parameters comments",
     }),
+    init: flags.boolean({
+      description: "Create a ts-to-zod.config.js file",
+    }),
   };
 
   static args = [
-    { name: "input", description: "input file (typescript)", required: true },
+    { name: "input", description: "input file (typescript)" },
     {
       name: "output",
       description: "output file (zod schemas)",
-      required: false,
     },
   ];
 
   async run() {
     const { args, flags } = this.parse(TsToZod);
-    const inputPath = join(process.cwd(), args.input);
-    const outputPath = join(process.cwd(), args.output || args.input);
+
+    if (flags.init) {
+      (await init())
+        ? this.log(`🧐 ts-to-zod.config.js created!`)
+        : this.log(`Nothing changed!`);
+      return;
+    }
+
+    // Retrieve ts-to-zod.config.js values and consolidate with cli flags.
+    const {
+      input: fileConfigInput,
+      output: fileConfigOutput,
+      tests: fileConfigTests,
+      ...fileConfig
+    } = loadUserConfig();
+
+    const input = args.input || fileConfigInput;
+    const output = args.output || fileConfigOutput;
+    const tests = flags.tests || fileConfigTests;
+
+    if (!input) {
+      this.error(`Missing 1 required arg:
+${TsToZod.args[0].description}
+See more help with --help`);
+    }
+
+    const inputPath = join(process.cwd(), input);
+    const outputPath = join(process.cwd(), output || input);
 
     // Check args/flags file extensions
     const extErrors: { path: string; expectedExtensions: string[] }[] = [];
-    if (!hasExtensions(args.input, typescriptExtensions)) {
+    if (!hasExtensions(input, typescriptExtensions)) {
       extErrors.push({
-        path: args.input,
+        path: input,
         expectedExtensions: typescriptExtensions,
       });
     }
     if (
-      args.output &&
-      !hasExtensions(args.output, [
-        ...typescriptExtensions,
-        ...javascriptExtensions,
-      ])
+      output &&
+      !hasExtensions(output, [...typescriptExtensions, ...javascriptExtensions])
     ) {
       extErrors.push({
-        path: args.output,
+        path: output,
         expectedExtensions: [...typescriptExtensions, ...javascriptExtensions],
       });
     }
-    if (flags.tests && !hasExtensions(flags.tests, typescriptExtensions)) {
+    if (tests && !hasExtensions(tests, typescriptExtensions)) {
       extErrors.push({
-        path: flags.tests,
+        path: tests,
         expectedExtensions: typescriptExtensions,
       });
     }
@@ -83,11 +114,9 @@ class TsToZod extends Command {
 
     const sourceText = readFileSync(inputPath, "utf-8");
 
-    const userConfig = loadUserConfig();
-
     const generateOptions: GenerateProps = {
       sourceText,
-      ...userConfig,
+      ...fileConfig,
     };
     if (typeof flags.maxRun === "number") {
       generateOptions.maxRun = flags.maxRun;
@@ -103,7 +132,7 @@ class TsToZod extends Command {
       hasCircularDependencies,
     } = generate(generateOptions);
 
-    if (hasCircularDependencies && !args.output) {
+    if (hasCircularDependencies && !output) {
       this.error(
         "--output= must also be provided when input file have some circular dependencies"
       );
@@ -115,7 +144,7 @@ class TsToZod extends Command {
       getImportPath(outputPath, inputPath)
     );
 
-    if (args.output && hasExtensions(args.output, javascriptExtensions)) {
+    if (output && hasExtensions(output, javascriptExtensions)) {
       outputFileSync(
         outputPath,
         ts.transpileModule(zodSchemasFile, {
@@ -131,16 +160,16 @@ class TsToZod extends Command {
     }
     this.log(`🎉 Zod schemas generated!`);
 
-    if (flags.tests) {
-      if (!args.output) {
+    if (tests) {
+      if (!output) {
         this.error("output must also be provided when using --tests=");
       }
-      if (hasExtensions(args.output, javascriptExtensions)) {
+      if (hasExtensions(output, javascriptExtensions)) {
         this.error(
           "Javascript format for --output is not compatible with --tests"
         );
       }
-      const testsPath = join(process.cwd(), flags.tests);
+      const testsPath = join(process.cwd(), tests);
       outputFileSync(
         testsPath,
         getIntegrationTestFile(
@@ -182,11 +211,12 @@ function hasExtensions(path: string, extensions: string[]) {
   return extensions.includes(ext);
 }
 
+const configPath = join(process.cwd(), "ts-to-zod.config.js");
+
 /**
  * Load user config from `ts-to-zod.config.js`
  */
-function loadUserConfig() {
-  const configPath = join(process.cwd(), "ts-to-zod.config.js");
+function loadUserConfig(): TsToZodConfig {
   if (existsSync(configPath)) {
     const config = require(slash(relative(__dirname, configPath)));
     const parsedConfig = configSchema.strict().parse(config);
@@ -200,21 +230,40 @@ function loadUserConfig() {
         ? nameFilterSchema.implement(parsedConfig.nameFilter)
         : undefined,
     };
+  } else {
+    return {};
   }
 }
 
 /**
- * Zod schemas to validate the user configuration
+ * Initialize ts-to-zod.config.js file.
+ *
+ * @returns `true` if the file was created
  */
-const getSchemaNameSchema = z.function().args(z.string()).returns(z.string());
-const nameFilterSchema = z.function().args(z.string()).returns(z.boolean());
-const configSchema = z
-  .object({
-    maxRun: z.number(),
-    nameFilter: nameFilterSchema,
-    getSchemaName: getSchemaNameSchema,
-    keepComments: z.boolean(),
-  })
-  .partial();
+async function init() {
+  if (existsSync(configPath)) {
+    const { answer } = await inquirer.prompt<{ answer: boolean }>({
+      type: "confirm",
+      name: "answer",
+      message:
+        "ts-to-zod.config.js already exists, do you want to override it?",
+    });
+    if (!answer) {
+      return false;
+    }
+  }
+  const configTemplate = `/**
+ * ts-to-zod configuration.
+ *
+ * @type {import("ts-to-zod").TsToZodConfig}
+ */
+module.exports = {
+  
+};
+`;
+
+  outputFile(configPath, configTemplate, "utf-8");
+  return true;
+}
 
 export = TsToZod;
