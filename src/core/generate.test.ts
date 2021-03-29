@@ -36,9 +36,6 @@ describe("generate", () => {
             name: nameSchema,
             age: z.number(),
             underKryptonite: z.boolean().optional(),
-            /**
-             * @format email
-             **/
             email: z.string().email()
         });
 
@@ -155,6 +152,9 @@ describe("generate", () => {
 
   describe("with options", () => {
     const sourceText = `export interface Superman {
+      /**
+       * Name of superman
+       */
       name: string;
     }
 
@@ -168,6 +168,7 @@ describe("generate", () => {
       sourceText,
       nameFilter: (id) => id === "Superman",
       getSchemaName: (id) => id.toLowerCase(),
+      keepComments: true,
     });
 
     it("should only generate superman schema", () => {
@@ -176,6 +177,9 @@ describe("generate", () => {
         import { z } from \\"zod\\";
 
         export const superman = z.object({
+            /**
+             * Name of superman
+             */
             name: z.string()
         });
         "

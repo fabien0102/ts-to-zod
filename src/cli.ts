@@ -3,7 +3,7 @@ import { readFileSync, outputFileSync, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
-import { generate } from "./core/generate";
+import { generate, GenerateProps } from "./core/generate";
 import { z } from "zod";
 
 class TsToZod extends Command {
@@ -20,6 +20,10 @@ class TsToZod extends Command {
       hidden: true,
       default: 10,
       description: "max iteration number to resolve the declaration order",
+    }),
+    keepComments: flags.boolean({
+      char: "c",
+      description: "Keep parameters comments",
     }),
   };
 
@@ -81,16 +85,23 @@ class TsToZod extends Command {
 
     const userConfig = loadUserConfig();
 
+    const generateOptions: GenerateProps = {
+      sourceText,
+      ...userConfig,
+    };
+    if (typeof flags.maxRun === "number") {
+      generateOptions.maxRun = flags.maxRun;
+    }
+    if (typeof flags.keepComments === "boolean") {
+      generateOptions.keepComments = flags.keepComments;
+    }
+
     const {
       errors,
       getZodSchemasFile,
       getIntegrationTestFile,
       hasCircularDependencies,
-    } = generate({
-      sourceText,
-      maxRun: flags.maxRun,
-      ...userConfig,
-    });
+    } = generate(generateOptions);
 
     if (hasCircularDependencies && !args.output) {
       this.error(
@@ -202,6 +213,7 @@ const configSchema = z
     maxRun: z.number(),
     nameFilter: nameFilterSchema,
     getSchemaName: getSchemaNameSchema,
+    keepComments: z.boolean(),
   })
   .partial();
 

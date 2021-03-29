@@ -17,14 +17,20 @@ export interface GenerateProps {
   maxRun?: number;
 
   /**
-   * Filter function on type/interface name
+   * Filter function on type/interface name.
    */
   nameFilter?: (name: string) => boolean;
 
   /**
-   * Schema name generator
+   * Schema name generator.
    */
   getSchemaName?: (identifier: string) => string;
+
+  /**
+   * Keep parameters comments.
+   * @default false
+   */
+  keepComments?: boolean;
 }
 
 /**
@@ -37,6 +43,7 @@ export function generate({
   maxRun = 10,
   nameFilter = () => true,
   getSchemaName = (id) => camel(id) + "Schema",
+  keepComments = false,
 }: GenerateProps) {
   // Create a source file
   const sourceFile = ts.createSourceFile(
@@ -120,7 +127,10 @@ ${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
   }
 
   // Create output files (zod schemas & integration tests)
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+  const printer = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+    removeComments: !keepComments,
+  });
   const print = (node: ts.Node) =>
     printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
 
