@@ -1,9 +1,10 @@
 import { Command, flags } from "@oclif/command";
-import { readFileSync, outputFileSync } from "fs-extra";
+import { readFileSync, outputFileSync, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
 import { generate } from "./core/generate";
+import { z } from "zod";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -79,6 +80,8 @@ class TsToZod extends Command {
 
     const sourceText = readFileSync(inputPath, "utf-8");
 
+    const userConfig = loadUserConfig();
+
     const {
       errors,
       getZodSchemasFile,
@@ -87,6 +90,7 @@ class TsToZod extends Command {
     } = generate({
       sourceText,
       maxRun: flags.maxRun,
+      ...userConfig,
     });
 
     if (hasCircularDependencies && !args.output) {
@@ -164,5 +168,39 @@ function hasExtensions(path: string, extensions: string[]) {
   const { ext } = parse(path);
   return extensions.includes(ext);
 }
+
+/**
+ * Load user config from `ts-to-zod.config.js`
+ */
+function loadUserConfig() {
+  const configPath = join(process.cwd(), "ts-to-zod.config.js");
+  if (existsSync(configPath)) {
+    const config = require(slash(relative(__dirname, configPath)));
+    const parsedConfig = configSchema.strict().parse(config);
+
+    return {
+      ...parsedConfig,
+      getSchemaName: parsedConfig.getSchemaName
+        ? getSchemaNameSchema.implement(parsedConfig.getSchemaName)
+        : undefined,
+      nameFilter: parsedConfig.nameFilter
+        ? nameFilterSchema.implement(parsedConfig.nameFilter)
+        : undefined,
+    };
+  }
+}
+
+/**
+ * Zod schemas to validate the user configuration
+ */
+const getSchemaNameSchema = z.function().args(z.string()).returns(z.string());
+const nameFilterSchema = z.function().args(z.string()).returns(z.boolean());
+const configSchema = z
+  .object({
+    maxRun: z.number(),
+    nameFilter: nameFilterSchema,
+    getSchemaName: getSchemaNameSchema,
+  })
+  .partial();
 
 export = TsToZod;

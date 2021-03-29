@@ -1,4 +1,5 @@
-export { generate, GenerateProps } from "./core/generate";
+import { generate, GenerateProps } from "./core/generate";
+export { generate, GenerateProps };
 
 export {
   generateZodInferredType,
@@ -11,3 +12,5 @@ export {
 } from "./core/generateZodSchema";
 
 export { generateIntegrationTests } from "./core/generateIntegrationTests";
+
+export type TsToZodConfig = Omit<GenerateProps, "sourceText">;
