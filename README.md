@@ -6,9 +6,9 @@
 Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript types/interfaces.
 
 [![Version](https://img.shields.io/npm/v/ts-to-zod.svg)](https://npmjs.org/package/ts-to-zod)
-![Github CI](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml/badge.svg)
+[![Github CI](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml/badge.svg)](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml)
 [![codecov](https://codecov.io/gh/fabien0102/ts-to-zod/branch/main/graph/badge.svg?token=W5M8UIJ59C)](https://codecov.io/gh/fabien0102/ts-to-zod)
-[![License](https://img.shields.io/npm/l/ts-to-zod.svg)](https://github.com/fabien0102/ts-to-zod/blob/master/package.json)
+[![License](https://img.shields.io/npm/l/ts-to-zod.svg)](https://github.com/fabien0102/ts-to-zod/blob/main/LICENSE)
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 
 ## Usage
