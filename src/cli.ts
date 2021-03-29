@@ -15,7 +15,6 @@ class TsToZod extends Command {
     tests: flags.string({
       char: "t",
       description: "generate integration tests",
-      dependsOn: ["output"],
     }),
     maxRun: flags.integer({
       hidden: true,
@@ -122,6 +121,9 @@ class TsToZod extends Command {
     this.log(`🎉 Zod schemas generated!`);
 
     if (flags.tests) {
+      if (!args.output) {
+        this.error("output must also be provided when using --tests=");
+      }
       if (hasExtensions(args.output, javascriptExtensions)) {
         this.error(
           "Javascript format for --output is not compatible with --tests"
