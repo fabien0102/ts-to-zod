@@ -490,7 +490,11 @@ function buildZodPrimitive({
       return buildZodSchema(z, "void", [], zodProperties);
   }
 
-  console.log(ts.SyntaxKind[typeNode.kind], typeNode);
+  console.warn(
+    ` »   Warning: '${
+      ts.SyntaxKind[typeNode.kind]
+    }' is not supported, fallback into 'z.any()'`
+  );
   return buildZodSchema(z, "any", [], zodProperties);
 }
 
