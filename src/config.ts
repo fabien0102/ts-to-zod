@@ -18,7 +18,6 @@ export const configSchema = z
     keepComments: z.boolean(),
     input: z.string(),
     output: z.string(),
-    tests: z.string(),
   })
   .partial();
 

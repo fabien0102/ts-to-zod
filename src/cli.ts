@@ -12,6 +12,7 @@ import {
   TsToZodConfig,
 } from "./config";
 import { getImportPath } from "./utils/getImportPath";
+import { validateGeneratedTypes } from "./core/validateGeneratedTypes";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -19,10 +20,6 @@ class TsToZod extends Command {
   static flags = {
     version: flags.version({ char: "v" }),
     help: flags.help({ char: "h" }),
-    tests: flags.string({
-      char: "t",
-      description: "generate integration tests",
-    }),
     maxRun: flags.integer({
       hidden: true,
       default: 10,
@@ -34,6 +31,10 @@ class TsToZod extends Command {
     }),
     init: flags.boolean({
       description: "Create a ts-to-zod.config.js file",
+    }),
+    skipValidation: flags.boolean({
+      default: false,
+      description: "Skip the validation step (not recommended)",
     }),
   };
 
@@ -59,13 +60,11 @@ class TsToZod extends Command {
     const {
       input: fileConfigInput,
       output: fileConfigOutput,
-      tests: fileConfigTests,
       ...fileConfig
     } = loadUserConfig();
 
     const input = args.input || fileConfigInput;
     const output = args.output || fileConfigOutput;
-    const tests = flags.tests || fileConfigTests;
 
     if (!input) {
       this.error(`Missing 1 required arg:
@@ -91,12 +90,6 @@ See more help with --help`);
       extErrors.push({
         path: output,
         expectedExtensions: [...typescriptExtensions, ...javascriptExtensions],
-      });
-    }
-    if (tests && !hasExtensions(tests, typescriptExtensions)) {
-      extErrors.push({
-        path: tests,
-        expectedExtensions: typescriptExtensions,
       });
     }
 
@@ -141,6 +134,16 @@ See more help with --help`);
 
     errors.map(this.warn);
 
+    if (!flags.skipValidation) {
+      const generationErrors = validateGeneratedTypes({
+        sourceText,
+        getIntegrationTestFile,
+        getZodSchemasFile,
+      });
+
+      generationErrors.map((e) => this.error(e));
+    }
+
     const zodSchemasFile = getZodSchemasFile(
       getImportPath(outputPath, inputPath)
     );
@@ -160,26 +163,6 @@ See more help with --help`);
       outputFileSync(outputPath, zodSchemasFile);
     }
     this.log(`🎉 Zod schemas generated!`);
-
-    if (tests) {
-      if (!output) {
-        this.error("output must also be provided when using --tests=");
-      }
-      if (hasExtensions(output, javascriptExtensions)) {
-        this.error(
-          "Javascript format for --output is not compatible with --tests"
-        );
-      }
-      const testsPath = join(process.cwd(), tests);
-      outputFileSync(
-        testsPath,
-        getIntegrationTestFile(
-          getImportPath(testsPath, inputPath),
-          getImportPath(testsPath, outputPath)
-        )
-      );
-      this.log(`🤓 Integration tests generated!`);
-    }
   }
 }
 

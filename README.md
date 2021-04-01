@@ -22,13 +22,11 @@ That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all th
 
 Note: The generated zod schemas have `zod@next` as dependency.
 
-## Generated integration tests
+## Embedded validation
 
-To make sure the generated zod schemas are 100% compatible with your original types, you can add the `--tests src/integrationTests.ts` flag to generate an extra file.
+To make sure the generated zod schemas are 100% compatible with your original types, this tool is internally comparing `z.infer<generatedSchema>` and your original type. If you are running on those validation, please open an issue 😀
 
-Please make sure that this file is part of your typescript project, if everything is green, you are good to go, otherwise, please open an issue 😀.
-
-The goal of this file is just to compare types, nothing else, you can have a look of this file into `example/heros.integration.ts`.
+(Note: Even if this is really not recommanded, you can skip this validation step with `--skipValidation`. At your own risk!)
 
 ## Validators
 
