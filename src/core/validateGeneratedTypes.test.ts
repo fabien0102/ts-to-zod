@@ -78,24 +78,10 @@ describe("validateGeneratedTypes", () => {
 
     expect(errors).toMatchInlineSnapshot(`
       Array [
-        Object {
-          "character": 45,
-          "from": "spec",
-          "line": 13,
-          "message": "Argument of type 'number' is not assignable to parameter of type 'string'.",
-          "source": "      expectType<myStringSchemaInferredType>({} as spec.MyNumber);",
-          "specType": "MyNumber",
-          "zodType": "myStringSchema",
-        },
-        Object {
-          "character": 32,
-          "from": "type",
-          "line": 14,
-          "message": "Argument of type 'string' is not assignable to parameter of type 'number'.",
-          "source": "      expectType<spec.MyNumber>({} as myStringSchemaInferredType);",
-          "specType": "MyNumber",
-          "zodType": "myStringSchema",
-        },
+        "'MyNumber' is not compatible with 'myStringSchema':
+      Argument of type 'number' is not assignable to parameter of type 'string'.",
+        "'myStringSchema' is not compatible with 'MyNumber':
+      Argument of type 'string' is not assignable to parameter of type 'number'.",
       ]
     `);
   });

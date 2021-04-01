@@ -89,9 +89,13 @@ export function validateGeneratedTypes({
       );
       const details = getDetails(diagnostic.file, position.line);
 
-      return { ...position, message, ...details };
+      if (details.zodType && details.specType && details.from) {
+        return details.from === "spec"
+          ? `'${details.specType}' is not compatible with '${details.zodType}':\n${message}`
+          : `'${details.zodType}' is not compatible with '${details.specType}':\n${message}`;
+      }
     }
-    return { message };
+    return message;
   });
 }
 
