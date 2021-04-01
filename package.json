@@ -75,7 +75,10 @@
   },
   "jest": {
     "preset": "ts-jest",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/*.test.ts"
+    ]
   },
   "prettier": {
     "printWidth": 80,
