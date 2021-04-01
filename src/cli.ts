@@ -1,5 +1,5 @@
 import { Command, flags } from "@oclif/command";
-import { readFileSync, outputFileSync, existsSync, outputFile } from "fs-extra";
+import { readFile, outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
@@ -13,6 +13,7 @@ import {
 } from "./config";
 import { getImportPath } from "./utils/getImportPath";
 import { validateGeneratedTypes } from "./core/validateGeneratedTypes";
+import ora from "ora";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -106,7 +107,7 @@ See more help with --help`);
       );
     }
 
-    const sourceText = readFileSync(inputPath, "utf-8");
+    const sourceText = await readFile(inputPath, "utf-8");
 
     const generateOptions: GenerateProps = {
       sourceText,
@@ -135,11 +136,15 @@ See more help with --help`);
     errors.map(this.warn);
 
     if (!flags.skipValidation) {
+      const validatorSpinner = ora("Validating generated types").start();
       const generationErrors = validateGeneratedTypes({
         sourceText,
         getIntegrationTestFile,
         getZodSchemasFile,
       });
+      generationErrors.length
+        ? validatorSpinner.fail()
+        : validatorSpinner.succeed();
 
       generationErrors.map((e) => this.error(e));
     }
@@ -149,7 +154,7 @@ See more help with --help`);
     );
 
     if (output && hasExtensions(output, javascriptExtensions)) {
-      outputFileSync(
+      await outputFile(
         outputPath,
         ts.transpileModule(zodSchemasFile, {
           compilerOptions: {
@@ -160,7 +165,7 @@ See more help with --help`);
         }).outputText
       );
     } else {
-      outputFileSync(outputPath, zodSchemasFile);
+      await outputFile(outputPath, zodSchemasFile);
     }
     this.log(`🎉 Zod schemas generated!`);
   }
