@@ -133,6 +133,13 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate a promise schema", () => {
+    const source = `export type KrytonResponse = Promise<boolean>`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const krytonResponseSchema = z.promise(z.boolean());"`
+    );
+  });
+
   it("should generate a referenced schema", () => {
     const source = `export type Vilain = BadGuy;`;
     expect(generate(source)).toMatchInlineSnapshot(

@@ -286,6 +286,26 @@ function buildZodPrimitive({
       );
     }
 
+    // Deal with `Promise<>` syntax
+    if (identifierName === "Promise" && typeNode.typeArguments) {
+      return buildZodSchema(
+        z,
+        "promise",
+        typeNode.typeArguments.map((i) =>
+          buildZodPrimitive({
+            z,
+            typeNode: i,
+            isOptional: false,
+            jsDocTags,
+            sourceFile,
+            dependencies,
+            getDependencyName,
+          })
+        ),
+        zodProperties
+      );
+    }
+
     // Deal with `Omit<>` & `Pick<>` syntax
     if (["Omit", "Pick"].includes(identifierName) && typeNode.typeArguments) {
       const [originalType, keys] = typeNode.typeArguments;
