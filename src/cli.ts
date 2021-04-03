@@ -12,8 +12,8 @@ import {
   TsToZodConfig,
 } from "./config";
 import { getImportPath } from "./utils/getImportPath";
-import { validateGeneratedTypes } from "./core/validateGeneratedTypes";
 import ora from "ora";
+import * as worker from "./worker";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -137,11 +137,21 @@ See more help with --help`);
 
     if (!flags.skipValidation) {
       const validatorSpinner = ora("Validating generated types").start();
-      const generationErrors = validateGeneratedTypes({
-        sourceText,
-        getIntegrationTestFile,
-        getZodSchemasFile,
+      const generationErrors = await worker.validateGeneratedTypesInWorker({
+        sourceTypes: {
+          sourceText,
+          relativePath: "./source.ts",
+        },
+        integrationTests: {
+          sourceText: getIntegrationTestFile("./source", "./source.zod"),
+          relativePath: "./source.integration.ts",
+        },
+        zodSchemas: {
+          sourceText: getZodSchemasFile("./source"),
+          relativePath: "./source.zod.ts",
+        },
       });
+
       generationErrors.length
         ? validatorSpinner.fail()
         : validatorSpinner.succeed();

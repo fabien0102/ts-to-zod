@@ -1,38 +1,27 @@
 import {
   createDefaultMapFromNodeModules,
   createFSBackedSystem,
-  // createSystem,
   createVirtualTypeScriptEnvironment,
 } from "@typescript/vfs";
 import ts from "typescript";
-import { getImportPath } from "../utils/getImportPath";
-import { generate } from "./generate";
 import { join } from "path";
-
-export interface ValidateGeneratedTypesProps {
-  /**
-   * File content of the source types.
-   */
+interface File {
   sourceText: string;
-
-  /**
-   * Getter for generated zod schemas
-   */
-  getZodSchemasFile: ReturnType<typeof generate>["getZodSchemasFile"];
-
-  /**
-   * Getter for generated integration tests
-   */
-  getIntegrationTestFile: ReturnType<typeof generate>["getIntegrationTestFile"];
+  relativePath: string;
+}
+export interface ValidateGeneratedTypesProps {
+  sourceTypes: File;
+  zodSchemas: File;
+  integrationTests: File;
 }
 
 /**
  * Use typescript compiler to validate the generated zod schemas.
  */
 export function validateGeneratedTypes({
-  sourceText,
-  getZodSchemasFile,
-  getIntegrationTestFile,
+  sourceTypes,
+  zodSchemas,
+  integrationTests,
 }: ValidateGeneratedTypesProps) {
   // Shared configuration
   const compilerOptions: ts.CompilerOptions = {
@@ -45,38 +34,27 @@ export function validateGeneratedTypes({
     target: compilerOptions.target,
   });
   const projectRoot = process.cwd();
-  const fileNames = {
-    source: join(projectRoot, "source.ts"),
-    zod: join(projectRoot, "source.zod.ts"),
-    test: join(projectRoot, "source.test.ts"),
-  };
-  fsMap.set(fileNames.source, sourceText);
-  fsMap.set(
-    fileNames.zod,
-    getZodSchemasFile(getImportPath(fileNames.zod, fileNames.source))
-  );
-  fsMap.set(
-    fileNames.test,
-    getIntegrationTestFile(
-      getImportPath(fileNames.test, fileNames.source),
-      getImportPath(fileNames.test, fileNames.zod)
-    )
-  );
+  fsMap.set(getPath(sourceTypes), sourceTypes.sourceText);
+  fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
+  fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
   // Create a virtual typescript environment
-  // const system = createSystem(fsMap);
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
-    Object.values(fileNames),
+    [sourceTypes, zodSchemas, integrationTests].map(getPath),
     ts,
     compilerOptions
   );
 
   // Get the diagnostic
   const errors: ts.Diagnostic[] = [];
-  errors.push(...env.languageService.getSemanticDiagnostics(fileNames.test));
-  errors.push(...env.languageService.getSyntacticDiagnostics(fileNames.test));
+  errors.push(
+    ...env.languageService.getSemanticDiagnostics(getPath(integrationTests))
+  );
+  errors.push(
+    ...env.languageService.getSyntacticDiagnostics(getPath(integrationTests))
+  );
 
   return errors.map((diagnostic) => {
     const message = ts.flattenDiagnosticMessageText(
@@ -125,4 +103,8 @@ function getDetails(file: ts.SourceFile, line: number) {
     }
   });
   return expression;
+}
+
+function getPath(file: File) {
+  return join(process.cwd(), file.relativePath);
 }
