@@ -102,6 +102,20 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a tuple schema", () => {
+    const source = `export type Life = [LoisLane, Problem[]];`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const lifeSchema = z.tuple([loisLaneSchema, z.array(problemSchema)]);"`
+    );
+  });
+
+  it("should generate a tuple schema (named)", () => {
+    const source = `export type Story = [subject: string, problems: string[]];`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const storySchema = z.tuple([z.string(), z.array(z.string())]);"`
+    );
+  });
+
   it("should generate an object schema", () => {
     const source = `export type Superman = {
      name: "superman";

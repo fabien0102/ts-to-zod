@@ -371,6 +371,26 @@ function buildZodPrimitive({
     );
   }
 
+  if (ts.isTupleTypeNode(typeNode)) {
+    const values = typeNode.elements.map((i) =>
+      buildZodPrimitive({
+        z,
+        typeNode: ts.isNamedTupleMember(i) ? i.type : i,
+        isOptional: false,
+        jsDocTags: {},
+        sourceFile,
+        dependencies,
+        getDependencyName,
+      })
+    );
+    return buildZodSchema(
+      z,
+      "tuple",
+      [f.createArrayLiteralExpression(values)],
+      zodProperties
+    );
+  }
+
   if (ts.isLiteralTypeNode(typeNode)) {
     if (ts.isStringLiteral(typeNode.literal)) {
       return buildZodSchema(
