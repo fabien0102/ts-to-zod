@@ -1,5 +1,5 @@
 import { Command, flags } from "@oclif/command";
-import { readFileSync, outputFileSync, existsSync, outputFile } from "fs-extra";
+import { readFile, outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
@@ -11,6 +11,9 @@ import {
   nameFilterSchema,
   TsToZodConfig,
 } from "./config";
+import { getImportPath } from "./utils/getImportPath";
+import ora from "ora";
+import * as worker from "./worker";
 
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
@@ -18,10 +21,6 @@ class TsToZod extends Command {
   static flags = {
     version: flags.version({ char: "v" }),
     help: flags.help({ char: "h" }),
-    tests: flags.string({
-      char: "t",
-      description: "generate integration tests",
-    }),
     maxRun: flags.integer({
       hidden: true,
       default: 10,
@@ -33,6 +32,10 @@ class TsToZod extends Command {
     }),
     init: flags.boolean({
       description: "Create a ts-to-zod.config.js file",
+    }),
+    skipValidation: flags.boolean({
+      default: false,
+      description: "Skip the validation step (not recommended)",
     }),
   };
 
@@ -58,13 +61,11 @@ class TsToZod extends Command {
     const {
       input: fileConfigInput,
       output: fileConfigOutput,
-      tests: fileConfigTests,
       ...fileConfig
     } = loadUserConfig();
 
     const input = args.input || fileConfigInput;
     const output = args.output || fileConfigOutput;
-    const tests = flags.tests || fileConfigTests;
 
     if (!input) {
       this.error(`Missing 1 required arg:
@@ -92,12 +93,6 @@ See more help with --help`);
         expectedExtensions: [...typescriptExtensions, ...javascriptExtensions],
       });
     }
-    if (tests && !hasExtensions(tests, typescriptExtensions)) {
-      extErrors.push({
-        path: tests,
-        expectedExtensions: typescriptExtensions,
-      });
-    }
 
     if (extErrors.length) {
       this.error(
@@ -112,7 +107,7 @@ See more help with --help`);
       );
     }
 
-    const sourceText = readFileSync(inputPath, "utf-8");
+    const sourceText = await readFile(inputPath, "utf-8");
 
     const generateOptions: GenerateProps = {
       sourceText,
@@ -140,12 +135,36 @@ See more help with --help`);
 
     errors.map(this.warn);
 
+    if (!flags.skipValidation) {
+      const validatorSpinner = ora("Validating generated types").start();
+      const generationErrors = await worker.validateGeneratedTypesInWorker({
+        sourceTypes: {
+          sourceText,
+          relativePath: "./source.ts",
+        },
+        integrationTests: {
+          sourceText: getIntegrationTestFile("./source", "./source.zod"),
+          relativePath: "./source.integration.ts",
+        },
+        zodSchemas: {
+          sourceText: getZodSchemasFile("./source"),
+          relativePath: "./source.zod.ts",
+        },
+      });
+
+      generationErrors.length
+        ? validatorSpinner.fail()
+        : validatorSpinner.succeed();
+
+      generationErrors.map((e) => this.error(e));
+    }
+
     const zodSchemasFile = getZodSchemasFile(
       getImportPath(outputPath, inputPath)
     );
 
     if (output && hasExtensions(output, javascriptExtensions)) {
-      outputFileSync(
+      await outputFile(
         outputPath,
         ts.transpileModule(zodSchemasFile, {
           compilerOptions: {
@@ -156,44 +175,10 @@ See more help with --help`);
         }).outputText
       );
     } else {
-      outputFileSync(outputPath, zodSchemasFile);
+      await outputFile(outputPath, zodSchemasFile);
     }
     this.log(`🎉 Zod schemas generated!`);
-
-    if (tests) {
-      if (!output) {
-        this.error("output must also be provided when using --tests=");
-      }
-      if (hasExtensions(output, javascriptExtensions)) {
-        this.error(
-          "Javascript format for --output is not compatible with --tests"
-        );
-      }
-      const testsPath = join(process.cwd(), tests);
-      outputFileSync(
-        testsPath,
-        getIntegrationTestFile(
-          getImportPath(testsPath, inputPath),
-          getImportPath(testsPath, outputPath)
-        )
-      );
-      this.log(`🤓 Integration tests generated!`);
-    }
   }
-}
-
-/**
- * Resolve the path of an import.
- *
- * @param from path of the current file
- * @param to path of the import file
- * @returns relative path without extension
- */
-function getImportPath(from: string, to: string) {
-  const relativePath = slash(relative(from, to).slice(1));
-  const { dir, name } = parse(relativePath);
-
-  return `${dir}/${name}`;
 }
 
 const typescriptExtensions = [".ts", ".tsx"];
