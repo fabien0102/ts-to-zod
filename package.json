@@ -24,6 +24,7 @@
     "test": "jest",
     "test:ci": "jest --ci --coverage && yarn example && tsc --noEmit",
     "example": "./bin/run example/heros.ts example/heros.zod.ts",
+    "postexample": "prettier example/heros.zod.ts --write",
     "prepare": "husky install"
   },
   "files": [
