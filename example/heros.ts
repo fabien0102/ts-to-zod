@@ -27,3 +27,10 @@ export interface EvilPlanDetails {
   parent: EvilPlan; // <- Unsolvable circular reference
   steps: string[];
 }
+
+export type Story = [subject: string, problems: string[]];
+export type KrytonResponse = Promise<boolean>;
+export type KillSuperman = (
+  withKryptonite: boolean,
+  method: string
+) => Promise<boolean>;

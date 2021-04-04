@@ -26,3 +26,12 @@ export const vilainSchema: z.ZodSchema<Vilain> = z.lazy(() =>
     friends: z.array(vilainSchema),
   })
 );
+
+export const storySchema = z.tuple([z.string(), z.array(z.string())]);
+
+export const krytonResponseSchema = z.promise(z.boolean());
+
+export const killSupermanSchema = z
+  .function()
+  .args(z.boolean(), z.string())
+  .returns(z.promise(z.boolean()));
