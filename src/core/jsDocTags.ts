@@ -98,7 +98,10 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
   return jsDocTags;
 }
 
-export type ZodProperty = { identifier: string; expression?: ts.Expression };
+export type ZodProperty = {
+  identifier: string;
+  expressions?: ts.Expression[];
+};
 
 /**
  * Convert a set of jsDocTags to zod properties
@@ -118,25 +121,25 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.minimum !== undefined) {
     zodProperties.push({
       identifier: "min",
-      expression: f.createNumericLiteral(jsDocTags.minimum),
+      expressions: [f.createNumericLiteral(jsDocTags.minimum)],
     });
   }
   if (jsDocTags.maximum !== undefined) {
     zodProperties.push({
       identifier: "max",
-      expression: f.createNumericLiteral(jsDocTags.maximum),
+      expressions: [f.createNumericLiteral(jsDocTags.maximum)],
     });
   }
   if (jsDocTags.minLenght !== undefined) {
     zodProperties.push({
       identifier: "min",
-      expression: f.createNumericLiteral(jsDocTags.minLenght),
+      expressions: [f.createNumericLiteral(jsDocTags.minLenght)],
     });
   }
   if (jsDocTags.maxLenght !== undefined) {
     zodProperties.push({
       identifier: "max",
-      expression: f.createNumericLiteral(jsDocTags.maxLenght),
+      expressions: [f.createNumericLiteral(jsDocTags.maxLenght)],
     });
   }
   if (jsDocTags.format) {
@@ -147,7 +150,7 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.pattern) {
     zodProperties.push({
       identifier: "regex",
-      expression: f.createRegularExpressionLiteral(`/${jsDocTags.pattern}/`),
+      expressions: [f.createRegularExpressionLiteral(`/${jsDocTags.pattern}/`)],
     });
   }
   if (isOptional) {

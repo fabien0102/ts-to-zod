@@ -170,6 +170,20 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a function schema", () => {
+    const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const killSupermanSchema = z.function().args(z.boolean(), z.string()).returns(z.promise(z.boolean()));"`
+    );
+  });
+
+  it("should generate a function schema (with `any` fallback on param)", () => {
+    const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const killSupermanSchema = z.function().args(z.boolean(), z.any()).returns(z.promise(z.boolean()));"`
+    );
+  });
+
   it("should throw on non string record", () => {
     const source = `export type UnsupportedType = Record<number, number>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(

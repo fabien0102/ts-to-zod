@@ -513,6 +513,46 @@ function buildZodPrimitive({
     );
   }
 
+  if (ts.isFunctionTypeNode(typeNode)) {
+    return buildZodSchema(
+      z,
+      "function",
+      [],
+      [
+        {
+          identifier: "args",
+          expressions: typeNode.parameters.map((p) =>
+            buildZodPrimitive({
+              z,
+              typeNode:
+                p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
+              jsDocTags,
+              sourceFile,
+              dependencies,
+              getDependencyName,
+              isOptional: false,
+            })
+          ),
+        },
+        {
+          identifier: "returns",
+          expressions: [
+            buildZodPrimitive({
+              z,
+              typeNode: typeNode.type,
+              jsDocTags,
+              sourceFile,
+              dependencies,
+              getDependencyName,
+              isOptional: false,
+            }),
+          ],
+        },
+        ...zodProperties,
+      ]
+    );
+  }
+
   switch (typeNode.kind) {
     case ts.SyntaxKind.StringKeyword:
       return buildZodSchema(z, "string", [], zodProperties);
@@ -581,7 +621,7 @@ function withZodProperties(
           f.createIdentifier(property.identifier)
         ),
         undefined,
-        property.expression ? [property.expression] : undefined
+        property.expressions ? property.expressions : undefined
       ),
     expression
   ) as ts.CallExpression;
