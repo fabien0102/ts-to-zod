@@ -86,6 +86,9 @@ export function generateZodSchemaVariableStatement({
   }
 
   if (ts.isTypeAliasDeclaration(node)) {
+    if (node.typeParameters) {
+      throw new Error("Type with generics are not supported!");
+    }
     schema = buildZodPrimitive({
       z: zodImportValue,
       typeNode: node.type,
