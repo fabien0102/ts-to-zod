@@ -35,3 +35,16 @@ export const killSupermanSchema = z
   .function()
   .args(z.boolean(), z.string())
   .returns(z.promise(z.boolean()));
+
+export const withDefaultsSchema = z.object({
+  theAnswerToTheUltimateQuestionOfLife: z.number().default(42),
+  isVulnerable: z.boolean().default(false),
+  name: z
+    .union([z.literal("clark"), z.literal("superman"), z.literal("kal-l")])
+    .default("clark"),
+  theMeaningOf42: z
+    .string()
+    .default("The Answer to the Ultimate Question of Life"),
+  emptyString: z.string().optional().default(""),
+  booleanAsString: z.string().default("true"),
+});

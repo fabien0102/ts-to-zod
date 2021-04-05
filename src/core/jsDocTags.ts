@@ -90,6 +90,29 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
+          case "default":
+            if (
+              tag.comment &&
+              !tag.comment.includes('"') &&
+              !Number.isNaN(parseInt(tag.comment))
+            ) {
+              // number
+              jsDocTags[tagName] = parseInt(tag.comment);
+            } else if (tag.comment && ["false", "true"].includes(tag.comment)) {
+              // boolean
+              jsDocTags[tagName] = tag.comment === "true";
+            } else if (
+              tag.comment &&
+              tag.comment.startsWith('"') &&
+              tag.comment.endsWith('"')
+            ) {
+              // string with double quotes
+              jsDocTags[tagName] = tag.comment.slice(1, -1);
+            } else if (tag.comment) {
+              // string without quotes
+              jsDocTags[tagName] = tag.comment;
+            }
+            break;
         }
       });
     });
@@ -166,6 +189,19 @@ export function jsDocTagToZodProperties(
   if (isRequired) {
     zodProperties.push({
       identifier: "required",
+    });
+  }
+  if (jsDocTags.default !== undefined) {
+    zodProperties.push({
+      identifier: "default",
+      expressions:
+        jsDocTags.default === true
+          ? [f.createTrue()]
+          : jsDocTags.default === false
+          ? [f.createFalse()]
+          : typeof jsDocTags.default === "number"
+          ? [f.createNumericLiteral(jsDocTags.default)]
+          : [f.createStringLiteral(jsDocTags.default)],
     });
   }
 

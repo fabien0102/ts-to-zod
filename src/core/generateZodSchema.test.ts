@@ -440,7 +440,7 @@ describe("generateZodSchema", () => {
            *
            * @default true
            */
-          hasSuperPower: z.boolean().optional(),
+          hasSuperPower: z.boolean().optional().default(true),
           /**
            * The age of the hero
            *
@@ -448,6 +448,63 @@ describe("generateZodSchema", () => {
            * @maximum 500
            */
           age: z.number().min(0).max(500)
+      });"
+    `);
+  });
+
+  it("should deal with @default with all types", () => {
+    const source = `export interface WithDefaults {
+     /**
+      * @default 42
+      */
+      theAnswerToTheUltimateQuestionOfLife: number;
+      /**
+       * @default false
+       */
+      isVulnerable: boolean;
+      /**
+       * @default clark
+       */
+      name: "clark" | "superman" | "kal-l";
+      /**
+       * @default The Answer to the Ultimate Question of Life
+       */
+      theMeaningOf42: string;
+      /**
+       * @default ""
+       */
+      emptyString: string;
+      /**
+       * @default "true"
+       */
+      booleanAsString: string;
+   }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const withDefaultsSchema = z.object({
+          /**
+           * @default 42
+           */
+          theAnswerToTheUltimateQuestionOfLife: z.number().default(42),
+          /**
+           * @default false
+           */
+          isVulnerable: z.boolean().default(false),
+          /**
+           * @default clark
+           */
+          name: z.union([z.literal(\\"clark\\"), z.literal(\\"superman\\"), z.literal(\\"kal-l\\")]).default(\\"clark\\"),
+          /**
+           * @default The Answer to the Ultimate Question of Life
+           */
+          theMeaningOf42: z.string().default(\\"The Answer to the Ultimate Question of Life\\"),
+          /**
+           * @default \\"\\"
+           */
+          emptyString: z.string().default(\\"\\"),
+          /**
+           * @default \\"true\\"
+           */
+          booleanAsString: z.string().default(\\"true\\")
       });"
     `);
   });

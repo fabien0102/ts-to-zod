@@ -34,3 +34,30 @@ export type KillSuperman = (
   withKryptonite: boolean,
   method: string
 ) => Promise<boolean>;
+
+export interface WithDefaults {
+  /**
+   * @default 42
+   */
+  theAnswerToTheUltimateQuestionOfLife: number;
+  /**
+   * @default false
+   */
+  isVulnerable: boolean;
+  /**
+   * @default clark
+   */
+  name: "clark" | "superman" | "kal-l";
+  /**
+   * @default The Answer to the Ultimate Question of Life
+   */
+  theMeaningOf42: string;
+  /**
+   * @default ""
+   */
+  emptyString?: string;
+  /**
+   * @default "true"
+   */
+  booleanAsString: string;
+}
