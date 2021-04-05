@@ -26,7 +26,10 @@ Note: The generated zod schemas have `zod@next` as dependency.
 
 To make sure the generated zod schemas are 100% compatible with your original types, this tool is internally comparing `z.infer<generatedSchema>` and your original type. If you are running on those validation, please open an issue 😀
 
-(Note: Even if this is really not recommanded, you can skip this validation step with `--skipValidation`. At your own risk!)
+Notes:
+
+- Only exported types/interface are tested (so you can have some private types/interface and just exports the composed type)
+- Even if this is not recommanded, you can skip this validation step with `--skipValidation`. (At your own risk!)
 
 ## Validators
 

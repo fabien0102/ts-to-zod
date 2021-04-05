@@ -48,3 +48,12 @@ export const withDefaultsSchema = z.object({
   emptyString: z.string().optional().default(""),
   booleanAsString: z.string().default("true"),
 });
+
+const nonExportedSchema = z.object({
+  name: z.string(),
+});
+
+export const exportedSchema = z.object({
+  a: nonExportedSchema,
+  b: z.string(),
+});

@@ -150,10 +150,12 @@ ${Array.from(statements.values())
 `;
 
   const testCases = generateIntegrationTests(
-    Array.from(statements.values()).map((i) => ({
-      zodType: `${getSchemaName(i.typeName)}InferredType`,
-      tsType: `spec.${i.typeName}`,
-    }))
+    Array.from(statements.values())
+      .filter(isExported)
+      .map((i) => ({
+        zodType: `${getSchemaName(i.typeName)}InferredType`,
+        tsType: `spec.${i.typeName}`,
+      }))
   );
 
   const getIntegrationTestFile = (
@@ -171,6 +173,7 @@ function expectType<T>(_: T) {
 }
 
 ${Array.from(statements.values())
+  .filter(isExported)
   .map((statement) => {
     // Generate z.infer<>
     const zodInferredSchema = generateZodInferredType({
@@ -212,3 +215,11 @@ ${testCases.map(print).join("\n")}
     hasCircularDependencies: imports.length > 0,
   };
 }
+
+/**
+ * Helper to filter exported const declaration
+ * @param i
+ * @returns
+ */
+const isExported = (i: { typeName: string; value: ts.VariableStatement }) =>
+  i.value.modifiers?.find((mod) => mod.kind === ts.SyntaxKind.ExportKeyword);

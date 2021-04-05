@@ -103,7 +103,7 @@ export function generateZodSchemaVariableStatement({
   return {
     dependencies: uniq(dependencies),
     statement: f.createVariableStatement(
-      [f.createModifier(ts.SyntaxKind.ExportKeyword)],
+      node.modifiers,
       f.createVariableDeclarationList(
         [
           f.createVariableDeclaration(

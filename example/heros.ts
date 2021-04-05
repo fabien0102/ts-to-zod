@@ -61,3 +61,12 @@ export interface WithDefaults {
    */
   booleanAsString: string;
 }
+
+interface NonExported {
+  name: string;
+}
+
+export interface Exported {
+  a: NonExported;
+  b: string;
+}
