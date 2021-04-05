@@ -547,6 +547,15 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should throw on generics", () => {
+    const source = `export interface Vilain<TPower> {
+     powers: TPower[]
+   }`;
+    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
+      `"Interface with generics are not supported!"`
+    );
+  });
+
   it("should be able to override the zod import value", () => {
     const source = `export type TheLastTest = true`;
 

@@ -60,6 +60,9 @@ export function generateZodSchemaVariableStatement({
 
   if (ts.isInterfaceDeclaration(node)) {
     let baseSchema: string | undefined;
+    if (node.typeParameters) {
+      throw new Error("Interface with generics are not supported!");
+    }
     if (node.heritageClauses) {
       if (
         node.heritageClauses.length > 1 ||
