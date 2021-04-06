@@ -143,7 +143,6 @@ Since we are generating Zod schemas, we are limited by what Zod actually support
 - No type generics
 - No complex circular dependencies (you will be warn if you have some in your types)
 - No `Record<number, …>`
-- No Function type inference
 - …
 
 To resume, you can use all the primitive types and some the following typescript helpers:
@@ -154,6 +153,7 @@ To resume, you can use all the primitive types and some the following typescript
 - `Partial<>`
 - `Required<>`
 - `Array<>`
+- `Promise<>`
 
 This utils is design to work with one file only, and will reference types from the same file:
 
