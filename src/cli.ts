@@ -1,22 +1,49 @@
 import { Command, flags } from "@oclif/command";
+import { OutputFlags } from "@oclif/parser";
 import { readFile, outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
 import { generate, GenerateProps } from "./core/generate";
-import inquirer from "inquirer";
 import {
-  configSchema,
+  tsToZodconfigSchema,
   getSchemaNameSchema,
   nameFilterSchema,
   TsToZodConfig,
+  Config,
 } from "./config";
 import { getImportPath } from "./utils/getImportPath";
 import ora from "ora";
 import * as worker from "./worker";
 
+// Try to load `ts-to-zod.config.js`
+// We are doing this here to be able to infer the available `flags` of the cli help
+const tsToZodConfigJs = "ts-to-zod.config.js";
+const configPath = join(process.cwd(), tsToZodConfigJs);
+let parsedConfig: ReturnType<typeof tsToZodconfigSchema.safeParse> | undefined;
+let haveMultiConfig = false;
+const configKeys: string[] = [];
+
+if (existsSync(configPath)) {
+  const rawConfig = require(slash(relative(__dirname, configPath)));
+  parsedConfig = tsToZodconfigSchema.safeParse(rawConfig);
+  if (parsedConfig.success && Array.isArray(parsedConfig.data)) {
+    haveMultiConfig = true;
+    configKeys.push(...parsedConfig.data.map((c) => c.name));
+  }
+}
+
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
+
+  static usage = haveMultiConfig
+    ? [
+        "--all",
+        ...configKeys.map(
+          (key) => `--config ${key.includes(" ") ? `"${key}"` : key}`
+        ),
+      ]
+    : undefined;
 
   static flags = {
     version: flags.version({ char: "v" }),
@@ -27,15 +54,29 @@ class TsToZod extends Command {
       description: "max iteration number to resolve the declaration order",
     }),
     keepComments: flags.boolean({
-      char: "c",
+      char: "k",
       description: "Keep parameters comments",
     }),
     init: flags.boolean({
+      char: "i",
       description: "Create a ts-to-zod.config.js file",
     }),
     skipValidation: flags.boolean({
       default: false,
       description: "Skip the validation step (not recommended)",
+    }),
+    // -- Multi config flags --
+    config: flags.enum({
+      char: "c",
+      options: configKeys,
+      description: "Execute one config",
+      hidden: !haveMultiConfig,
+    }),
+    all: flags.boolean({
+      char: "a",
+      default: false,
+      description: "Execute all configs",
+      hidden: !haveMultiConfig,
     }),
   };
 
@@ -57,20 +98,45 @@ class TsToZod extends Command {
       return;
     }
 
-    // Retrieve ts-to-zod.config.js values and consolidate with cli flags.
-    const {
-      input: fileConfigInput,
-      output: fileConfigOutput,
-      ...fileConfig
-    } = loadUserConfig();
+    const fileConfig = this.loadFileConfig(parsedConfig, flags);
 
-    const input = args.input || fileConfigInput;
-    const output = args.output || fileConfigOutput;
+    if (Array.isArray(fileConfig)) {
+      fileConfig.map((config) => {
+        // TODO Advanced badass spinners
+        this.log(`Start generate ${config.name}`);
+        this.generate(args, config, flags);
+      });
+    } else {
+      const result = await this.generate(args, fileConfig, flags);
+      if (result.success) {
+        this.log(`🎉 Zod schemas generated!`);
+      } else {
+        this.error(result.error);
+      }
+    }
+  }
+
+  /**
+   * Generate on zod schema file.
+   * @param args
+   * @param fileConfig
+   * @param flags
+   */
+  async generate(
+    args: { input?: string; output?: string },
+    fileConfig: Config,
+    flags: OutputFlags<typeof TsToZod.flags>
+  ): Promise<{ success: true } | { success: false; error: string }> {
+    const input = args.input || fileConfig.input;
+    const output = args.output || fileConfig.output;
 
     if (!input) {
-      this.error(`Missing 1 required arg:
+      return {
+        success: false,
+        error: `Missing 1 required arg:
 ${TsToZod.args[0].description}
-See more help with --help`);
+See more help with --help`,
+      };
     }
 
     const inputPath = join(process.cwd(), input);
@@ -95,16 +161,17 @@ See more help with --help`);
     }
 
     if (extErrors.length) {
-      this.error(
-        `Unexpected file extension:\n${extErrors
+      return {
+        success: false,
+        error: `Unexpected file extension:\n${extErrors
           .map(
             ({ path, expectedExtensions }) =>
               `"${path}" must be ${expectedExtensions
                 .map((i) => `"${i}"`)
                 .join(", ")}`
           )
-          .join("\n")}`
-      );
+          .join("\n")}`,
+      };
     }
 
     const sourceText = await readFile(inputPath, "utf-8");
@@ -128,9 +195,11 @@ See more help with --help`);
     } = generate(generateOptions);
 
     if (hasCircularDependencies && !output) {
-      this.error(
-        "--output= must also be provided when input file have some circular dependencies"
-      );
+      return {
+        success: false,
+        error:
+          "--output= must also be provided when input file have some circular dependencies",
+      };
     }
 
     errors.map(this.warn);
@@ -156,7 +225,12 @@ See more help with --help`);
         ? validatorSpinner.fail()
         : validatorSpinner.succeed();
 
-      generationErrors.map((e) => this.error(e));
+      if (generationErrors.length > 0) {
+        return {
+          success: false,
+          error: generationErrors.join("\n"),
+        };
+      }
     }
 
     const zodSchemasFile = getZodSchemasFile(
@@ -177,7 +251,47 @@ See more help with --help`);
     } else {
       await outputFile(outputPath, zodSchemasFile);
     }
-    this.log(`🎉 Zod schemas generated!`);
+    return { success: true };
+  }
+
+  /**
+   * Load user config from `ts-to-zod.config.js`
+   */
+  loadFileConfig(
+    config: typeof parsedConfig,
+    flags: OutputFlags<typeof TsToZod.flags>
+  ): TsToZodConfig {
+    if (!config) {
+      return {};
+    }
+    if (!config.success) {
+      this.error(`"${tsToZodConfigJs}" invalid:\n${config.error.message}`);
+    }
+    if (Array.isArray(config.data)) {
+      if (flags.all) {
+        return config.data;
+      }
+      if (flags.config) {
+        const selectedConfig = config.data.find((c) => c.name === flags.config);
+        if (!selectedConfig) {
+          this.error(`${flags.config} configuration not found!`);
+        }
+        return selectedConfig;
+      }
+      this.error(
+        `--all or --config=(${configKeys.join("|")}) need to provided`
+      );
+    }
+
+    return {
+      ...config.data,
+      getSchemaName: config.data.getSchemaName
+        ? getSchemaNameSchema.implement(config.data.getSchemaName)
+        : undefined,
+      nameFilter: config.data.nameFilter
+        ? nameFilterSchema.implement(config.data.nameFilter)
+        : undefined,
+    };
   }
 }
 

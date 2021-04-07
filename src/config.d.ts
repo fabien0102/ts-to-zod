@@ -1,4 +1,4 @@
-export declare type TsToZodConfig = {
+export declare type Config = {
   /**
    * Path of the input file (types source)
    */
@@ -34,3 +34,16 @@ export declare type TsToZodConfig = {
    */
   keepComments?: boolean;
 };
+
+export type Configs = Array<
+  Config & {
+    /**
+     * Name of the config.
+     *
+     * Usage: `ts-to-zod --config {name}`
+     */
+    name: string;
+  }
+>;
+
+export type TsToZodConfig = Config | Configs;

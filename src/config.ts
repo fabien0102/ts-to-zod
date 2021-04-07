@@ -21,4 +21,12 @@ export const configSchema = z
   })
   .partial();
 
-export type TsToZodConfig = z.infer<typeof configSchema>;
+export const configsSchema = z.array(
+  configSchema.and(z.object({ name: z.string() }))
+);
+
+export const tsToZodconfigSchema = z.union([configSchema, configsSchema]);
+
+export type Config = z.infer<typeof configSchema>;
+export type Configs = z.infer<typeof configsSchema>;
+export type TsToZodConfig = z.infer<typeof tsToZodconfigSchema>;
