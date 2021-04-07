@@ -59,21 +59,39 @@ export async function createConfig(configPath: string) {
   const dev = existsSync(project);
 
   let answers: Answers | undefined;
+  let prefix: string | undefined;
+
+  const getOutputDefault = () => {
+    if (answers?.mode === "single") {
+      return answers.config.input.replace(/\.ts(x)?$/, ".zod.ts$1");
+    } else if (answers?.mode === "multi") {
+      return answers.config[answers.config.length - 1].input.replace(
+        /\.ts(x)?$/,
+        ".zod.ts$1"
+      );
+    }
+  };
 
   const prompts = new Subject<DistinctQuestion>();
   let i = 0; // Trick to ask the same question (`askAnswered` is not in the types…)
-  const askForInputOutput = (prefix?: string) => {
+
+  const askForInput = () => {
     prompts.next({
       type: "input",
       name: `input-${i}`,
       message: "Where is your file with types?",
-      prefix,
+      default: prefix ? `${prefix}.ts` : undefined,
+      prefix: prefix ? `[${prefix}]` : undefined,
     });
+  };
+
+  const askForOutput = (prefix?: string) => {
     prompts.next({
       type: "input",
       name: `output-${i}`,
       message: "Where do you want to save the generated zod schemas?",
-      prefix,
+      default: getOutputDefault(),
+      prefix: prefix ? `[${prefix}]` : undefined,
     });
   };
 
@@ -85,6 +103,14 @@ export async function createConfig(configPath: string) {
     });
   };
 
+  const askForOneMore = () => {
+    prompts.next({
+      type: "confirm",
+      name: `oneMore-${i++}`,
+      message: "Do you want to add another config?",
+    });
+  };
+
   inquirer.prompt(prompts).ui.process.subscribe(
     (q) => {
       // inquirer type are a bit broken…
@@ -93,7 +119,7 @@ export async function createConfig(configPath: string) {
       if (question.name === "mode") {
         if (question.answer.toLowerCase().includes("single")) {
           answers = { mode: "single", config: { input: "", output: "" } };
-          askForInputOutput();
+          askForInput();
         } else {
           answers = { mode: "multi", config: [] };
           askForConfigName();
@@ -106,6 +132,7 @@ export async function createConfig(configPath: string) {
         } else if (answers?.mode === "multi") {
           answers.config[answers.config.length - 1].input = question.answer;
         }
+        askForOutput();
       }
 
       if (question.name.startsWith("output")) {
@@ -114,6 +141,7 @@ export async function createConfig(configPath: string) {
           prompts.complete();
         } else if (answers?.mode === "multi") {
           answers.config[answers.config.length - 1].output = question.answer;
+          askForOneMore();
         }
       }
 
@@ -125,12 +153,8 @@ export async function createConfig(configPath: string) {
             output: "",
           });
         }
-        askForInputOutput(`[${question.answer}]`);
-        prompts.next({
-          type: "confirm",
-          name: `oneMore-${i++}`,
-          message: "Do you want to add another config?",
-        });
+        prefix = question.answer;
+        askForInput();
       }
 
       if (question.name.startsWith("oneMore")) {
