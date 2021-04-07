@@ -10,27 +10,33 @@ import {
   getSchemaNameSchema,
   nameFilterSchema,
   TsToZodConfig,
+  createConfig,
   Config,
 } from "./config";
 import { getImportPath } from "./utils/getImportPath";
 import ora from "ora";
+import prettier from "prettier";
 import * as worker from "./worker";
 
 // Try to load `ts-to-zod.config.js`
-// We are doing this here to be able to infer the available `flags` of the cli help
+// We are doing this here to be able to infer the `flags` & `usage` in the cli help
 const tsToZodConfigJs = "ts-to-zod.config.js";
 const configPath = join(process.cwd(), tsToZodConfigJs);
 let parsedConfig: ReturnType<typeof tsToZodconfigSchema.safeParse> | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
-if (existsSync(configPath)) {
-  const rawConfig = require(slash(relative(__dirname, configPath)));
-  parsedConfig = tsToZodconfigSchema.safeParse(rawConfig);
-  if (parsedConfig.success && Array.isArray(parsedConfig.data)) {
-    haveMultiConfig = true;
-    configKeys.push(...parsedConfig.data.map((c) => c.name));
+try {
+  if (existsSync(configPath)) {
+    const rawConfig = require(slash(relative(__dirname, configPath)));
+    parsedConfig = tsToZodconfigSchema.safeParse(rawConfig);
+    if (parsedConfig.success && Array.isArray(parsedConfig.data)) {
+      haveMultiConfig = true;
+      configKeys.push(...parsedConfig.data.map((c) => c.name));
+    }
   }
+} catch {
+  console.log(`${tsToZodConfigJs} can't be loaded!`);
 }
 
 class TsToZod extends Command {
@@ -90,9 +96,8 @@ class TsToZod extends Command {
 
   async run() {
     const { args, flags } = this.parse(TsToZod);
-
     if (flags.init) {
-      (await init())
+      (await createConfig(configPath))
         ? this.log(`🧐 ts-to-zod.config.js created!`)
         : this.log(`Nothing changed!`);
       return;
@@ -240,16 +245,22 @@ See more help with --help`,
     if (output && hasExtensions(output, javascriptExtensions)) {
       await outputFile(
         outputPath,
-        ts.transpileModule(zodSchemasFile, {
-          compilerOptions: {
-            target: ts.ScriptTarget.Latest,
-            module: ts.ModuleKind.ESNext,
-            newLine: ts.NewLineKind.LineFeed,
-          },
-        }).outputText
+        prettier.format(
+          ts.transpileModule(zodSchemasFile, {
+            compilerOptions: {
+              target: ts.ScriptTarget.Latest,
+              module: ts.ModuleKind.ESNext,
+              newLine: ts.NewLineKind.LineFeed,
+            },
+          }).outputText,
+          { parser: "babel-ts" }
+        )
       );
     } else {
-      await outputFile(outputPath, zodSchemasFile);
+      await outputFile(
+        outputPath,
+        prettier.format(zodSchemasFile, { parser: "babel-ts" })
+      );
     }
     return { success: true };
   }
@@ -308,61 +319,6 @@ const javascriptExtensions = [".js", ".jsx"];
 function hasExtensions(path: string, extensions: string[]) {
   const { ext } = parse(path);
   return extensions.includes(ext);
-}
-
-const configPath = join(process.cwd(), "ts-to-zod.config.js");
-
-/**
- * Load user config from `ts-to-zod.config.js`
- */
-function loadUserConfig(): TsToZodConfig {
-  if (existsSync(configPath)) {
-    const config = require(slash(relative(__dirname, configPath)));
-    const parsedConfig = configSchema.strict().parse(config);
-
-    return {
-      ...parsedConfig,
-      getSchemaName: parsedConfig.getSchemaName
-        ? getSchemaNameSchema.implement(parsedConfig.getSchemaName)
-        : undefined,
-      nameFilter: parsedConfig.nameFilter
-        ? nameFilterSchema.implement(parsedConfig.nameFilter)
-        : undefined,
-    };
-  } else {
-    return {};
-  }
-}
-
-/**
- * Initialize ts-to-zod.config.js file.
- *
- * @returns `true` if the file was created
- */
-async function init() {
-  if (existsSync(configPath)) {
-    const { answer } = await inquirer.prompt<{ answer: boolean }>({
-      type: "confirm",
-      name: "answer",
-      message:
-        "ts-to-zod.config.js already exists, do you want to override it?",
-    });
-    if (!answer) {
-      return false;
-    }
-  }
-  const configTemplate = `/**
- * ts-to-zod configuration.
- *
- * @type {import("ts-to-zod").TsToZodConfig}
- */
-module.exports = {
-  
-};
-`;
-
-  outputFile(configPath, configTemplate, "utf-8");
-  return true;
 }
 
 export = TsToZod;
