@@ -17,6 +17,7 @@ import { getImportPath } from "./utils/getImportPath";
 import ora from "ora";
 import prettier from "prettier";
 import * as worker from "./worker";
+import inquirer from "inquirer";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
@@ -103,7 +104,7 @@ class TsToZod extends Command {
       return;
     }
 
-    const fileConfig = this.loadFileConfig(parsedConfig, flags);
+    const fileConfig = await this.loadFileConfig(parsedConfig, flags);
 
     if (Array.isArray(fileConfig)) {
       fileConfig.map((config) => {
@@ -268,10 +269,10 @@ See more help with --help`,
   /**
    * Load user config from `ts-to-zod.config.js`
    */
-  loadFileConfig(
+  async loadFileConfig(
     config: typeof parsedConfig,
     flags: OutputFlags<typeof TsToZod.flags>
-  ): TsToZodConfig {
+  ): Promise<TsToZodConfig> {
     if (!config) {
       return {};
     }
@@ -279,6 +280,33 @@ See more help with --help`,
       this.error(`"${tsToZodConfigJs}" invalid:\n${config.error.message}`);
     }
     if (Array.isArray(config.data)) {
+      if (!flags.all && !flags.config) {
+        const { mode } = await inquirer.prompt<{
+          mode: "none" | "multi" | `single-${string}`;
+        }>([
+          {
+            name: "mode",
+            message: `You have multiple configs available in "${tsToZodConfigJs}"\n What do you want?`,
+            type: "list",
+            choices: [
+              {
+                value: "multi",
+                name: `${TsToZod.flags.all.description} (--all)`,
+              },
+              ...configKeys.map((key) => ({
+                value: `single-${key}`,
+                name: `Execute "${key}" config (--config=${key})`,
+              })),
+              { value: "none", name: "Don't use the config" },
+            ],
+          },
+        ]);
+        if (mode.startsWith("single-")) {
+          flags.config = mode.slice("single-".length);
+        } else if (mode === "multi") {
+          flags.all = true;
+        }
+      }
       if (flags.all) {
         return config.data;
       }
@@ -289,9 +317,7 @@ See more help with --help`,
         }
         return selectedConfig;
       }
-      this.error(
-        `--all or --config=(${configKeys.join("|")}) need to provided`
-      );
+      return {};
     }
 
     return {

@@ -174,8 +174,8 @@ export async function createConfig(configPath: string) {
     name: "mode",
     message: "What kind of configuration do you need?",
     choices: [
-      { key: "single", value: "Single configuration" },
-      { key: "multi", value: "Multiple configurations" },
+      { value: "single", name: "Single configuration" },
+      { value: "multi", name: "Multiple configurations" },
     ],
   });
 
