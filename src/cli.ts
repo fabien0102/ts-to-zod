@@ -1,6 +1,6 @@
 import { Command, flags } from "@oclif/command";
 import { OutputFlags } from "@oclif/parser";
-import { error } from "@oclif/errors";
+import { error as oclifError } from "@oclif/errors";
 import { readFile, outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
@@ -38,7 +38,7 @@ try {
     }
   }
 } catch (e) {
-  error(
+  oclifError(
     `"${tsToZodConfigJs}" invalid:
 ${e.message}
 
