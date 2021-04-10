@@ -18,6 +18,7 @@ import ora from "ora";
 import prettier from "prettier";
 import * as worker from "./worker";
 import inquirer from "inquirer";
+import { eachSeries } from "async";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
@@ -107,11 +108,16 @@ class TsToZod extends Command {
     const fileConfig = await this.loadFileConfig(parsedConfig, flags);
 
     if (Array.isArray(fileConfig)) {
-      fileConfig.map((config) => {
-        // TODO Advanced badass spinners
-        this.log(`Start generate ${config.name}`);
-        this.generate(args, config, flags);
-      });
+      eachSeries(fileConfig, async (config) => {
+        this.log(`Generating "${config.name}"`);
+        const result = await this.generate(args, config, flags);
+        if (result.success) {
+          this.log(` 🎉 Zod schemas generated!`);
+        } else {
+          this.error(result.error, { exit: false });
+        }
+        this.log(); // empty line between configs
+      }).catch((e) => this.error(e, { exit: false }));
     } else {
       const result = await this.generate(args, fileConfig, flags);
       if (result.success) {
@@ -211,7 +217,8 @@ See more help with --help`,
     errors.map(this.warn);
 
     if (!flags.skipValidation) {
-      const validatorSpinner = ora("Validating generated types").start();
+      const validatorSpinner = ora(" Validating generated types").start();
+      if (flags.all) validatorSpinner.indent = 1;
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText,
