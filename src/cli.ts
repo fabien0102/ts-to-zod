@@ -37,8 +37,8 @@ try {
       configKeys.push(...parsedConfig.data.map((c) => c.name));
     }
   }
-} catch {
-  console.log(`${tsToZodConfigJs} can't be loaded!`);
+} catch (e) {
+  console.log(`"${tsToZodConfigJs}" can't be loaded:\n  ${e.message}\n`);
 }
 
 class TsToZod extends Command {
@@ -217,7 +217,7 @@ See more help with --help`,
     errors.map(this.warn);
 
     if (!flags.skipValidation) {
-      const validatorSpinner = ora(" Validating generated types").start();
+      const validatorSpinner = ora("Validating generated types").start();
       if (flags.all) validatorSpinner.indent = 1;
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
