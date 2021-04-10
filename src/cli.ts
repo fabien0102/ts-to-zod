@@ -1,44 +1,52 @@
 import { Command, flags } from "@oclif/command";
 import { OutputFlags } from "@oclif/parser";
+import { error } from "@oclif/errors";
 import { readFile, outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
 import { generate, GenerateProps } from "./core/generate";
+import { TsToZodConfig, Config } from "./config";
 import {
-  tsToZodconfigSchema,
+  tsToZodConfigSchema,
   getSchemaNameSchema,
   nameFilterSchema,
-  TsToZodConfig,
-  createConfig,
-  Config,
-} from "./config";
+} from "./config.zod";
 import { getImportPath } from "./utils/getImportPath";
 import ora from "ora";
 import prettier from "prettier";
 import * as worker from "./worker";
 import inquirer from "inquirer";
 import { eachSeries } from "async";
+import { createConfig } from "./createConfig";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
 const tsToZodConfigJs = "ts-to-zod.config.js";
 const configPath = join(process.cwd(), tsToZodConfigJs);
-let parsedConfig: ReturnType<typeof tsToZodconfigSchema.safeParse> | undefined;
+let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
 try {
   if (existsSync(configPath)) {
     const rawConfig = require(slash(relative(__dirname, configPath)));
-    parsedConfig = tsToZodconfigSchema.safeParse(rawConfig);
-    if (parsedConfig.success && Array.isArray(parsedConfig.data)) {
+    config = tsToZodConfigSchema.parse(rawConfig);
+    if (Array.isArray(config)) {
       haveMultiConfig = true;
-      configKeys.push(...parsedConfig.data.map((c) => c.name));
+      configKeys.push(...config.map((c) => c.name));
     }
   }
 } catch (e) {
-  console.log(`"${tsToZodConfigJs}" can't be loaded:\n  ${e.message}\n`);
+  error(
+    `"${tsToZodConfigJs}" invalid:
+${e.message}
+
+Please fix the invalid configuration
+You can generate a new config with --init`,
+    { exit: false }
+  );
+  process.exit(2);
 }
 
 class TsToZod extends Command {
@@ -105,7 +113,7 @@ class TsToZod extends Command {
       return;
     }
 
-    const fileConfig = await this.loadFileConfig(parsedConfig, flags);
+    const fileConfig = await this.loadFileConfig(config, flags);
 
     if (Array.isArray(fileConfig)) {
       eachSeries(fileConfig, async (config) => {
@@ -277,16 +285,13 @@ See more help with --help`,
    * Load user config from `ts-to-zod.config.js`
    */
   async loadFileConfig(
-    config: typeof parsedConfig,
+    config: TsToZodConfig | undefined,
     flags: OutputFlags<typeof TsToZod.flags>
   ): Promise<TsToZodConfig> {
     if (!config) {
       return {};
     }
-    if (!config.success) {
-      this.error(`"${tsToZodConfigJs}" invalid:\n${config.error.message}`);
-    }
-    if (Array.isArray(config.data)) {
+    if (Array.isArray(config)) {
       if (!flags.all && !flags.config) {
         const { mode } = await inquirer.prompt<{
           mode: "none" | "multi" | `single-${string}`;
@@ -315,10 +320,10 @@ See more help with --help`,
         }
       }
       if (flags.all) {
-        return config.data;
+        return config;
       }
       if (flags.config) {
-        const selectedConfig = config.data.find((c) => c.name === flags.config);
+        const selectedConfig = config.find((c) => c.name === flags.config);
         if (!selectedConfig) {
           this.error(`${flags.config} configuration not found!`);
         }
@@ -328,12 +333,12 @@ See more help with --help`,
     }
 
     return {
-      ...config.data,
-      getSchemaName: config.data.getSchemaName
-        ? getSchemaNameSchema.implement(config.data.getSchemaName)
+      ...config,
+      getSchemaName: config.getSchemaName
+        ? getSchemaNameSchema.implement(config.getSchemaName)
         : undefined,
-      nameFilter: config.data.nameFilter
-        ? nameFilterSchema.implement(config.data.nameFilter)
+      nameFilter: config.nameFilter
+        ? nameFilterSchema.implement(config.nameFilter)
         : undefined,
     };
   }
