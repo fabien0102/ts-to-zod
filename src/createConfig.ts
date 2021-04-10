@@ -159,10 +159,12 @@ export async function createConfig(configPath: string) {
 module.exports = `;
 
   if (answers) {
+    const prettierConfig = await prettier.resolveConfig(process.cwd());
     await outputFile(
       configPath,
       prettier.format(header + JSON.stringify(answers.config), {
         parser: "babel",
+        ...prettierConfig,
       }),
       "utf-8"
     );

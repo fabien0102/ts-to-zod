@@ -258,6 +258,8 @@ See more help with --help`,
       getImportPath(outputPath, inputPath)
     );
 
+    const prettierConfig = await prettier.resolveConfig(process.cwd());
+
     if (output && hasExtensions(output, javascriptExtensions)) {
       await outputFile(
         outputPath,
@@ -269,13 +271,16 @@ See more help with --help`,
               newLine: ts.NewLineKind.LineFeed,
             },
           }).outputText,
-          { parser: "babel-ts" }
+          { parser: "babel-ts", ...prettierConfig }
         )
       );
     } else {
       await outputFile(
         outputPath,
-        prettier.format(zodSchemasFile, { parser: "babel-ts" })
+        prettier.format(zodSchemasFile, {
+          parser: "babel-ts",
+          ...prettierConfig,
+        })
       );
     }
     return { success: true };
