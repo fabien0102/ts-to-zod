@@ -39,6 +39,11 @@ export interface GenerateZodSchemaProps {
    * @default (identifierName) => camel(`${identifierName}Schema`)
    */
   getDependencyName?: (identifierName: string) => string;
+
+  /**
+   * Add `.strict()` to every `z.object()` (disallow unknown keys)
+   */
+  strict?: boolean;
 }
 
 /**
@@ -54,6 +59,7 @@ export function generateZodSchemaVariableStatement({
   varName,
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
+  strict = false,
 }: GenerateZodSchemaProps) {
   let schema: ts.CallExpression | ts.Identifier | undefined;
   const dependencies: string[] = [];
@@ -82,6 +88,7 @@ export function generateZodSchemaVariableStatement({
       dependencies,
       getDependencyName,
       baseSchema,
+      strict,
     });
   }
 
@@ -97,6 +104,7 @@ export function generateZodSchemaVariableStatement({
       sourceFile,
       dependencies,
       getDependencyName,
+      strict,
     });
   }
 
@@ -125,12 +133,14 @@ function buildZodProperties({
   sourceFile,
   dependencies,
   getDependencyName,
+  strict,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
   zodImportValue: string;
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
+  strict: boolean;
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
@@ -158,6 +168,7 @@ function buildZodProperties({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       })
     );
   });
@@ -174,6 +185,7 @@ function buildZodPrimitive({
   sourceFile,
   dependencies,
   getDependencyName,
+  strict,
 }: {
   z: string;
   typeNode: ts.TypeNode;
@@ -184,6 +196,7 @@ function buildZodPrimitive({
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
+  strict: boolean;
 }): ts.CallExpression | ts.Identifier {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
@@ -201,6 +214,7 @@ function buildZodPrimitive({
       sourceFile,
       dependencies,
       getDependencyName,
+      strict,
     });
   }
 
@@ -217,6 +231,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       });
     }
 
@@ -231,6 +246,7 @@ function buildZodPrimitive({
         isPartial: true,
         dependencies,
         getDependencyName,
+        strict,
       });
     }
 
@@ -245,6 +261,7 @@ function buildZodPrimitive({
         isRequired: true,
         dependencies,
         getDependencyName,
+        strict,
       });
     }
 
@@ -258,6 +275,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       });
     }
 
@@ -286,6 +304,7 @@ function buildZodPrimitive({
             isPartial: false,
             dependencies,
             getDependencyName,
+            strict,
           }),
         ],
         zodProperties
@@ -306,6 +325,7 @@ function buildZodPrimitive({
             sourceFile,
             dependencies,
             getDependencyName,
+            strict,
           })
         ),
         zodProperties
@@ -361,6 +381,7 @@ function buildZodPrimitive({
             sourceFile,
             dependencies,
             getDependencyName,
+            strict,
           }),
           f.createIdentifier(lower(identifierName))
         ),
@@ -387,6 +408,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       })
     );
     return buildZodSchema(
@@ -407,6 +429,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       })
     );
     return buildZodSchema(
@@ -455,6 +478,7 @@ function buildZodPrimitive({
           sourceFile,
           dependencies,
           getDependencyName,
+          strict,
         }),
       ],
       zodProperties
@@ -469,6 +493,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       }),
       zodProperties
     );
@@ -484,6 +509,7 @@ function buildZodPrimitive({
       sourceFile,
       dependencies,
       getDependencyName,
+      strict,
     });
 
     return rest.reduce(
@@ -503,6 +529,7 @@ function buildZodPrimitive({
               sourceFile,
               dependencies,
               getDependencyName,
+              strict,
             }),
           ]
         ),
@@ -536,6 +563,7 @@ function buildZodPrimitive({
               sourceFile,
               dependencies,
               getDependencyName,
+              strict,
               isOptional: false,
             })
           ),
@@ -550,6 +578,7 @@ function buildZodPrimitive({
               sourceFile,
               dependencies,
               getDependencyName,
+              strict,
               isOptional: false,
             }),
           ],
@@ -643,6 +672,7 @@ function buildZodObject({
   sourceFile,
   getDependencyName,
   baseSchema,
+  strict,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
@@ -650,6 +680,7 @@ function buildZodObject({
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   baseSchema?: string;
+  strict: boolean;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -682,6 +713,7 @@ function buildZodObject({
       sourceFile,
       dependencies,
       getDependencyName,
+      strict,
     });
 
     objectSchema = buildZodSchema(
@@ -694,7 +726,8 @@ function buildZodObject({
           }),
           true
         ),
-      ]
+      ],
+      strict ? [{ identifier: "strict" }] : undefined
     );
   }
 
@@ -714,6 +747,7 @@ function buildZodObject({
         sourceFile,
         dependencies,
         getDependencyName,
+        strict,
       }),
     ]);
 
@@ -731,5 +765,10 @@ function buildZodObject({
   } else if (objectSchema) {
     return objectSchema;
   }
-  return buildZodSchema(z, "object", [f.createObjectLiteralExpression()]);
+  return buildZodSchema(
+    z,
+    "object",
+    [f.createObjectLiteralExpression()],
+    strict ? [{ identifier: "strict" }] : undefined
+  );
 }

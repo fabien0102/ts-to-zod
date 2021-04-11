@@ -31,6 +31,11 @@ export interface GenerateProps {
    * @default false
    */
   keepComments?: boolean;
+
+  /**
+   * Add `.strict()` to every `z.object()` (disallow unknown keys)
+   */
+  strict?: boolean;
 }
 
 /**
@@ -44,6 +49,7 @@ export function generate({
   nameFilter = () => true,
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
+  strict = false,
 }: GenerateProps) {
   // Create a source file
   const sourceFile = ts.createSourceFile(
@@ -74,6 +80,7 @@ export function generate({
       sourceFile,
       varName,
       getDependencyName: getSchemaName,
+      strict,
     });
 
     return { typeName, varName, ...zodSchema };

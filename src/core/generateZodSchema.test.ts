@@ -579,6 +579,31 @@ describe("generateZodSchema", () => {
       `"export const theLastTestSchema = zod.literal(true);"`
     );
   });
+
+  it("should generate a schema in strict mode", () => {
+    const source = `export interface FormalSuperman {
+     name: string;
+     age: number;
+     powers: Power[];
+     exposedSecrets: {
+       canFly: boolean;
+       isClark: boolean;
+       loveLois: boolean;
+     }
+   };`;
+    expect(generate(source, undefined, true)).toMatchInlineSnapshot(`
+      "export const formalSupermanSchema = z.object({
+          name: z.string(),
+          age: z.number(),
+          powers: z.array(powerSchema),
+          exposedSecrets: z.object({
+              canFly: z.boolean(),
+              isClark: z.boolean(),
+              loveLois: z.boolean()
+          }).strict()
+      }).strict();"
+    `);
+  });
 });
 
 /**
@@ -587,7 +612,7 @@ describe("generateZodSchema", () => {
  * @param sourceText Typescript interface or type
  * @returns Generated Zod schema
  */
-function generate(sourceText: string, z?: string) {
+function generate(sourceText: string, z?: string, strict?: boolean) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
     sourceText,
@@ -609,6 +634,7 @@ function generate(sourceText: string, z?: string) {
     node: declaration,
     sourceFile,
     varName: zodConstName,
+    strict,
   });
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })

@@ -169,6 +169,7 @@ describe("generate", () => {
       nameFilter: (id) => id === "Superman",
       getSchemaName: (id) => id.toLowerCase(),
       keepComments: true,
+      strict: true,
     });
 
     it("should only generate superman schema", () => {
@@ -181,7 +182,7 @@ describe("generate", () => {
              * Name of superman
              */
             name: z.string()
-        });
+        }).strict();
         "
       `);
     });

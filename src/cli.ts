@@ -82,6 +82,11 @@ class TsToZod extends Command {
       default: false,
       description: "Skip the validation step (not recommended)",
     }),
+    strict: flags.boolean({
+      default: false,
+      description:
+        "Use `.strict()` in the generated schema to disallow unknown keys",
+    }),
     watch: flags.boolean({
       char: "w",
       default: false,
@@ -237,6 +242,9 @@ See more help with --help`,
     }
     if (typeof flags.keepComments === "boolean") {
       generateOptions.keepComments = flags.keepComments;
+    }
+    if (typeof flags.strict === "boolean") {
+      generateOptions.strict = flags.strict;
     }
 
     const {
