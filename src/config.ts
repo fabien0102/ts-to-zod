@@ -5,12 +5,12 @@ export type Config = {
   /**
    * Path of the input file (types source)
    */
-  input?: string;
+  input: string;
 
   /**
    * Path of the output file (generated zod schemas)
    */
-  output?: string;
+  output: string;
 
   /**
    * Skip the validation step (not recommended)
