@@ -212,7 +212,7 @@ $ yarn test --watch
 And a playground inside `example`, buildable with the following command:
 
 ```sh
-$ yarn gen:example
+$ yarn gen:example --watch
 ```
 
 Last note, if you are updating `src/config.ts`, you need to run `yarn gen:config` to have generate the schemas of the config (`src/config.zod.ts`) (Yes, we are using the tool to build itself #inception)
