@@ -19,6 +19,7 @@ import * as worker from "./worker";
 import inquirer from "inquirer";
 import { eachSeries } from "async";
 import { createConfig } from "./createConfig";
+import chokidar from "chokidar";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
@@ -81,6 +82,11 @@ class TsToZod extends Command {
       default: false,
       description: "Skip the validation step (not recommended)",
     }),
+    watch: flags.boolean({
+      char: "w",
+      default: false,
+      description: "Watch input file(s) for changes and re-run related task",
+    }),
     // -- Multi config flags --
     config: flags.enum({
       char: "c",
@@ -116,7 +122,10 @@ class TsToZod extends Command {
     const fileConfig = await this.loadFileConfig(config, flags);
 
     if (Array.isArray(fileConfig)) {
-      eachSeries(fileConfig, async (config) => {
+      if (args.input || args.output) {
+        this.error(`INPUT and OUTPUT arguments are not compatible with --all`);
+      }
+      await eachSeries(fileConfig, async (config) => {
         this.log(`Generating "${config.name}"`);
         const result = await this.generate(args, config, flags);
         if (result.success) {
@@ -134,6 +143,29 @@ class TsToZod extends Command {
         this.error(result.error);
       }
     }
+
+    if (flags.watch) {
+      const inputs = Array.isArray(fileConfig)
+        ? fileConfig.map((i) => i.input)
+        : fileConfig?.input || args.input;
+
+      this.log("\nWatching for changes…");
+      chokidar.watch(inputs).on("change", async (path) => {
+        console.clear();
+        this.log(`Changes detected in "${slash(path)}"`);
+        const config = Array.isArray(fileConfig)
+          ? fileConfig.find((i) => i.input === slash(path))
+          : fileConfig;
+
+        const result = await this.generate(args, config, flags);
+        if (result.success) {
+          this.log(`🎉 Zod schemas generated!`);
+        } else {
+          this.error(result.error);
+        }
+        this.log("\nWatching for changes…");
+      });
+    }
   }
 
   /**
@@ -144,11 +176,11 @@ class TsToZod extends Command {
    */
   async generate(
     args: { input?: string; output?: string },
-    fileConfig: Config,
+    fileConfig: Config | undefined,
     flags: OutputFlags<typeof TsToZod.flags>
   ): Promise<{ success: true } | { success: false; error: string }> {
-    const input = args.input || fileConfig.input;
-    const output = args.output || fileConfig.output;
+    const input = args.input || fileConfig?.input;
+    const output = args.output || fileConfig?.output;
 
     if (!input) {
       return {
@@ -292,9 +324,9 @@ See more help with --help`,
   async loadFileConfig(
     config: TsToZodConfig | undefined,
     flags: OutputFlags<typeof TsToZod.flags>
-  ): Promise<TsToZodConfig> {
+  ): Promise<TsToZodConfig | undefined> {
     if (!config) {
-      return {};
+      return undefined;
     }
     if (Array.isArray(config)) {
       if (!flags.all && !flags.config) {
@@ -334,7 +366,7 @@ See more help with --help`,
         }
         return selectedConfig;
       }
-      return {};
+      return undefined;
     }
 
     return {

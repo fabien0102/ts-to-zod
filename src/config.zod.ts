@@ -12,8 +12,8 @@ export const nameFilterSchema = z
   .returns(z.boolean());
 
 export const configSchema = z.object({
-  input: z.string().optional(),
-  output: z.string().optional(),
+  input: z.string(),
+  output: z.string(),
   skipValidation: z.boolean().optional(),
   maxRun: z.number().optional(),
   nameFilter: nameFilterSchema.optional(),
