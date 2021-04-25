@@ -21,8 +21,8 @@ export interface JSDocTags {
   minimum?: number;
   maximum?: number;
   default?: number | string | boolean;
-  minLenght?: number;
-  maxLenght?: number;
+  minLength?: number;
+  maxLength?: number;
   format?: typeof formats[-1];
   pattern?: string;
 }
@@ -37,8 +37,8 @@ function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
     "minimum",
     "maximum",
     "default",
-    "minLenght",
-    "maxLenght",
+    "minLength",
+    "maxLength",
     "format",
     "pattern",
   ];
@@ -74,8 +74,8 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
         switch (tagName) {
           case "minimum":
           case "maximum":
-          case "minLenght":
-          case "maxLenght":
+          case "minLength":
+          case "maxLength":
             if (tag.comment && !Number.isNaN(parseInt(tag.comment))) {
               jsDocTags[tagName] = parseInt(tag.comment);
             }
@@ -153,16 +153,16 @@ export function jsDocTagToZodProperties(
       expressions: [f.createNumericLiteral(jsDocTags.maximum)],
     });
   }
-  if (jsDocTags.minLenght !== undefined) {
+  if (jsDocTags.minLength !== undefined) {
     zodProperties.push({
       identifier: "min",
-      expressions: [f.createNumericLiteral(jsDocTags.minLenght)],
+      expressions: [f.createNumericLiteral(jsDocTags.minLength)],
     });
   }
-  if (jsDocTags.maxLenght !== undefined) {
+  if (jsDocTags.maxLength !== undefined) {
     zodProperties.push({
       identifier: "max",
-      expressions: [f.createNumericLiteral(jsDocTags.maxLenght)],
+      expressions: [f.createNumericLiteral(jsDocTags.maxLength)],
     });
   }
   if (jsDocTags.format) {
