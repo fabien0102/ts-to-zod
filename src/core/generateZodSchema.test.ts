@@ -47,9 +47,9 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a void schema", () => {
-    const source = `export type MyEnnemyChance = void;`;
+    const source = `export type MyEnemyChance = void;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const myEnnemyChanceSchema = z.void();"`
+      `"export const myEnemyChanceSchema = z.void();"`
     );
   });
 
@@ -89,16 +89,16 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate an array schema (T[] notation)", () => {
-    const source = `export type Vilains = string[];`;
+    const source = `export type Villains = string[];`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const vilainsSchema = z.array(z.string());"`
+      `"export const villainsSchema = z.array(z.string());"`
     );
   });
 
   it("should generate an array schema (Array<T> notation)", () => {
-    const source = `export type Vilains = Array<string>;`;
+    const source = `export type Villains = Array<string>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const vilainsSchema = z.array(z.string());"`
+      `"export const villainsSchema = z.array(z.string());"`
     );
   });
 
@@ -121,14 +121,14 @@ describe("generateZodSchema", () => {
      name: "superman";
      weakness: Kryptonite;
      age: number;
-     ennemies: Array<string>;
+     enemies: Array<string>;
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
           name: z.literal(\\"superman\\"),
           weakness: kryptoniteSchema,
           age: z.number(),
-          ennemies: z.array(z.string())
+          enemies: z.array(z.string())
       });"
     `);
   });
@@ -141,9 +141,9 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a referenced schema", () => {
-    const source = `export type Vilain = BadGuy;`;
+    const source = `export type Villain = BadGuy;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const vilainSchema = badGuySchema;"`
+      `"export const villainSchema = badGuySchema;"`
     );
   });
 
@@ -254,9 +254,9 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a required schema", () => {
-    const source = `export type IDidFindYou = Required<VilainLocation>;`;
+    const source = `export type IDidFindYou = Required<VillainLocation>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const iDidFindYouSchema = vilainLocationSchema.required();"`
+      `"export const iDidFindYouSchema = villainLocationSchema.required();"`
     );
   });
 
@@ -291,7 +291,7 @@ describe("generateZodSchema", () => {
   it("should generate a complex schema from an interface", () => {
     const source = `export interface Superman {
      name: "superman" | "clark kent" | "kal-l";
-     ennemies: Record<string, Ennemy>;
+     enemies: Record<string, Enemy>;
      age: number;
      underKryptonite?: boolean;
      needGlasses: true | null;
@@ -299,7 +299,7 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
           name: z.union([z.literal(\\"superman\\"), z.literal(\\"clark kent\\"), z.literal(\\"kal-l\\")]),
-          ennemies: z.record(ennemySchema),
+          enemies: z.record(enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
           needGlasses: z.union([z.literal(true), z.null()])
@@ -319,20 +319,20 @@ describe("generateZodSchema", () => {
   });
 
   it("should deal with literal keys", () => {
-    const source = `export interface Vilain {
+    const source = `export interface Villain {
      "i.will.kill.everybody": true;
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
-      "export const vilainSchema = z.object({
+      "export const villainSchema = z.object({
           \\"i.will.kill.everybody\\": z.literal(true)
       });"
     `);
   });
 
   it("should deal with parenthesized type", () => {
-    const source = `export type SecretVilain = (NormalGuy | Vilain);`;
+    const source = `export type SecretVillain = (NormalGuy | Villain);`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const secretVilainSchema = z.union([normalGuySchema, vilainSchema]);"`
+      `"export const secretVillainSchema = z.union([normalGuySchema, villainSchema]);"`
     );
   });
 
@@ -548,7 +548,7 @@ describe("generateZodSchema", () => {
   });
 
   it("should throw on generics", () => {
-    const source = `export interface Vilain<TPower> {
+    const source = `export interface Villain<TPower> {
      powers: TPower[]
    }`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
@@ -557,7 +557,7 @@ describe("generateZodSchema", () => {
   });
 
   it("should throw on interface with generics", () => {
-    const source = `export interface Vilain<TPower> {
+    const source = `export interface Villain<TPower> {
      powers: TPower[]
    }`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
@@ -566,7 +566,7 @@ describe("generateZodSchema", () => {
   });
 
   it("should throw on type with generics", () => {
-    const source = `export type SecretVilain<T> = RandomPeople<T>`;
+    const source = `export type SecretVillain<T> = RandomPeople<T>`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Type with generics are not supported!"`
     );
