@@ -1,7 +1,7 @@
 {
   "name": "ts-to-zod",
   "description": "Generate zod schemas from typescript types/interfaces",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "homepage": "https://github.com/fabien0102/ts-to-zod",
   "bugs": "https://github.com/fabien0102/ts-to-zod/issues",
   "repository": "fabien0102/ts-to-zod",
