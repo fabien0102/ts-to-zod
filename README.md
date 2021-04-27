@@ -41,8 +41,8 @@ List of supported keywords:
 | ---------------------------------- | ----------------- | ---------------------------- |
 | `@minimum {number}`                | `@minimum 42`     | `z.number().min(42)`         |
 | `@maximum {number}`                | `@maximum 42`     | `z.number().max(42)`         |
-| `@minLenght {number}`              | `@minLenght 42`   | `z.string().min(42)`         |
-| `@maxLenght {number}`              | `@maxLenght 42`   | `z.string().min(42)`         |
+| `@minLength {number}`              | `@minLength 42`   | `z.string().min(42)`         |
+| `@maxLength {number}`              | `@maxLength 42`   | `z.string().min(42)`         |
 | `@format {"email"\|"uuid"\|"url"}` | `@format email`   | `z.string().email()`         |
 | `@pattern {regex}`                 | `@pattern ^hello` | `z.string().regex(/^hello/)` |
 
@@ -61,8 +61,8 @@ export interface HeroContact {
   /**
    * The name of the hero.
    *
-   * @minLenght 2
-   * @maxLenght 50
+   * @minLength 2
+   * @maxLength 50
    */
   name: string;
 
@@ -101,8 +101,8 @@ export const heroContactSchema = z.object({
   /**
    * The name of the hero.
    *
-   * @minLenght 2
-   * @maxLenght 50
+   * @minLength 2
+   * @maxLength 50
    */
   name: z.string().min(2).max(50),
 

@@ -387,8 +387,8 @@ describe("generateZodSchema", () => {
       /**
        * The name of the hero.
        *
-       * @minLenght 2
-       * @maxLenght 50
+       * @minLength 2
+       * @maxLength 50
        */
       name: string;
     
@@ -425,8 +425,8 @@ describe("generateZodSchema", () => {
           /**
            * The name of the hero.
            *
-           * @minLenght 2
-           * @maxLenght 50
+           * @minLength 2
+           * @maxLength 50
            */
           name: z.string().min(2).max(50),
           /**
