@@ -118,7 +118,7 @@ export const heroContactSchema = z.object({
    *
    * @default true
    */
-  hasSuperPower: z.boolean().optional(),
+  hasSuperPower: z.boolean().default(true),
 
   /**
    * The age of the hero
