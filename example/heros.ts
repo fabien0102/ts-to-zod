@@ -1,4 +1,4 @@
-export interface Ennemy {
+export interface Enemy {
   name: string;
   powers: string[];
   inPrison: boolean;
@@ -6,19 +6,19 @@ export interface Ennemy {
 
 export interface Superman {
   name: "superman" | "clark kent" | "kal-l";
-  ennemies: Record<string, Ennemy>;
+  enemies: Record<string, Enemy>;
   age: number;
   underKryptonite?: boolean;
 }
 
-export interface Vilain {
+export interface Villain {
   name: string;
   powers: string[];
-  friends: Vilain[];
+  friends: Villain[];
 }
 
 export interface EvilPlan {
-  owner: Vilain;
+  owner: Villain;
   description: string;
   details: EvilPlanDetails;
 }
