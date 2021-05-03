@@ -68,9 +68,9 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a literal schema (number)", () => {
-    const source = `export type IdentiesCount = 2;`;
+    const source = `export type IdentitiesCount = 2;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const identiesCountSchema = z.literal(2);"`
+      `"export const identitiesCountSchema = z.literal(2);"`
     );
   });
 
@@ -164,9 +164,9 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a record schema", () => {
-    const source = `export type EnnemiesPowers = Record<string, Power>;`;
+    const source = `export type EnemiesPowers = Record<string, Power>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const ennemiesPowersSchema = z.record(powerSchema);"`
+      `"export const enemiesPowersSchema = z.record(powerSchema);"`
     );
   });
 
@@ -364,6 +364,17 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const collectionSchema = z.object({
           movies: z.record(movieSchema).optional()
+      });"
+    `);
+  });
+
+  it("should deal with optional array", () => {
+    const source = `export interface Collection {
+      movies?: Array<string>
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const collectionSchema = z.object({
+          movies: z.array(z.string()).optional()
       });"
     `);
   });
