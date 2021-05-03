@@ -212,7 +212,7 @@ function buildZodPrimitive({
       return buildZodPrimitive({
         z,
         typeNode: f.createArrayTypeNode(typeNode.typeArguments[0]),
-        isOptional: false,
+        isOptional,
         jsDocTags: {},
         sourceFile,
         dependencies,
