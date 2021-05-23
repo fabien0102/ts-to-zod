@@ -5,6 +5,7 @@ import {
 } from "@typescript/vfs";
 import ts from "typescript";
 import { join } from "path";
+import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 interface File {
   sourceText: string;
   relativePath: string;
@@ -34,7 +35,10 @@ export function validateGeneratedTypes({
     target: compilerOptions.target,
   });
   const projectRoot = process.cwd();
-  fsMap.set(getPath(sourceTypes), sourceTypes.sourceText);
+  fsMap.set(
+    getPath(sourceTypes),
+    resolveDefaultProperties(sourceTypes.sourceText)
+  );
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
