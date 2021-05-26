@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.1.0...v1.2.0) (2021-05-26)
+
+
+### Features
+
+* Add `never` support ([#25](https://www.github.com/fabien0102/ts-to-zod/issues/25)) ([3267f67](https://www.github.com/fabien0102/ts-to-zod/commit/3267f67cab2bc2c4793bb7ec340f65dcd0df0a3d))
+
 ## [1.1.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.0.3...v1.1.0) (2021-05-23)
 
 
