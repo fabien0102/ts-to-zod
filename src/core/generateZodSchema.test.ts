@@ -88,6 +88,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a never", () => {
+    const source = `export type CanBeatZod = never;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const canBeatZodSchema = z.never();"`
+    );
+  });
+
   it("should generate an array schema (T[] notation)", () => {
     const source = `export type Villains = string[];`;
     expect(generate(source)).toMatchInlineSnapshot(

@@ -24,6 +24,7 @@ export const villainSchema: z.ZodSchema<Villain> = z.lazy(() =>
     name: z.string(),
     powers: z.array(z.string()),
     friends: z.array(villainSchema),
+    canBeTrusted: z.never(),
   })
 );
 

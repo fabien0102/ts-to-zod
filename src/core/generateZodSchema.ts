@@ -574,6 +574,8 @@ function buildZodPrimitive({
       return buildZodSchema(z, "bigint", [], zodProperties);
     case ts.SyntaxKind.VoidKeyword:
       return buildZodSchema(z, "void", [], zodProperties);
+    case ts.SyntaxKind.NeverKeyword:
+      return buildZodSchema(z, "never", [], zodProperties);
   }
 
   console.warn(
