@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.2.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.2.0...v1.2.1) (2021-05-28)
+
+
+### Bug Fixes
+
+* Fix typescript version ([#28](https://www.github.com/fabien0102/ts-to-zod/issues/28)) ([5bdecbc](https://www.github.com/fabien0102/ts-to-zod/commit/5bdecbca185622515442b25e8df4c5d7c8b9c88d))
+
 ## [1.2.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.1.0...v1.2.0) (2021-05-26)
 
 
