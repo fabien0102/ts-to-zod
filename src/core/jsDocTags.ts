@@ -70,7 +70,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
     jsDoc.forEach((doc) => {
       (doc.tags || []).forEach((tag) => {
         const tagName = tag.tagName.escapedText.toString();
-        if (!isJSDocTagKey(tagName)) return;
+        if (!isJSDocTagKey(tagName) || typeof tag.comment !== "string") return;
         switch (tagName) {
           case "minimum":
           case "maximum":
