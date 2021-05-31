@@ -60,6 +60,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a date schema", () => {
+    const source = `export type lastIncidentInMetropolis = Date;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const lastIncidentInMetropolisSchema = z.date();"`
+    );
+  });
+
   it("should generate a literal schema (string)", () => {
     const source = `export type Kryptonite = "kryptonite";`;
     expect(generate(source)).toMatchInlineSnapshot(
