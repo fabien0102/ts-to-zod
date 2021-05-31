@@ -1,5 +1,22 @@
+export interface SimplifiedJSDocTag {
+  /**
+   * Name of the tag
+   *
+   * @ref tag.tagName.escapedText.toString()
+   */
+  name: string;
+
+  /**
+   * Value of the tag
+   *
+   * @ref tag.comment
+   */
+  value?: string;
+}
+
 export type GetSchemaName = (identifier: string) => string;
 export type NameFilter = (name: string) => boolean;
+export type JSDocTagFilter = (tags: SimplifiedJSDocTag[]) => boolean;
 
 export type Config = {
   /**
@@ -23,9 +40,14 @@ export type Config = {
   maxRun?: number;
 
   /**
-   * Filter function on type/interface name.
+   * Filter on type/interface name.
    */
   nameFilter?: NameFilter;
+
+  /**
+   * Filter on JSDocTag.
+   */
+  jsDocTagFilter?: JSDocTagFilter;
 
   /**
    * Schema name generator.

@@ -134,6 +134,53 @@ If you want to customized the schema name or restrict the exported schemas, you 
 
 Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of typesafety).
 
+You have two ways to restrict the scope of ts-to-zod:
+
+- `nameFilter` will filter by interface/type name
+- `jsDocTagFilter` will filter on jsDocTag
+
+Example:
+
+```ts
+// ts-to-zod.config.js
+/**
+ * ts-to-zod configuration.
+ *
+ * @type {import("./src/config").TsToZodConfig}
+ */
+module.exports = [
+  {
+    name: "example",
+    input: "example/heros.ts",
+    output: "example/heros.zod.ts",
+    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract")) // <= rule here
+  },
+];
+
+// example/heros.ts
+/**
+ * Will not be part of `example/heros.zod.ts`
+ */
+export interface Enemy {
+  name: string;
+  powers: string[];
+  inPrison: boolean;
+}
+
+/**
+ * Will be part of `example/heros.zod.ts`
+ * @toExtract
+ */
+export interface Superman {
+  name: "superman" | "clark kent" | "kal-l";
+  enemies: Record<string, Enemy>;
+  age: number;
+  underKryptonite?: boolean;
+}
+```
+
+/!\ Please note: if your exported interface/type have a reference to a non-exported interface/type, ts-to-zod will not be able to generate anything (a circular dependency will be report due to the missing reference).
+
 ## Limitation
 
 Since we are generating Zod schemas, we are limited by what Zod actually supports:
