@@ -292,6 +292,11 @@ function buildZodPrimitive({
       );
     }
 
+    // Deal with `Date`
+    if (identifierName === "Date") {
+      return buildZodSchema(z, "date", [], zodProperties);
+    }
+
     // Deal with `Promise<>` syntax
     if (identifierName === "Promise" && typeNode.typeArguments) {
       return buildZodSchema(
