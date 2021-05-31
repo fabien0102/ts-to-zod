@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.2.1...v1.3.0) (2021-05-31)
+
+
+### Features
+
+* Add `Date` support ([#32](https://www.github.com/fabien0102/ts-to-zod/issues/32)) ([46d769a](https://www.github.com/fabien0102/ts-to-zod/commit/46d769ad5b3ab81029cf6d9f504846b784c95f38))
+
 ### [1.2.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.2.0...v1.2.1) (2021-05-28)
 
 
