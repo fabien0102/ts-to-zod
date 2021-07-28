@@ -19,7 +19,7 @@ export interface GenerateZodSchemaProps {
   /**
    * Interface or type node
    */
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration;
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration;
 
   /**
    * Zod import value.
@@ -57,6 +57,8 @@ export function generateZodSchemaVariableStatement({
 }: GenerateZodSchemaProps) {
   let schema: ts.CallExpression | ts.Identifier | undefined;
   const dependencies: string[] = [];
+  let requiresImport = false;
+  // const imports: string[] = [];
 
   if (ts.isInterfaceDeclaration(node)) {
     let baseSchema: string | undefined;
@@ -100,6 +102,11 @@ export function generateZodSchemaVariableStatement({
     });
   }
 
+  if (ts.isEnumDeclaration(node)) {
+    schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
+    requiresImport = true;
+  }
+
   return {
     dependencies: uniq(dependencies),
     statement: f.createVariableStatement(
@@ -116,6 +123,7 @@ export function generateZodSchemaVariableStatement({
         ts.NodeFlags.Const
       )
     ),
+    requiresImport,
   };
 }
 
