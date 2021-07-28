@@ -168,6 +168,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a literal schema for a single union", () => {
+    const source = `export type Identity = | "superman";`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const identitySchema = z.literal(\\"superman\\");"`
+    );
+  });
+
   it("should generate two joined schemas", () => {
     const source = `export type SupermanWithWeakness = Superman & { weakness: Kryptonite };`;
     expect(generate(source)).toMatchInlineSnapshot(`
