@@ -1,6 +1,12 @@
+export enum EnemyPower {
+  Flight = "flight",
+  Strength = "strength",
+  Speed = "speed",
+}
+
 export interface Enemy {
   name: string;
-  powers: string[];
+  powers: EnemyPower[];
   inPrison: boolean;
 }
 
@@ -13,7 +19,7 @@ export interface Superman {
 
 export interface Villain {
   name: string;
-  powers: string[];
+  powers: EnemyPower[];
   friends: Villain[];
   canBeTrusted: never;
 }
