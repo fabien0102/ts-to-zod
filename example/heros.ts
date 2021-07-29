@@ -4,6 +4,10 @@ export enum EnemyPower {
   Speed = "speed",
 }
 
+export type SpeedEnemy = {
+  power: EnemyPower.Speed;
+};
+
 export interface Enemy {
   name: string;
   powers: EnemyPower[];
