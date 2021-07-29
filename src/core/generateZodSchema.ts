@@ -58,7 +58,6 @@ export function generateZodSchemaVariableStatement({
   let schema: ts.CallExpression | ts.Identifier | undefined;
   const dependencies: string[] = [];
   let requiresImport = false;
-  // const imports: string[] = [];
 
   if (ts.isInterfaceDeclaration(node)) {
     let baseSchema: string | undefined;
