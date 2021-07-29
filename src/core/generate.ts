@@ -53,10 +53,16 @@ export function generate({
   );
 
   // Extract the nodes (interface declarations & type aliases)
-  const nodes: Array<ts.InterfaceDeclaration | ts.TypeAliasDeclaration> = [];
+  const nodes: Array<
+    ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration
+  > = [];
 
   const visitor = (node: ts.Node) => {
-    if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+    if (
+      ts.isInterfaceDeclaration(node) ||
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isEnumDeclaration(node)
+    ) {
       if (nameFilter(node.name.text)) {
         nodes.push(node);
       }
@@ -91,23 +97,28 @@ export function generate({
   while (statements.size !== zodSchemas.length && n < maxRun) {
     zodSchemas
       .filter(({ varName }) => !statements.has(varName))
-      .forEach(({ varName, dependencies, statement, typeName }) => {
-        const isCircular = dependencies.includes(varName);
-        const missingDependencies = dependencies
-          .filter((dep) => dep !== varName)
-          .filter((dep) => !statements.has(dep));
-        if (missingDependencies.length === 0) {
-          if (isCircular) {
-            typeImports.add(typeName);
-            statements.set(varName, {
-              value: transformRecursiveSchema("z", statement, typeName),
-              typeName,
-            });
-          } else {
-            statements.set(varName, { value: statement, typeName });
+      .forEach(
+        ({ varName, dependencies, statement, typeName, requiresImport }) => {
+          const isCircular = dependencies.includes(varName);
+          const missingDependencies = dependencies
+            .filter((dep) => dep !== varName)
+            .filter((dep) => !statements.has(dep));
+          if (missingDependencies.length === 0) {
+            if (isCircular) {
+              typeImports.add(typeName);
+              statements.set(varName, {
+                value: transformRecursiveSchema("z", statement, typeName),
+                typeName,
+              });
+            } else {
+              if (requiresImport) {
+                typeImports.add(typeName);
+              }
+              statements.set(varName, { value: statement, typeName });
+            }
           }
         }
-      });
+      );
 
     n++; // Just a safety net to avoid infinity loops
   }
