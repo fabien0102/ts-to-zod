@@ -455,6 +455,25 @@ function buildZodPrimitive({
     }
   }
 
+  // Deal with enums used as literals
+  if (
+    ts.isTypeReferenceNode(typeNode) &&
+    ts.isQualifiedName(typeNode.typeName) &&
+    ts.isIdentifier(typeNode.typeName.left)
+  ) {
+    return buildZodSchema(
+      z,
+      "literal",
+      [
+        f.createPropertyAccessExpression(
+          typeNode.typeName.left,
+          typeNode.typeName.right
+        ),
+      ],
+      zodProperties
+    );
+  }
+
   if (ts.isArrayTypeNode(typeNode)) {
     return buildZodSchema(
       z,
