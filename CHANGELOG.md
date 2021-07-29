@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.3.0...v1.4.0) (2021-07-29)
+
+
+### Features
+
+* Adds support for use of enum types as literals and nativeEnums ([#40](https://www.github.com/fabien0102/ts-to-zod/issues/40)) ([45a64a3](https://www.github.com/fabien0102/ts-to-zod/commit/45a64a3b180f2668628f72d844855dfda038399c))
+
+
+### Bug Fixes
+
+* Fixes [#36](https://www.github.com/fabien0102/ts-to-zod/issues/36) | Allows for single value unions ([#37](https://www.github.com/fabien0102/ts-to-zod/issues/37)) ([57a38b2](https://www.github.com/fabien0102/ts-to-zod/commit/57a38b27b2922f680ad3bbd0ce661e8a27aa5110))
+
 ## [1.3.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.2.1...v1.3.0) (2021-05-31)
 
 
