@@ -83,6 +83,10 @@ describe("generate", () => {
         Superman = "superman"
         ClarkKent = "clark-kent"
       };
+
+      export type FavoriteSuperhero = {
+        superhero: Superhero.Superman
+      };
       `;
 
     const { getZodSchemasFile, getIntegrationTestFile, errors } = generate({
@@ -96,6 +100,10 @@ describe("generate", () => {
         import { Superhero } from \\"./superhero\\";
 
         export const superheroSchema = z.nativeEnum(Superhero);
+
+        export const favoriteSuperheroSchema = z.object({
+            superhero: z.literal(Superhero.Superman)
+        });
         "
       `);
     });
@@ -115,8 +123,12 @@ describe("generate", () => {
         }
 
         export type superheroSchemaInferredType = z.infer<typeof generated.superheroSchema>;
+
+        export type favoriteSuperheroSchemaInferredType = z.infer<typeof generated.favoriteSuperheroSchema>;
         expectType<spec.Superhero>({} as superheroSchemaInferredType)
         expectType<superheroSchemaInferredType>({} as spec.Superhero)
+        expectType<spec.FavoriteSuperhero>({} as favoriteSuperheroSchemaInferredType)
+        expectType<favoriteSuperheroSchemaInferredType>({} as spec.FavoriteSuperhero)
         "
       `);
     });
