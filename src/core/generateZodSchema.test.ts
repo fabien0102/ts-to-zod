@@ -95,6 +95,19 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a literal schema (enum)", () => {
+    const source = `
+    export type BestSuperhero = {
+      superhero: Superhero.Superman
+    };
+    `;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const bestSuperheroSchema = z.object({
+          superhero: z.literal(Superhero.Superman)
+      });"
+    `);
+  });
+
   it("should generate a nativeEnum schema", () => {
     const source = `export enum Superhero = { 
       Superman = "superman",
@@ -630,8 +643,15 @@ function generate(sourceText: string, z?: string) {
   );
   const declaration = findNode(
     sourceFile,
-    (node): node is ts.InterfaceDeclaration | ts.TypeAliasDeclaration =>
-      ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)
+    (
+      node
+    ): node is
+      | ts.InterfaceDeclaration
+      | ts.TypeAliasDeclaration
+      | ts.EnumDeclaration =>
+      ts.isInterfaceDeclaration(node) ||
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isEnumDeclaration(node)
   );
   if (!declaration) {
     throw new Error("No `type` or `interface` found!");
