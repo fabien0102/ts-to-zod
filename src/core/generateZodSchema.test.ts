@@ -95,6 +95,16 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a nativeEnum schema", () => {
+    const source = `export enum Superhero = { 
+      Superman = "superman",
+      ClarkKent = "clark_kent",
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const superheroSchema = z.nativeEnum(Superhero);"`
+    );
+  });
+
   it("should generate a never", () => {
     const source = `export type CanBeatZod = never;`;
     expect(generate(source)).toMatchInlineSnapshot(
