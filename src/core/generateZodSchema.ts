@@ -394,6 +394,11 @@ function buildZodPrimitive({
         getDependencyName,
       })
     );
+    // type A = | 'b' is a valid typescript definintion
+    // Zod does not allow `z.union(['b']), so we have to return just the value
+    if (values.length === 1) {
+      return values[0];
+    }
     return buildZodSchema(
       z,
       "union",
