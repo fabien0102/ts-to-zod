@@ -1,5 +1,6 @@
 import { camel } from "case";
 import ts from "typescript";
+import { resolveModules } from "../utils/resolveModules";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
@@ -45,6 +46,9 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
 }: GenerateProps) {
+  // Deal with `namespace` keyword (module)
+  sourceText = resolveModules(sourceText);
+
   // Create a source file
   const sourceFile = ts.createSourceFile(
     "index.ts",
