@@ -1,143 +1,156 @@
 import { pascal } from "case";
-import ts, { factory as f } from "typescript";
+import ts, { factory as f, SourceFile } from "typescript";
 
 /**
  * Resolve all modules from a source text.
  *
  * @param sourceText
  */
-export function resolveModules(sourceText: string): string {
+export function resolveModules(sourceText: string): SourceFile {
   const sourceFile = ts.createSourceFile(
     "index.ts",
     sourceText,
     ts.ScriptTarget.Latest
   );
 
-  const nodes: ts.Node[] = [];
-  let hasModule = false;
+  const declarations = getDeclarationNames(sourceFile);
+  const { transformed } = ts.transform(sourceFile, [
+    moduleToPrefix(declarations),
+  ]);
 
-  const visitor = (node: ts.Node) => {
-    if (ts.isModuleDeclaration(node)) {
-      hasModule = true;
-      nodes.push(...flattenModule(node));
-    } else {
-      nodes.push(node);
-    }
-  };
-
-  ts.forEachChild(sourceFile, visitor);
-
-  if (hasModule) {
-    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
-
-    const print = (node: ts.Node) =>
-      printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
-
-    return nodes.map(print).join("\n\n");
-  } else {
-    return sourceText;
-  }
+  return transformed[0];
 }
 
 /**
- * Extract and prefix every `interface` and `type` from a module (`export namespace`)
+ * Extract all declarations under a namespace
  *
- * @param module
+ * @param sourceFile
+ * @returns
  */
-function flattenModule(module: ts.ModuleDeclaration) {
-  // 1. Extract all type names in the module
-  const namespacedTypes = new Set<string>();
+function getDeclarationNames(sourceFile: ts.SourceFile) {
+  const declarations = new Map<string, string[]>();
 
-  const extractNamespacedTypesVisitor = (node: ts.Node) => {
+  const extractNamespacedTypesVisitor = (namespace: string) => (
+    node: ts.Node
+  ) => {
     if (
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
       ts.isEnumDeclaration(node)
     ) {
-      namespacedTypes.add(node.name.text);
+      const prev = declarations.get(namespace);
+      prev
+        ? declarations.set(namespace, [...prev, node.name.text])
+        : declarations.set(namespace, [node.name.text]);
     }
   };
 
-  module.body?.forEachChild(extractNamespacedTypesVisitor);
-
-  const prefixTypeReferences = (member: ts.TypeElement) => {
-    if (!ts.isPropertySignature(member) || !member.type) {
-      return member;
-    }
-
-    let type = member.type;
-
-    if (
-      ts.isTypeReferenceNode(member.type) &&
-      ts.isIdentifier(member.type.typeName) &&
-      namespacedTypes.has(member.type.typeName.text)
-    ) {
-      type = f.createTypeReferenceNode(
-        f.createIdentifier(
-          pascal(module.name.text) + pascal(member.type.typeName.text)
-        ),
-        member.type.typeArguments
-      );
-    }
-
-    if (ts.isTypeLiteralNode(member.type)) {
-      type = f.createTypeLiteralNode(
-        member.type.members.map(prefixTypeReferences)
-      );
-    }
-
-    return f.createPropertySignature(
-      member.modifiers,
-      member.name,
-      member.questionToken,
-      type
-    );
-  };
-
-  // 2. Extract and prefix all interfaces/types/enums declaration
-  const declarations: Array<
-    ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration
-  > = [];
-
-  const getDeclarationsVisitor = (node: ts.Node) => {
-    if (ts.isInterfaceDeclaration(node)) {
-      declarations.push(
-        f.createInterfaceDeclaration(
-          node.decorators,
-          node.modifiers,
-          pascal(module.name.text) + pascal(node.name.text), // Prefix with module name
-          node.typeParameters,
-          node.heritageClauses,
-          node.members.map(prefixTypeReferences)
-        )
-      );
-    } else if (ts.isTypeAliasDeclaration(node)) {
-      declarations.push(
-        f.createTypeAliasDeclaration(
-          node.decorators,
-          node.modifiers,
-          pascal(module.name.text) + pascal(node.name.text), // Prefix with module name
-          node.typeParameters,
-          ts.isTypeLiteralNode(node.type)
-            ? f.createTypeLiteralNode(
-                node.type.members.map(prefixTypeReferences)
-              )
-            : node.type
-        )
-      );
-    } else if (ts.isEnumDeclaration(node)) {
-      declarations.push(
-        f.createEnumDeclaration(
-          node.decorators,
-          node.modifiers,
-          pascal(module.name.text) + pascal(node.name.text), // Prefix with module name
-          node.members
-        )
-      );
+  const topLevelVisitor = (node: ts.Node) => {
+    if (ts.isModuleDeclaration(node)) {
+      node.body?.forEachChild(extractNamespacedTypesVisitor(node.name.text));
     }
   };
 
-  module.body?.forEachChild(getDeclarationsVisitor);
+  sourceFile.forEachChild(topLevelVisitor);
 
   return declarations;
 }
+
+/**
+ * Apply namespace to every declarations
+ *
+ * @param declarationNames
+ * @returns
+ */
+const moduleToPrefix = (
+  declarationNames: Map<string, string[]>
+): ts.TransformerFactory<ts.SourceFile> => (context) => (sourceFile) => {
+  const prefixInterfacesAndTypes = (moduleName: string) => (
+    node: ts.Node
+  ): ts.Node | undefined => {
+    if (
+      ts.isTypeReferenceNode(node) &&
+      ts.isIdentifier(node.typeName) &&
+      (declarationNames.get(moduleName) || []).includes(node.typeName.text)
+    ) {
+      return f.updateTypeReferenceNode(
+        node,
+        f.createIdentifier(pascal(moduleName) + pascal(node.typeName.text)),
+        node.typeArguments
+      );
+    }
+
+    if (ts.isTypeAliasDeclaration(node)) {
+      return f.updateTypeAliasDeclaration(
+        node,
+        node.decorators,
+        node.modifiers,
+        f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+        node.typeParameters,
+        ts.isTypeLiteralNode(node.type)
+          ? f.updateTypeLiteralNode(
+              node.type,
+              ts.visitNodes(
+                node.type.members,
+                prefixInterfacesAndTypes(moduleName)
+              )
+            )
+          : ts.isTypeReferenceNode(node.type)
+          ? f.updateTypeReferenceNode(
+              node.type,
+              node.type.typeName,
+              ts.visitNodes(
+                node.type.typeArguments,
+                prefixInterfacesAndTypes(moduleName)
+              )
+            )
+          : node.type
+      );
+    }
+
+    if (ts.isInterfaceDeclaration(node)) {
+      return f.updateInterfaceDeclaration(
+        node,
+        node.decorators,
+        node.modifiers,
+        f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+        node.typeParameters,
+        node.heritageClauses,
+        ts.visitNodes(node.members, prefixInterfacesAndTypes(moduleName))
+      );
+    }
+
+    if (ts.isEnumDeclaration(node)) {
+      return f.updateEnumDeclaration(
+        node,
+        node.decorators,
+        node.modifiers,
+        f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+        node.members
+      );
+    }
+
+    return ts.visitEachChild(
+      node,
+      prefixInterfacesAndTypes(moduleName),
+      context
+    );
+  };
+
+  const flattenModuleDeclaration = (node: ts.Node): ts.Node | ts.Node[] => {
+    if (
+      ts.isModuleDeclaration(node) &&
+      node.body &&
+      ts.isModuleBlock(node.body)
+    ) {
+      const transformedNodes = ts.visitNodes(
+        node.body.statements,
+        prefixInterfacesAndTypes(node.name.text)
+      );
+      return [...transformedNodes];
+    }
+    return ts.visitEachChild(node, flattenModuleDeclaration, context);
+  };
+
+  return ts.visitNode(sourceFile, flattenModuleDeclaration);
+};

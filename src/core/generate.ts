@@ -46,15 +46,8 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
 }: GenerateProps) {
-  // Deal with `namespace` keyword (module)
-  sourceText = resolveModules(sourceText);
-
-  // Create a source file
-  const sourceFile = ts.createSourceFile(
-    "index.ts",
-    sourceText,
-    ts.ScriptTarget.Latest
-  );
+  // Create a source file and deal with modules
+  const sourceFile = resolveModules(sourceText);
 
   // Extract the nodes (interface declarations & type aliases)
   const nodes: Array<

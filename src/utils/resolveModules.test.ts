@@ -1,3 +1,4 @@
+import ts from "typescript";
 import { resolveModules } from "./resolveModules";
 
 describe("resolveModules", () => {
@@ -9,12 +10,11 @@ describe("resolveModules", () => {
       }
     }`;
 
-    expect(resolveModules(sourceText)).toMatchInlineSnapshot(`
+    expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
       "export interface MetropolisSuperman {
           name: string;
           hasPower: boolean;
       }
-
       "
     `);
   });
@@ -24,9 +24,8 @@ describe("resolveModules", () => {
       export type Name = "superman" | "clark kent" | "kal-l";
     }`;
 
-    expect(resolveModules(sourceText)).toMatchInlineSnapshot(`
+    expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
       "export type MetropolisName = \\"superman\\" | \\"clark kent\\" | \\"kal-l\\";
-
       "
     `);
   });
@@ -39,12 +38,12 @@ describe("resolveModules", () => {
       };
     }`;
 
-    expect(resolveModules(sourceText)).toMatchInlineSnapshot(`
+    expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
       "export enum MetropolisSuperhero {
           Superman = \\"superman\\",
           ClarkKent = \\"clark_kent\\"
       }
-
+      ;
       "
     `);
   });
@@ -55,6 +54,8 @@ describe("resolveModules", () => {
 
     export namespace Metropolis {
       export type Name = string;
+
+      export type BadassSuperman = Omit<Superman, "underKryptonite">;
 
       export interface Superman {
         fullName: Name;
@@ -71,11 +72,10 @@ describe("resolveModules", () => {
       }
     }`;
 
-    expect(resolveModules(sourceText)).toMatchInlineSnapshot(`
+    expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
       "export type Weakness = \\"krytonite\\" | \\"lois\\";
-
       export type MetropolisName = string;
-
+      export type MetropolisBadassSuperman = Omit<MetropolisSuperman, \\"underKryptonite\\">;
       export interface MetropolisSuperman {
           fullName: MetropolisName;
           name: {
@@ -85,7 +85,6 @@ describe("resolveModules", () => {
           hasPower: boolean;
           weakness: Weakness;
       }
-
       export type MetropolisSupermanBis = {
           fullName: MetropolisName;
           name: {
@@ -95,8 +94,10 @@ describe("resolveModules", () => {
           hasPower: boolean;
           weakness: Weakness;
       };
-
       "
     `);
   });
 });
+
+const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+const print = (sourceFile: ts.SourceFile) => printer.printFile(sourceFile);

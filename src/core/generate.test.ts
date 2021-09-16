@@ -334,6 +334,8 @@ describe("generate", () => {
             underKryptonite: z.boolean().optional(),
             email: z.string().email()
         });
+
+        export const metropolisBadassSupermanSchema = metropolisSupermanSchema.omit({ \\"underKryptonite\\": true });
         "
       `);
     });
@@ -355,10 +357,14 @@ describe("generate", () => {
         export type metropolisNameSchemaInferredType = z.infer<typeof generated.metropolisNameSchema>;
 
         export type metropolisSupermanSchemaInferredType = z.infer<typeof generated.metropolisSupermanSchema>;
+
+        export type metropolisBadassSupermanSchemaInferredType = z.infer<typeof generated.metropolisBadassSupermanSchema>;
         expectType<spec.MetropolisName>({} as metropolisNameSchemaInferredType)
         expectType<metropolisNameSchemaInferredType>({} as spec.MetropolisName)
         expectType<spec.MetropolisSuperman>({} as metropolisSupermanSchemaInferredType)
         expectType<metropolisSupermanSchemaInferredType>({} as spec.MetropolisSuperman)
+        expectType<spec.MetropolisBadassSuperman>({} as metropolisBadassSupermanSchemaInferredType)
+        expectType<metropolisBadassSupermanSchemaInferredType>({} as spec.MetropolisBadassSuperman)
         "
       `);
     });
