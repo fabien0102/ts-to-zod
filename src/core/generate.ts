@@ -139,8 +139,15 @@ ${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
     newLine: ts.NewLineKind.LineFeed,
     removeComments: !keepComments,
   });
+
+  const printerWithComments = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+  });
+
   const print = (node: ts.Node) =>
     printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+
+  const transformedSourceText = printerWithComments.printFile(sourceFile);
 
   const imports = Array.from(typeImports.values());
   const getZodSchemasFile = (
@@ -197,6 +204,11 @@ ${testCases.map(print).join("\n")}
 `;
 
   return {
+    /**
+     * Source text with pre-process applied.
+     */
+    transformedSourceText,
+
     /**
      * Get the content of the zod schemas file.
      *
