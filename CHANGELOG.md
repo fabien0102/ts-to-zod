@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.4.0...v1.5.0) (2021-09-20)
+
+
+### Features
+
+* Support namespace ([#44](https://www.github.com/fabien0102/ts-to-zod/issues/44)) ([3255083](https://www.github.com/fabien0102/ts-to-zod/commit/3255083644ded94810c9ea673d14b5a863a10995))
+
 ## [1.4.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.3.0...v1.4.0) (2021-07-29)
 
 
