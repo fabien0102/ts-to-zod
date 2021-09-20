@@ -4,7 +4,7 @@ import { EnemyPower, Villain } from "./heros";
 
 export const enemyPowerSchema = z.nativeEnum(EnemyPower);
 
-export const speedEnemySchema = z.object({
+export const skillsSpeedEnemySchema = z.object({
   power: z.literal(EnemyPower.Speed),
 });
 

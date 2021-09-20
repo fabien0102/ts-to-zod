@@ -1,5 +1,6 @@
 import { camel } from "case";
 import ts from "typescript";
+import { resolveModules } from "../utils/resolveModules";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
@@ -45,12 +46,8 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
 }: GenerateProps) {
-  // Create a source file
-  const sourceFile = ts.createSourceFile(
-    "index.ts",
-    sourceText,
-    ts.ScriptTarget.Latest
-  );
+  // Create a source file and deal with modules
+  const sourceFile = resolveModules(sourceText);
 
   // Extract the nodes (interface declarations & type aliases)
   const nodes: Array<
@@ -142,8 +139,15 @@ ${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
     newLine: ts.NewLineKind.LineFeed,
     removeComments: !keepComments,
   });
+
+  const printerWithComments = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+  });
+
   const print = (node: ts.Node) =>
     printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+
+  const transformedSourceText = printerWithComments.printFile(sourceFile);
 
   const imports = Array.from(typeImports.values());
   const getZodSchemasFile = (
@@ -200,6 +204,11 @@ ${testCases.map(print).join("\n")}
 `;
 
   return {
+    /**
+     * Source text with pre-process applied.
+     */
+    transformedSourceText,
+
     /**
      * Get the content of the zod schemas file.
      *

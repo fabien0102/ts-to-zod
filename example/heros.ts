@@ -4,9 +4,12 @@ export enum EnemyPower {
   Speed = "speed",
 }
 
-export type SpeedEnemy = {
-  power: EnemyPower.Speed;
-};
+// eslint-disable-next-line @typescript-eslint/no-namespace
+export namespace Skills {
+  export type SpeedEnemy = {
+    power: EnemyPower.Speed;
+  };
+}
 
 export interface Enemy {
   name: string;

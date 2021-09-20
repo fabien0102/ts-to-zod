@@ -241,6 +241,7 @@ See more help with --help`,
 
     const {
       errors,
+      transformedSourceText,
       getZodSchemasFile,
       getIntegrationTestFile,
       hasCircularDependencies,
@@ -261,7 +262,7 @@ See more help with --help`,
       if (flags.all) validatorSpinner.indent = 1;
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
-          sourceText,
+          sourceText: transformedSourceText,
           relativePath: "./source.ts",
         },
         integrationTests: {
