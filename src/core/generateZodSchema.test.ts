@@ -221,6 +221,17 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a function with optional parameter", () => {
+    const source = `export type GetSupermanSkill = (
+      key: string,
+      params?: Record<string, string | number>
+    ) => string`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const getSupermanSkillSchema = z.function().args(z.string(), z.record(z.union([z.string(), z.number()])).optional()).returns(z.string());"`
+    );
+  });
+
   it("should generate a function schema (with `any` fallback on param)", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
