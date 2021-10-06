@@ -64,3 +64,8 @@ export const exportedSchema = z.object({
   a: nonExportedSchema,
   b: z.string(),
 });
+
+export const getSupermanSkillSchema = z
+  .function()
+  .args(z.string(), z.boolean().optional())
+  .returns(z.string());

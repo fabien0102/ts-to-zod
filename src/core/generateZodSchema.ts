@@ -287,7 +287,7 @@ function buildZodPrimitive({
           buildZodPrimitive({
             z,
             typeNode: typeNode.typeArguments[1],
-            isOptional,
+            isOptional: false,
             jsDocTags,
             sourceFile,
             isPartial: false,
@@ -572,7 +572,7 @@ function buildZodPrimitive({
               sourceFile,
               dependencies,
               getDependencyName,
-              isOptional: false,
+              isOptional: Boolean(p.questionToken),
             })
           ),
         },

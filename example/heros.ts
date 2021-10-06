@@ -84,3 +84,8 @@ export interface Exported {
   a: NonExported;
   b: string;
 }
+
+export type GetSupermanSkill = (
+  skillName: string,
+  withKryptonite?: boolean
+) => string;
