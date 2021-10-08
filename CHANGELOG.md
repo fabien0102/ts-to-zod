@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.5.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.5.0...v1.5.1) (2021-10-07)
+
+
+### Bug Fixes
+
+* Fix optional function parameter ([#48](https://www.github.com/fabien0102/ts-to-zod/issues/48)) ([bf0d527](https://www.github.com/fabien0102/ts-to-zod/commit/bf0d527844ae53e69247b07fde18d4871880b872)), closes [#47](https://www.github.com/fabien0102/ts-to-zod/issues/47)
+
 ## [1.5.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.4.0...v1.5.0) (2021-09-20)
 
 
