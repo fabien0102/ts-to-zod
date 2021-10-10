@@ -819,7 +819,7 @@ function buildSchemaReference(
         (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
         ts.isIndexedAccessTypeNode(node.objectType) &&
         n.name.getText(sourceFile) ===
-          node.objectType.objectType.getText(sourceFile)
+          node.objectType.objectType.getText(sourceFile).split("[")[0]
       );
     });
 
@@ -839,32 +839,43 @@ function buildSchemaReference(
         // Array<type>
         if (
           ts.isTypeReferenceNode(member.type) &&
-          member.type.typeName.getText(sourceFile) === "Array" &&
-          member.type.typeArguments &&
-          ts.isTypeReferenceNode(member.type.typeArguments[0])
+          member.type.typeName.getText(sourceFile) === "Array"
         ) {
-          return f.createIdentifier(
-            getDependencyName(member.type.typeArguments[0].getText(sourceFile))
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `element.${path}`
           );
         }
         // type[]
-        if (
-          ts.isArrayTypeNode(member.type) &&
-          ts.isTypeReferenceNode(member.type.elementType)
-        ) {
-          return f.createIdentifier(
-            getDependencyName(member.type.elementType.getText(sourceFile))
+        if (ts.isArrayTypeNode(member.type)) {
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `element.${path}`
           );
         }
         // Record<string, type>
         if (
           ts.isTypeReferenceNode(member.type) &&
-          member.type.typeName.getText(sourceFile) === "Record" &&
-          member.type.typeArguments &&
-          ts.isTypeReferenceNode(member.type.typeArguments[1])
+          member.type.typeName.getText(sourceFile) === "Record"
         ) {
-          return f.createIdentifier(
-            getDependencyName(member.type.typeArguments[1].getText(sourceFile))
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `valueSchema.${path}`
           );
         }
 
@@ -874,6 +885,8 @@ function buildSchemaReference(
         return f.createIdentifier("any");
       }
     }
+
+    return f.createIdentifier("any");
   } else if (
     indexTypeType === "number" &&
     ts.isIndexedAccessTypeNode(node.objectType)
