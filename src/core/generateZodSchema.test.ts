@@ -384,6 +384,22 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with index access type (1st level)", () => {
+    const source = `export type SupermanName = Superman["name"]`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanNameSchema = supermanSchema.shape.name;"`
+    );
+  });
+
+  it("should deal with index access type (nested level)", () => {
+    const source = `export type SupermanFlyPower = Superman["power"]["fly"]`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanFlyPowerSchema = supermanSchema.shape.power.shape.fly;"`
+    );
+  });
+
   it("should deal with parenthesized type", () => {
     const source = `export type SecretVillain = (NormalGuy | Villain);`;
     expect(generate(source)).toMatchInlineSnapshot(

@@ -55,7 +55,11 @@ export function generateZodSchemaVariableStatement({
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
 }: GenerateZodSchemaProps) {
-  let schema: ts.CallExpression | ts.Identifier | undefined;
+  let schema:
+    | ts.CallExpression
+    | ts.Identifier
+    | ts.PropertyAccessExpression
+    | undefined;
   const dependencies: string[] = [];
   let requiresImport = false;
 
@@ -141,7 +145,7 @@ function buildZodProperties({
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
-    ts.CallExpression | ts.Identifier
+    ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression
   >();
   members.forEach((member) => {
     if (
@@ -191,7 +195,7 @@ function buildZodPrimitive({
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
-}): ts.CallExpression | ts.Identifier {
+}): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
     isOptional,
@@ -595,6 +599,15 @@ function buildZodPrimitive({
     );
   }
 
+  if (ts.isIndexedAccessTypeNode(typeNode)) {
+    return buildSchemaReference({
+      node: typeNode,
+      getDependencyName,
+      sourceFile,
+      dependencies,
+    });
+  }
+
   switch (typeNode.kind) {
     case ts.SyntaxKind.StringKeyword:
       return buildZodSchema(z, "string", [], zodProperties);
@@ -770,4 +783,44 @@ function buildZodObject({
     return objectSchema;
   }
   return buildZodSchema(z, "object", [f.createObjectLiteralExpression()]);
+}
+
+/**
+ * Build a schema reference from an IndexedAccessTypeNode
+ *
+ * example: Superman["power"]["fly"] -> SupermanSchema.shape.power.shape.fly
+ */
+function buildSchemaReference(
+  {
+    node,
+    dependencies,
+    sourceFile,
+    getDependencyName,
+  }: {
+    node: ts.IndexedAccessTypeNode;
+    dependencies: string[];
+    sourceFile: ts.SourceFile;
+    getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
+  },
+  path = ""
+): ts.PropertyAccessExpression {
+  if (ts.isTypeReferenceNode(node.objectType)) {
+    const dependencyName = getDependencyName(
+      node.objectType.typeName.getText(sourceFile)
+    );
+    dependencies.push(dependencyName);
+    const indexTypeName = node.indexType.getText(sourceFile).slice(1, -1);
+    return f.createPropertyAccessExpression(
+      f.createIdentifier(dependencyName),
+      f.createIdentifier(`shape.${indexTypeName}.${path}`.slice(0, -1))
+    );
+  } else if (ts.isIndexedAccessTypeNode(node.objectType)) {
+    const indexTypeName = node.indexType.getText(sourceFile).slice(1, -1);
+    return buildSchemaReference(
+      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      `shape.${indexTypeName}.${path}`
+    );
+  } else {
+    throw new Error("Unknown IndexedAccessTypeNode.objectType type");
+  }
 }
