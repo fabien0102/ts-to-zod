@@ -14,6 +14,8 @@ export const enemySchema = z.object({
   inPrison: z.boolean(),
 });
 
+export const supermanEnemySchema = enemySchema;
+
 export const supermanSchema = z.object({
   name: z.union([
     z.literal("superman"),
@@ -23,6 +25,11 @@ export const supermanSchema = z.object({
   enemies: z.record(enemySchema),
   age: z.number(),
   underKryptonite: z.boolean().optional(),
+  powers: z.tuple([
+    z.literal("fly"),
+    z.literal("laser"),
+    z.literal("invincible"),
+  ]),
 });
 
 export const villainSchema: z.ZodSchema<Villain> = z.lazy(() =>
@@ -69,3 +76,8 @@ export const getSupermanSkillSchema = z
   .function()
   .args(z.string(), z.boolean().optional())
   .returns(z.string());
+
+export const supermanNameSchema = supermanSchema.shape.name;
+
+export const supermanInvinciblePowerSchema =
+  supermanSchema.shape.powers.items[2];

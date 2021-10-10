@@ -7,6 +7,7 @@ import {
   ZodProperty,
 } from "./jsDocTags";
 import uniq from "lodash/uniq";
+import { findNode } from "../utils/findNode";
 
 const { factory: f } = ts;
 
@@ -803,24 +804,103 @@ function buildSchemaReference(
     getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   },
   path = ""
-): ts.PropertyAccessExpression {
+): ts.PropertyAccessExpression | ts.Identifier {
+  const indexTypeText = node.indexType.getText(sourceFile);
+  const { indexTypeName, type: indexTypeType } = /^"\w+"$/.exec(indexTypeText)
+    ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
+    : { type: "number" as const, indexTypeName: indexTypeText };
+
+  if (indexTypeName === "-1") {
+    // Get the original type declaration
+    const declaration = findNode(sourceFile, (n): n is
+      | ts.InterfaceDeclaration
+      | ts.TypeAliasDeclaration => {
+      return (
+        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+        ts.isIndexedAccessTypeNode(node.objectType) &&
+        n.name.getText(sourceFile) ===
+          node.objectType.objectType.getText(sourceFile)
+      );
+    });
+
+    if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
+      const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
+      const members =
+        ts.isTypeAliasDeclaration(declaration) &&
+        ts.isTypeLiteralNode(declaration.type)
+          ? declaration.type.members
+          : ts.isInterfaceDeclaration(declaration)
+          ? declaration.members
+          : [];
+
+      const member = members.find((m) => m.name?.getText(sourceFile) === key);
+
+      if (member && ts.isPropertySignature(member) && member.type) {
+        // Array<type>
+        if (
+          ts.isTypeReferenceNode(member.type) &&
+          member.type.typeName.getText(sourceFile) === "Array" &&
+          member.type.typeArguments &&
+          ts.isTypeReferenceNode(member.type.typeArguments[0])
+        ) {
+          return f.createIdentifier(
+            getDependencyName(member.type.typeArguments[0].getText(sourceFile))
+          );
+        }
+        // type[]
+        if (
+          ts.isArrayTypeNode(member.type) &&
+          ts.isTypeReferenceNode(member.type.elementType)
+        ) {
+          return f.createIdentifier(
+            getDependencyName(member.type.elementType.getText(sourceFile))
+          );
+        }
+        // Record<string, type>
+        if (
+          ts.isTypeReferenceNode(member.type) &&
+          member.type.typeName.getText(sourceFile) === "Record" &&
+          member.type.typeArguments &&
+          ts.isTypeReferenceNode(member.type.typeArguments[1])
+        ) {
+          return f.createIdentifier(
+            getDependencyName(member.type.typeArguments[1].getText(sourceFile))
+          );
+        }
+
+        console.warn(
+          ` »   Warning: indexAccessType can’t be resolved, fallback into 'any'`
+        );
+        return f.createIdentifier("any");
+      }
+    }
+  } else if (
+    indexTypeType === "number" &&
+    ts.isIndexedAccessTypeNode(node.objectType)
+  ) {
+    return buildSchemaReference(
+      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      `items[${indexTypeName}].${path}`
+    );
+  }
+
+  if (ts.isIndexedAccessTypeNode(node.objectType)) {
+    return buildSchemaReference(
+      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      `shape.${indexTypeName}.${path}`
+    );
+  }
+
   if (ts.isTypeReferenceNode(node.objectType)) {
     const dependencyName = getDependencyName(
       node.objectType.typeName.getText(sourceFile)
     );
     dependencies.push(dependencyName);
-    const indexTypeName = node.indexType.getText(sourceFile).slice(1, -1);
     return f.createPropertyAccessExpression(
       f.createIdentifier(dependencyName),
       f.createIdentifier(`shape.${indexTypeName}.${path}`.slice(0, -1))
     );
-  } else if (ts.isIndexedAccessTypeNode(node.objectType)) {
-    const indexTypeName = node.indexType.getText(sourceFile).slice(1, -1);
-    return buildSchemaReference(
-      { node: node.objectType, dependencies, sourceFile, getDependencyName },
-      `shape.${indexTypeName}.${path}`
-    );
-  } else {
-    throw new Error("Unknown IndexedAccessTypeNode.objectType type");
   }
+
+  throw new Error("Unknown IndexedAccessTypeNode.objectType type");
 }

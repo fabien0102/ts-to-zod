@@ -400,6 +400,126 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should deal with index access type (array item)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: Array<Power>
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = powerSchema;"`
+    );
+  });
+
+  it("should deal with index access type (array item bis)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: Power[]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = powerSchema;"`
+    );
+  });
+
+  it("should deal with index access type (record item)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: Record<string, Power>
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = powerSchema;"`
+    );
+  });
+
+  it("should deal with index access type (record item) (interface)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export interface Superman {
+      powers: Record<string, Power>
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = powerSchema;"`
+    );
+  });
+
+  it("should deal with index access type (tuple)", () => {
+    const source = `export type SupermanPower = Superman["powers"][1];
+    
+    export type Superman = {
+      powers: ["fly", "burnStuff"]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.items[1];"`
+    );
+  });
+
+  it("should fallback to any with index access type (nested array item)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1][-1];
+    
+    export type Superman = {
+      powers: Power[][]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = any;"`
+    );
+  });
+
+  it("should fallback to any with index access type (inline array item)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: Array<{type: string}>
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = any;"`
+    );
+  });
+
+  it("should fallback to any with index access type (inline array item bis)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: {type: string}[]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = any;"`
+    );
+  });
+
+  it("should fallback to any with index access type (inline record)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: Record<string, {type: string}>
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = any;"`
+    );
+  });
+
+  it("should fallback to any with index access type (advanced)", () => {
+    const source = `export type SupermanPower = Superman["powers"][-1];
+    
+    export type Superman = {
+      powers: [string, number]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = any;"`
+    );
+  });
+
   it("should deal with parenthesized type", () => {
     const source = `export type SecretVillain = (NormalGuy | Villain);`;
     expect(generate(source)).toMatchInlineSnapshot(
