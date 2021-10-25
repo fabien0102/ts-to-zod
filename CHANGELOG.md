@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.5.1...v1.6.0) (2021-10-25)
+
+
+### Features
+
+* Support `IndexAccessType` ([#51](https://www.github.com/fabien0102/ts-to-zod/issues/51)) ([2b28266](https://www.github.com/fabien0102/ts-to-zod/commit/2b2826679353ac3df7848be320b94d8fe2c38092))
+
 ### [1.5.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.5.0...v1.5.1) (2021-10-07)
 
 
