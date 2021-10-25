@@ -7,6 +7,7 @@ import {
   ZodProperty,
 } from "./jsDocTags";
 import uniq from "lodash/uniq";
+import { findNode } from "../utils/findNode";
 
 const { factory: f } = ts;
 
@@ -55,7 +56,11 @@ export function generateZodSchemaVariableStatement({
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
 }: GenerateZodSchemaProps) {
-  let schema: ts.CallExpression | ts.Identifier | undefined;
+  let schema:
+    | ts.CallExpression
+    | ts.Identifier
+    | ts.PropertyAccessExpression
+    | undefined;
   const dependencies: string[] = [];
   let requiresImport = false;
 
@@ -141,7 +146,7 @@ function buildZodProperties({
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
-    ts.CallExpression | ts.Identifier
+    ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression
   >();
   members.forEach((member) => {
     if (
@@ -191,7 +196,7 @@ function buildZodPrimitive({
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
-}): ts.CallExpression | ts.Identifier {
+}): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
     isOptional,
@@ -595,6 +600,15 @@ function buildZodPrimitive({
     );
   }
 
+  if (ts.isIndexedAccessTypeNode(typeNode)) {
+    return buildSchemaReference({
+      node: typeNode,
+      getDependencyName,
+      sourceFile,
+      dependencies,
+    });
+  }
+
   switch (typeNode.kind) {
     case ts.SyntaxKind.StringKeyword:
       return buildZodSchema(z, "string", [], zodProperties);
@@ -770,4 +784,136 @@ function buildZodObject({
     return objectSchema;
   }
   return buildZodSchema(z, "object", [f.createObjectLiteralExpression()]);
+}
+
+/**
+ * Build a schema reference from an IndexedAccessTypeNode
+ *
+ * example: Superman["power"]["fly"] -> SupermanSchema.shape.power.shape.fly
+ */
+function buildSchemaReference(
+  {
+    node,
+    dependencies,
+    sourceFile,
+    getDependencyName,
+  }: {
+    node: ts.IndexedAccessTypeNode;
+    dependencies: string[];
+    sourceFile: ts.SourceFile;
+    getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
+  },
+  path = ""
+): ts.PropertyAccessExpression | ts.Identifier {
+  const indexTypeText = node.indexType.getText(sourceFile);
+  const { indexTypeName, type: indexTypeType } = /^"\w+"$/.exec(indexTypeText)
+    ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
+    : { type: "number" as const, indexTypeName: indexTypeText };
+
+  if (indexTypeName === "-1") {
+    // Get the original type declaration
+    const declaration = findNode(sourceFile, (n): n is
+      | ts.InterfaceDeclaration
+      | ts.TypeAliasDeclaration => {
+      return (
+        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+        ts.isIndexedAccessTypeNode(node.objectType) &&
+        n.name.getText(sourceFile) ===
+          node.objectType.objectType.getText(sourceFile).split("[")[0]
+      );
+    });
+
+    if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
+      const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
+      const members =
+        ts.isTypeAliasDeclaration(declaration) &&
+        ts.isTypeLiteralNode(declaration.type)
+          ? declaration.type.members
+          : ts.isInterfaceDeclaration(declaration)
+          ? declaration.members
+          : [];
+
+      const member = members.find((m) => m.name?.getText(sourceFile) === key);
+
+      if (member && ts.isPropertySignature(member) && member.type) {
+        // Array<type>
+        if (
+          ts.isTypeReferenceNode(member.type) &&
+          member.type.typeName.getText(sourceFile) === "Array"
+        ) {
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `element.${path}`
+          );
+        }
+        // type[]
+        if (ts.isArrayTypeNode(member.type)) {
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `element.${path}`
+          );
+        }
+        // Record<string, type>
+        if (
+          ts.isTypeReferenceNode(member.type) &&
+          member.type.typeName.getText(sourceFile) === "Record"
+        ) {
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+            },
+            `valueSchema.${path}`
+          );
+        }
+
+        console.warn(
+          ` »   Warning: indexAccessType can’t be resolved, fallback into 'any'`
+        );
+        return f.createIdentifier("any");
+      }
+    }
+
+    return f.createIdentifier("any");
+  } else if (
+    indexTypeType === "number" &&
+    ts.isIndexedAccessTypeNode(node.objectType)
+  ) {
+    return buildSchemaReference(
+      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      `items[${indexTypeName}].${path}`
+    );
+  }
+
+  if (ts.isIndexedAccessTypeNode(node.objectType)) {
+    return buildSchemaReference(
+      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      `shape.${indexTypeName}.${path}`
+    );
+  }
+
+  if (ts.isTypeReferenceNode(node.objectType)) {
+    const dependencyName = getDependencyName(
+      node.objectType.typeName.getText(sourceFile)
+    );
+    dependencies.push(dependencyName);
+    return f.createPropertyAccessExpression(
+      f.createIdentifier(dependencyName),
+      f.createIdentifier(`shape.${indexTypeName}.${path}`.slice(0, -1))
+    );
+  }
+
+  throw new Error("Unknown IndexedAccessTypeNode.objectType type");
 }
