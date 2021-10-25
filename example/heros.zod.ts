@@ -14,8 +14,6 @@ export const enemySchema = z.object({
   inPrison: z.boolean(),
 });
 
-export const supermanEnemySchema = enemySchema;
-
 export const supermanSchema = z.object({
   name: z.union([
     z.literal("superman"),
@@ -76,6 +74,16 @@ export const getSupermanSkillSchema = z
   .function()
   .args(z.string(), z.boolean().optional())
   .returns(z.string());
+
+export const heroContactSchema = z.object({
+  email: z.string().email(),
+  name: z.string().min(2).max(50),
+  phoneNumber: z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/),
+  hasSuperPower: z.boolean().optional().default(true),
+  age: z.number().min(0).max(500),
+});
+
+export const supermanEnemySchema = supermanSchema.shape.enemies.valueSchema;
 
 export const supermanNameSchema = supermanSchema.shape.name;
 
