@@ -20,8 +20,6 @@ $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
 
-Note: The generated zod schemas have `zod@next` as dependency.
-
 ## Embedded validation
 
 To make sure the generated zod schemas are 100% compatible with your original types, this tool is internally comparing `z.infer<generatedSchema>` and your original type. If you are running on those validation, please open an issue 😀
