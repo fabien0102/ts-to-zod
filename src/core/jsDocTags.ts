@@ -133,12 +133,14 @@ export type ZodProperty = {
  * @param isOptional
  * @param isPartial
  * @param isRequired
+ * @param isNullable
  */
 export function jsDocTagToZodProperties(
   jsDocTags: JSDocTags,
   isOptional: boolean,
   isPartial: boolean,
-  isRequired: boolean
+  isRequired: boolean,
+  isNullable: boolean
 ) {
   const zodProperties: ZodProperty[] = [];
   if (jsDocTags.minimum !== undefined) {
@@ -179,6 +181,11 @@ export function jsDocTagToZodProperties(
   if (isOptional) {
     zodProperties.push({
       identifier: "optional",
+    });
+  }
+  if (isNullable) {
+    zodProperties.push({
+      identifier: "nullable",
     });
   }
   if (isPartial) {

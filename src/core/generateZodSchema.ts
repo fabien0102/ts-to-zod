@@ -8,6 +8,7 @@ import {
 } from "./jsDocTags";
 import uniq from "lodash/uniq";
 import { findNode } from "../utils/findNode";
+import { isNotNull } from "../utils/isNotNull";
 
 const { factory: f } = ts;
 
@@ -180,6 +181,7 @@ function buildZodPrimitive({
   z,
   typeNode,
   isOptional,
+  isNullable,
   isPartial,
   isRequired,
   jsDocTags,
@@ -190,6 +192,7 @@ function buildZodPrimitive({
   z: string;
   typeNode: ts.TypeNode;
   isOptional: boolean;
+  isNullable?: boolean;
   isPartial?: boolean;
   isRequired?: boolean;
   jsDocTags: JSDocTags;
@@ -201,7 +204,8 @@ function buildZodPrimitive({
     jsDocTags,
     isOptional,
     Boolean(isPartial),
-    Boolean(isRequired)
+    Boolean(isRequired),
+    Boolean(isNullable)
   );
 
   if (ts.isParenthesizedTypeNode(typeNode)) {
@@ -395,22 +399,43 @@ function buildZodPrimitive({
   }
 
   if (ts.isUnionTypeNode(typeNode)) {
-    const values = typeNode.types.map((i) =>
+    const hasNull = Boolean(
+      typeNode.types.find(
+        (i) =>
+          ts.isLiteralTypeNode(i) &&
+          i.literal.kind === ts.SyntaxKind.NullKeyword
+      )
+    );
+
+    const nodes = typeNode.types.filter(isNotNull);
+
+    // type A = | 'b' is a valid typescript definition
+    // Zod does not allow `z.union(['b']), so we have to return just the value
+    if (nodes.length === 1) {
+      return buildZodPrimitive({
+        z,
+        typeNode: nodes[0],
+        isOptional: false,
+        isNullable: hasNull,
+        jsDocTags,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+      });
+    }
+
+    const values = nodes.map((i) =>
       buildZodPrimitive({
         z,
         typeNode: i,
         isOptional: false,
+        isNullable: false,
         jsDocTags: {},
         sourceFile,
         dependencies,
         getDependencyName,
       })
     );
-    // type A = | 'b' is a valid typescript definintion
-    // Zod does not allow `z.union(['b']), so we have to return just the value
-    if (values.length === 1) {
-      return values[0];
-    }
     return buildZodSchema(
       z,
       "union",
