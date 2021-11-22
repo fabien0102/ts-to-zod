@@ -357,7 +357,7 @@ describe("generateZodSchema", () => {
           enemies: z.record(enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
-          needGlasses: z.union([z.literal(true), z.null()])
+          needGlasses: z.literal(true).nullable()
       });"
     `);
   });
@@ -639,6 +639,29 @@ describe("generateZodSchema", () => {
            * @maximum 500
            */
           age: z.number().min(0).max(500)
+      });"
+    `);
+  });
+
+  it("should deal with nullable", () => {
+    const source = `export interface A {
+      /** @minimum 0 */
+      a: number | null;
+      /** @minLength 1 */
+      b: string | null;
+      /** @pattern ^c$ */
+      c: string | null;
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @minimum 0 */
+          a: z.number().min(0).nullable(),
+          /** @minLength 1 */
+          b: z.string().min(1).nullable(),
+          /** @pattern ^c$ */
+          c: z.string().regex(/^c$/).nullable()
       });"
     `);
   });
