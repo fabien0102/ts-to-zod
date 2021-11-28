@@ -96,11 +96,13 @@ export function generateZodSchemaVariableStatement({
     if (node.typeParameters) {
       throw new Error("Type with generics are not supported!");
     }
+    const jsDocTags = getJSDocTags(node, sourceFile);
+
     schema = buildZodPrimitive({
       z: zodImportValue,
       typeNode: node.type,
       isOptional: false,
-      jsDocTags: {},
+      jsDocTags,
       sourceFile,
       dependencies,
       getDependencyName,

@@ -18,7 +18,30 @@ export function resolveModules(sourceText: string): SourceFile {
     moduleToPrefix(declarations),
   ]);
 
-  return transformed[0];
+  return parseSourceFile(transformed[0]);
+}
+
+/**
+ * Parse a sourceFile in order to have new node positions.
+ *
+ * Typescript need all the node positions to be able to manipulate the AST.
+ * After any transformation, an altered node will have `{pos: -1, end: -1}`, this
+ * will cause issue when trying to get the JSDocTags (as example)
+ *
+ * @param sourceFile
+ */
+function parseSourceFile(sourceFile: SourceFile): SourceFile {
+  const printer = ts.createPrinter({
+    newLine: ts.NewLineKind.LineFeed,
+    removeComments: false,
+  });
+
+  const print = (node: ts.Node) =>
+    printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+
+  const sourceText = print(sourceFile);
+
+  return ts.createSourceFile("index.ts", sourceText, ts.ScriptTarget.Latest);
 }
 
 /**
