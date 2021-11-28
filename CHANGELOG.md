@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.6.0...v1.7.0) (2021-11-28)
+
+
+### Features
+
+* Improve nullable ([#57](https://www.github.com/fabien0102/ts-to-zod/issues/57)) ([0e00f1e](https://www.github.com/fabien0102/ts-to-zod/commit/0e00f1ea064a3ee01e66ca92260e9adf98407496))
+* Parse top-level JSDoc tag on `type` ([#59](https://www.github.com/fabien0102/ts-to-zod/issues/59)) ([33b17f6](https://www.github.com/fabien0102/ts-to-zod/commit/33b17f6553add96f5d0685d6e800fc892b5bb00a))
+
 ## [1.6.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.5.1...v1.6.0) (2021-10-25)
 
 
