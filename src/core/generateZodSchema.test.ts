@@ -643,6 +643,20 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate validator on top-level types", () => {
+    const source = `/**
+    * @minLength 1
+    */
+   export type NonEmptyString = string;`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "/**
+          * @minLength 1
+          */
+      export const nonEmptyStringSchema = z.string().min(1);"
+    `);
+  });
+
   it("should deal with nullable", () => {
     const source = `export interface A {
       /** @minimum 0 */
