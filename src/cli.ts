@@ -80,6 +80,10 @@ class TsToZod extends Command {
       char: "i",
       description: "Create a ts-to-zod.config.js file",
     }),
+    skipParseJSDoc: flags.boolean({
+      default: false,
+      description: "Skip the creation of zod validators from JSDoc annotations",
+    }),
     skipValidation: flags.boolean({
       default: false,
       description: "Skip the validation step (not recommended)",
@@ -240,6 +244,9 @@ See more help with --help`,
     if (typeof flags.keepComments === "boolean") {
       generateOptions.keepComments = flags.keepComments;
     }
+    if (typeof flags.skipParseJSDoc === "boolean") {
+      generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
+    }
 
     const {
       errors,
@@ -275,6 +282,7 @@ See more help with --help`,
           sourceText: getZodSchemasFile("./source"),
           relativePath: "./source.zod.ts",
         },
+        skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
       });
 
       generationErrors.length
