@@ -41,7 +41,7 @@ export type Config = {
   /**
    * Skip the creation of zod validators from JSDoc annotations
    *
-   * @default true
+   * @default false
    */
   skipParseJSDoc?: boolean;
 };

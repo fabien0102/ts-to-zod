@@ -19,7 +19,7 @@ export const configSchema = z.object({
   nameFilter: nameFilterSchema.optional(),
   getSchemaName: getSchemaNameSchema.optional(),
   keepComments: z.boolean().optional().default(false),
-  skipParseJSDoc: z.boolean().optional().default(true),
+  skipParseJSDoc: z.boolean().optional().default(false),
 });
 
 export const configsSchema = z.array(
