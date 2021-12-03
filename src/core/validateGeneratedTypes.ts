@@ -14,6 +14,7 @@ export interface ValidateGeneratedTypesProps {
   sourceTypes: File;
   zodSchemas: File;
   integrationTests: File;
+  skipParseJSDoc: boolean;
 }
 
 /**
@@ -23,6 +24,7 @@ export function validateGeneratedTypes({
   sourceTypes,
   zodSchemas,
   integrationTests,
+  skipParseJSDoc,
 }: ValidateGeneratedTypesProps) {
   // Shared configuration
   const compilerOptions: ts.CompilerOptions = {
@@ -37,7 +39,9 @@ export function validateGeneratedTypes({
   const projectRoot = process.cwd();
   fsMap.set(
     getPath(sourceTypes),
-    resolveDefaultProperties(sourceTypes.sourceText)
+    skipParseJSDoc
+      ? sourceTypes.sourceText
+      : resolveDefaultProperties(sourceTypes.sourceText)
   );
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);

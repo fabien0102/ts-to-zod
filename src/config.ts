@@ -37,6 +37,13 @@ export type Config = {
    * @default false
    */
   keepComments?: boolean;
+
+  /**
+   * Skip the creation of zod validators from JSDoc annotations
+   *
+   * @default false
+   */
+  skipParseJSDoc?: boolean;
 };
 
 export type Configs = Array<

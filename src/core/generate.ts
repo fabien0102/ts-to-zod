@@ -32,6 +32,13 @@ export interface GenerateProps {
    * @default false
    */
   keepComments?: boolean;
+
+  /**
+   * Skip the creation of zod validators from JSDoc annotations
+   *
+   * @default false
+   */
+  skipParseJSDoc?: boolean;
 }
 
 /**
@@ -45,6 +52,7 @@ export function generate({
   nameFilter = () => true,
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
+  skipParseJSDoc = false,
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -77,6 +85,7 @@ export function generate({
       sourceFile,
       varName,
       getDependencyName: getSchemaName,
+      skipParseJSDoc,
     });
 
     return { typeName, varName, ...zodSchema };

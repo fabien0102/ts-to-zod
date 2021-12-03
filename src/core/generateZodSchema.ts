@@ -41,6 +41,13 @@ export interface GenerateZodSchemaProps {
    * @default (identifierName) => camel(`${identifierName}Schema`)
    */
   getDependencyName?: (identifierName: string) => string;
+
+  /**
+   * Skip the creation of zod validators from JSDoc annotations
+   *
+   * @default false
+   */
+  skipParseJSDoc?: boolean;
 }
 
 /**
@@ -56,6 +63,7 @@ export function generateZodSchemaVariableStatement({
   varName,
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
+  skipParseJSDoc = false,
 }: GenerateZodSchemaProps) {
   let schema:
     | ts.CallExpression
@@ -89,6 +97,7 @@ export function generateZodSchemaVariableStatement({
       dependencies,
       getDependencyName,
       baseSchema,
+      skipParseJSDoc,
     });
   }
 
@@ -96,7 +105,7 @@ export function generateZodSchemaVariableStatement({
     if (node.typeParameters) {
       throw new Error("Type with generics are not supported!");
     }
-    const jsDocTags = getJSDocTags(node, sourceFile);
+    const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(node, sourceFile);
 
     schema = buildZodPrimitive({
       z: zodImportValue,
@@ -106,6 +115,7 @@ export function generateZodSchemaVariableStatement({
       sourceFile,
       dependencies,
       getDependencyName,
+      skipParseJSDoc,
     });
   }
 
@@ -140,12 +150,14 @@ function buildZodProperties({
   sourceFile,
   dependencies,
   getDependencyName,
+  skipParseJSDoc,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
   zodImportValue: string;
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
+  skipParseJSDoc: boolean;
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
@@ -161,7 +173,7 @@ function buildZodProperties({
     }
 
     const isOptional = Boolean(member.questionToken);
-    const jsDocTags = getJSDocTags(member, sourceFile);
+    const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(member, sourceFile);
 
     properties.set(
       member.name,
@@ -173,6 +185,7 @@ function buildZodProperties({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       })
     );
   });
@@ -190,6 +203,7 @@ function buildZodPrimitive({
   sourceFile,
   dependencies,
   getDependencyName,
+  skipParseJSDoc,
 }: {
   z: string;
   typeNode: ts.TypeNode;
@@ -201,6 +215,7 @@ function buildZodPrimitive({
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
+  skipParseJSDoc: boolean;
 }): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
@@ -219,6 +234,7 @@ function buildZodPrimitive({
       sourceFile,
       dependencies,
       getDependencyName,
+      skipParseJSDoc,
     });
   }
 
@@ -235,6 +251,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       });
     }
 
@@ -249,6 +266,7 @@ function buildZodPrimitive({
         isPartial: true,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       });
     }
 
@@ -263,6 +281,7 @@ function buildZodPrimitive({
         isRequired: true,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       });
     }
 
@@ -276,6 +295,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       });
     }
 
@@ -304,6 +324,7 @@ function buildZodPrimitive({
             isPartial: false,
             dependencies,
             getDependencyName,
+            skipParseJSDoc,
           }),
         ],
         zodProperties
@@ -329,6 +350,7 @@ function buildZodPrimitive({
             sourceFile,
             dependencies,
             getDependencyName,
+            skipParseJSDoc,
           })
         ),
         zodProperties
@@ -384,6 +406,7 @@ function buildZodPrimitive({
             sourceFile,
             dependencies,
             getDependencyName,
+            skipParseJSDoc,
           }),
           f.createIdentifier(lower(identifierName))
         ),
@@ -394,9 +417,8 @@ function buildZodPrimitive({
 
     const dependencyName = getDependencyName(identifierName);
     dependencies.push(dependencyName);
-    const zodSchema: ts.Identifier | ts.CallExpression = f.createIdentifier(
-      dependencyName
-    );
+    const zodSchema: ts.Identifier | ts.CallExpression =
+      f.createIdentifier(dependencyName);
     return withZodProperties(zodSchema, zodProperties);
   }
 
@@ -423,6 +445,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       });
     }
 
@@ -436,6 +459,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       })
     );
     return buildZodSchema(
@@ -456,6 +480,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       })
     );
     return buildZodSchema(
@@ -523,6 +548,7 @@ function buildZodPrimitive({
           sourceFile,
           dependencies,
           getDependencyName,
+          skipParseJSDoc,
         }),
       ],
       zodProperties
@@ -537,6 +563,7 @@ function buildZodPrimitive({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       }),
       zodProperties
     );
@@ -552,6 +579,7 @@ function buildZodPrimitive({
       sourceFile,
       dependencies,
       getDependencyName,
+      skipParseJSDoc,
     });
 
     return rest.reduce(
@@ -571,6 +599,7 @@ function buildZodPrimitive({
               sourceFile,
               dependencies,
               getDependencyName,
+              skipParseJSDoc,
             }),
           ]
         ),
@@ -605,6 +634,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               isOptional: Boolean(p.questionToken),
+              skipParseJSDoc,
             })
           ),
         },
@@ -619,6 +649,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               isOptional: false,
+              skipParseJSDoc,
             }),
           ],
         },
@@ -722,6 +753,7 @@ function buildZodObject({
   sourceFile,
   getDependencyName,
   baseSchema,
+  skipParseJSDoc,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
@@ -729,6 +761,7 @@ function buildZodObject({
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   baseSchema?: string;
+  skipParseJSDoc: boolean;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -761,6 +794,7 @@ function buildZodObject({
       sourceFile,
       dependencies,
       getDependencyName,
+      skipParseJSDoc,
     });
 
     objectSchema = buildZodSchema(
@@ -793,6 +827,7 @@ function buildZodObject({
         sourceFile,
         dependencies,
         getDependencyName,
+        skipParseJSDoc,
       }),
     ]);
 
@@ -839,16 +874,17 @@ function buildSchemaReference(
 
   if (indexTypeName === "-1") {
     // Get the original type declaration
-    const declaration = findNode(sourceFile, (n): n is
-      | ts.InterfaceDeclaration
-      | ts.TypeAliasDeclaration => {
-      return (
-        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
-        ts.isIndexedAccessTypeNode(node.objectType) &&
-        n.name.getText(sourceFile) ===
-          node.objectType.objectType.getText(sourceFile).split("[")[0]
-      );
-    });
+    const declaration = findNode(
+      sourceFile,
+      (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
+        return (
+          (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+          ts.isIndexedAccessTypeNode(node.objectType) &&
+          n.name.getText(sourceFile) ===
+            node.objectType.objectType.getText(sourceFile).split("[")[0]
+        );
+      }
+    );
 
     if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
       const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes

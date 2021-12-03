@@ -807,6 +807,28 @@ describe("generateZodSchema", () => {
       `"export const theLastTestSchema = zod.literal(true);"`
     );
   });
+
+  it("should not generate any zod validation if `skipParseJSDoc` is `true`", () => {
+    const source = `export interface A {
+      /** @minimum 0 */
+      a: number | null;
+      /** @minLength 1 */
+      b: string | null;
+      /** @pattern ^c$ */
+      c: string | null;
+    }`;
+
+    expect(generate(source, "z", true)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @minimum 0 */
+          a: z.number().nullable(),
+          /** @minLength 1 */
+          b: z.string().nullable(),
+          /** @pattern ^c$ */
+          c: z.string().nullable()
+      });"
+    `);
+  });
 });
 
 /**
@@ -815,7 +837,7 @@ describe("generateZodSchema", () => {
  * @param sourceText Typescript interface or type
  * @returns Generated Zod schema
  */
-function generate(sourceText: string, z?: string) {
+function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
     sourceText,
@@ -844,6 +866,7 @@ function generate(sourceText: string, z?: string) {
     node: declaration,
     sourceFile,
     varName: zodConstName,
+    skipParseJSDoc,
   });
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })
