@@ -680,6 +680,19 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should allow nullable on optional properties", () => {
+    const source = `export interface A {
+      a?: number | null;
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.number().optional().nullable()
+      });"
+    `);
+  });
+
   it("should deal with @default with all types", () => {
     const source = `export interface WithDefaults {
      /**

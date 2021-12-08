@@ -439,7 +439,7 @@ function buildZodPrimitive({
       return buildZodPrimitive({
         z,
         typeNode: nodes[0],
-        isOptional: false,
+        isOptional,
         isNullable: hasNull,
         jsDocTags,
         sourceFile,
