@@ -462,6 +462,14 @@ function buildZodPrimitive({
         skipParseJSDoc,
       })
     );
+
+    // Handling null value outside of the union type
+    if (hasNull) {
+      zodProperties.push({
+        identifier: "nullable",
+      });
+    }
+
     return buildZodSchema(
       z,
       "union",
