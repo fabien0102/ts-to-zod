@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.7.0...v1.8.0) (2021-12-10)
+
+
+### Features
+
+* Add `skipParseJSDoc` option ([#62](https://www.github.com/fabien0102/ts-to-zod/issues/62)) ([e48c5fe](https://www.github.com/fabien0102/ts-to-zod/commit/e48c5fef0bc8cd09a5305b13ea1d62be20d0c5a7))
+
+
+### Bug Fixes
+
+* union properties can be optional & nullable ([#66](https://www.github.com/fabien0102/ts-to-zod/issues/66)) ([2ba1838](https://www.github.com/fabien0102/ts-to-zod/commit/2ba18388a9194f008eac7f522ba4963da65a27f8))
+
 ## [1.7.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.6.0...v1.7.0) (2021-11-28)
 
 
