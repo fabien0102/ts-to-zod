@@ -439,7 +439,7 @@ function buildZodPrimitive({
       return buildZodPrimitive({
         z,
         typeNode: nodes[0],
-        isOptional: false,
+        isOptional,
         isNullable: hasNull,
         jsDocTags,
         sourceFile,
@@ -462,6 +462,14 @@ function buildZodPrimitive({
         skipParseJSDoc,
       })
     );
+
+    // Handling null value outside of the union type
+    if (hasNull) {
+      zodProperties.push({
+        identifier: "nullable",
+      });
+    }
+
     return buildZodSchema(
       z,
       "union",

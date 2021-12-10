@@ -680,6 +680,45 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should allow nullable on optional properties", () => {
+    const source = `export interface A {
+      a?: number | null;
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.number().optional().nullable()
+      });"
+    `);
+  });
+
+  it("should allow nullable on union properties", () => {
+    const source = `export interface A {
+      a: number | string | null;
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.union([z.number(), z.string()]).nullable()
+      });"
+    `);
+  });
+
+  it("should allow nullable on optional union properties", () => {
+    const source = `export interface A {
+      a?: number | string | null;
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.union([z.number(), z.string()]).optional().nullable()
+      });"
+    `);
+  });
+
   it("should deal with @default with all types", () => {
     const source = `export interface WithDefaults {
      /**
