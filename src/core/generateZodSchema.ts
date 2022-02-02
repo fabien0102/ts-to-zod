@@ -74,29 +74,36 @@ export function generateZodSchemaVariableStatement({
   let requiresImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
-    let baseSchema: string | undefined;
+    let schemaExtensionClauses: string[] | undefined;
     if (node.typeParameters) {
       throw new Error("Interface with generics are not supported!");
     }
     if (node.heritageClauses) {
-      if (
-        node.heritageClauses.length > 1 ||
-        node.heritageClauses[0].types.length > 1
-      ) {
-        throw new Error(
-          "Only interface with single `extends T` are not supported!"
-        );
-      }
-      const type = node.heritageClauses[0].types[0];
-      baseSchema = getDependencyName(type.expression.getText(sourceFile));
+      // Looping on heritageClauses browses the "extends" keywords
+      schemaExtensionClauses = node.heritageClauses.reduce(
+        (deps: string[], h) => {
+          if (h.token !== ts.SyntaxKind.ExtendsKeyword || !h.types) {
+            return deps;
+          }
+
+          // Looping on types browses the comma-separated interfaces
+          const heritages = h.types.map((expression) => {
+            return getDependencyName(expression.getText(sourceFile));
+          });
+
+          return deps.concat(heritages);
+        },
+        []
+      );
     }
+
     schema = buildZodObject({
       typeNode: node,
       sourceFile,
       z: zodImportValue,
       dependencies,
       getDependencyName,
-      baseSchema,
+      schemaExtensionClauses,
       skipParseJSDoc,
     });
   }
@@ -417,8 +424,9 @@ function buildZodPrimitive({
 
     const dependencyName = getDependencyName(identifierName);
     dependencies.push(dependencyName);
-    const zodSchema: ts.Identifier | ts.CallExpression =
-      f.createIdentifier(dependencyName);
+    const zodSchema: ts.Identifier | ts.CallExpression = f.createIdentifier(
+      dependencyName
+    );
     return withZodProperties(zodSchema, zodProperties);
   }
 
@@ -727,6 +735,35 @@ function buildZodSchema(
   return withZodProperties(zodCall, properties);
 }
 
+function buildZodExtendedSchema(
+  schemaList: string[],
+  args?: ts.Expression[],
+  properties?: ZodProperty[]
+) {
+  let zodCall = f.createIdentifier(schemaList[0]) as ts.Expression;
+
+  for (let i = 1; i < schemaList.length; i++) {
+    zodCall = f.createCallExpression(
+      f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+      undefined,
+      [
+        f.createPropertyAccessExpression(
+          f.createIdentifier(schemaList[i]),
+          f.createIdentifier("shape")
+        ),
+      ]
+    );
+  }
+
+  zodCall = f.createCallExpression(
+    f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+    undefined,
+    args
+  );
+
+  return withZodProperties(zodCall, properties);
+}
+
 /**
  * Apply zod properties to an expression (as `.optional()`)
  *
@@ -760,7 +797,7 @@ function buildZodObject({
   dependencies,
   sourceFile,
   getDependencyName,
-  baseSchema,
+  schemaExtensionClauses,
   skipParseJSDoc,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
@@ -768,7 +805,7 @@ function buildZodObject({
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
-  baseSchema?: string;
+  schemaExtensionClauses?: string[];
   skipParseJSDoc: boolean;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
@@ -805,22 +842,29 @@ function buildZodObject({
       skipParseJSDoc,
     });
 
-    objectSchema = buildZodSchema(
-      baseSchema || z,
-      baseSchema ? "extend" : "object",
-      [
+    if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
+      objectSchema = buildZodExtendedSchema(schemaExtensionClauses, [
         f.createObjectLiteralExpression(
           Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
             return f.createPropertyAssignment(key, tsCall);
           }),
           true
         ),
-      ]
-    );
+      ]);
+    } else {
+      objectSchema = buildZodSchema(z, "object", [
+        f.createObjectLiteralExpression(
+          Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
+            return f.createPropertyAssignment(key, tsCall);
+          }),
+          true
+        ),
+      ]);
+    }
   }
 
   if (indexSignature) {
-    if (baseSchema) {
+    if (schemaExtensionClauses) {
       throw new Error(
         "interface with `extends` and index signature are not supported!"
       );
@@ -882,17 +926,16 @@ function buildSchemaReference(
 
   if (indexTypeName === "-1") {
     // Get the original type declaration
-    const declaration = findNode(
-      sourceFile,
-      (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
-        return (
-          (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
-          ts.isIndexedAccessTypeNode(node.objectType) &&
-          n.name.getText(sourceFile) ===
-            node.objectType.objectType.getText(sourceFile).split("[")[0]
-        );
-      }
-    );
+    const declaration = findNode(sourceFile, (n): n is
+      | ts.InterfaceDeclaration
+      | ts.TypeAliasDeclaration => {
+      return (
+        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+        ts.isIndexedAccessTypeNode(node.objectType) &&
+        n.name.getText(sourceFile) ===
+          node.objectType.objectType.getText(sourceFile).split("[")[0]
+      );
+    });
 
     if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
       const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
