@@ -70,7 +70,7 @@ export function generateZodSchemaVariableStatement({
     | ts.Identifier
     | ts.PropertyAccessExpression
     | undefined;
-  const dependencies: string[] = [];
+  let dependencies: string[] = [];
   let requiresImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
@@ -95,6 +95,8 @@ export function generateZodSchemaVariableStatement({
         },
         []
       );
+
+      dependencies = dependencies.concat(schemaExtensionClauses);
     }
 
     schema = buildZodObject({
