@@ -253,16 +253,6 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on not supported interface extends", () => {
-    const source = `export interface Superman extends Clark extends KalL {
-     withCap: true;
-   };`;
-
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Only interface with single \`extends T\` are not supported!"`
-    );
-  });
-
   it("should throw on not supported interface with extends and index signature", () => {
     const source = `export interface Superman extends Clark {
      [key: string]: any;
@@ -371,6 +361,42 @@ describe("generateZodSchema", () => {
           withPower: z.boolean()
       });"
     `);
+  });
+
+  it("should generate a merged schema when two extends are used", () => {
+    const source = `export interface Superman extends Clark extends KalL {
+        withPower: boolean;
+     };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+        "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
+            withPower: z.boolean()
+        });"
+      `);
+  });
+
+  it("should generate a merged schema when extending with two comma-separated interfaces", () => {
+    const source = `export interface Superman extends Clark, KalL {
+        withPower: boolean;
+     };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+        "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
+            withPower: z.boolean()
+        });"
+      `);
+  });
+
+  it("should generate a merged schema when extending with multiple comma-separated interfaces", () => {
+    const source = `export interface Superman extends Clark, KalL, Kryptonian {
+        withPower: boolean;
+     };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+        "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend(kryptonianSchema.shape).extend({
+            withPower: z.boolean()
+        });"
+      `);
   });
 
   it("should deal with literal keys", () => {
