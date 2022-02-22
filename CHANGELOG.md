@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.8.0...v1.9.0) (2022-02-22)
+
+
+### Features
+
+* add JSDocTag filter ([#72](https://www.github.com/fabien0102/ts-to-zod/issues/72)) ([5f6bb7f](https://www.github.com/fabien0102/ts-to-zod/commit/5f6bb7f1004584378ebf0b94637d133b549f1972))
+* add support for multiple interface extensions ([#68](https://www.github.com/fabien0102/ts-to-zod/issues/68)) ([e349c33](https://www.github.com/fabien0102/ts-to-zod/commit/e349c33de997505da77103555f8d67446983b9f1))
+
 ## [1.8.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.7.0...v1.8.0) (2021-12-10)
 
 
