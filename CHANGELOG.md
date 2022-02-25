@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.9.0...v1.10.0) (2022-02-25)
+
+
+### Features
+
+* support custom zod error message ([#73](https://www.github.com/fabien0102/ts-to-zod/issues/73)) ([36964b3](https://www.github.com/fabien0102/ts-to-zod/commit/36964b3ed193b775d6d95bb123a03016c9b97915))
+
 ## [1.9.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.8.0...v1.9.0) (2022-02-22)
 
 
