@@ -14,16 +14,21 @@ const formats = [
   // "date-time" as const,
 ];
 
+type TagWithError<T> = {
+  value: T;
+  errorMessage?: string;
+};
+
 /**
  * JSDoc special tags that can be converted in zod flags.
  */
 export interface JSDocTags {
-  minimum?: number;
-  maximum?: number;
+  minimum?: TagWithError<number>;
+  maximum?: TagWithError<number>;
   default?: number | string | boolean;
-  minLength?: number;
-  maxLength?: number;
-  format?: typeof formats[-1];
+  minLength?: TagWithError<number>;
+  maxLength?: TagWithError<number>;
+  format?: TagWithError<typeof formats[-1]>;
   pattern?: string;
 }
 
@@ -52,8 +57,30 @@ function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
  */
 function isSupportedFormat(
   format = ""
-): format is Required<JSDocTags>["format"] {
+): format is Required<JSDocTags>["format"]["value"] {
   return (formats as string[]).includes(format);
+}
+
+/**
+ * Parse js doc comment.
+ *
+ * @example
+ * parseJsDocComment("email should be an email");
+ * // {value: "email", errorMessage: "should be an email"}
+ *
+ * @param comment
+ */
+function parseJsDocComment(
+  comment: string
+): { value: string; errorMessage?: string } {
+  const [value, ...rest] = comment.split(" ");
+  const errorMessage =
+    rest.join(" ").replace(/(^["']|["']$)/g, "") || undefined;
+
+  return {
+    value: value.replace(",", "").replace(/(^["']|["']$)/g, ""),
+    errorMessage,
+  };
 }
 
 /**
@@ -71,13 +98,15 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
       (doc.tags || []).forEach((tag) => {
         const tagName = tag.tagName.escapedText.toString();
         if (!isJSDocTagKey(tagName) || typeof tag.comment !== "string") return;
+        const { value, errorMessage } = parseJsDocComment(tag.comment);
+
         switch (tagName) {
           case "minimum":
           case "maximum":
           case "minLength":
           case "maxLength":
-            if (tag.comment && !Number.isNaN(parseInt(tag.comment))) {
-              jsDocTags[tagName] = parseInt(tag.comment);
+            if (value && !Number.isNaN(parseInt(value))) {
+              jsDocTags[tagName] = { value: parseInt(value), errorMessage };
             }
             break;
           case "pattern":
@@ -86,8 +115,8 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             }
             break;
           case "format":
-            if (isSupportedFormat(tag.comment)) {
-              jsDocTags[tagName] = tag.comment;
+            if (isSupportedFormat(value)) {
+              jsDocTags[tagName] = { value, errorMessage };
             }
             break;
           case "default":
@@ -146,30 +175,45 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.minimum !== undefined) {
     zodProperties.push({
       identifier: "min",
-      expressions: [f.createNumericLiteral(jsDocTags.minimum)],
+      expressions: withErrorMessage(
+        f.createNumericLiteral(jsDocTags.minimum.value),
+        jsDocTags.minimum.errorMessage
+      ),
     });
   }
   if (jsDocTags.maximum !== undefined) {
     zodProperties.push({
       identifier: "max",
-      expressions: [f.createNumericLiteral(jsDocTags.maximum)],
+      expressions: withErrorMessage(
+        f.createNumericLiteral(jsDocTags.maximum.value),
+        jsDocTags.maximum.errorMessage
+      ),
     });
   }
   if (jsDocTags.minLength !== undefined) {
     zodProperties.push({
       identifier: "min",
-      expressions: [f.createNumericLiteral(jsDocTags.minLength)],
+      expressions: withErrorMessage(
+        f.createNumericLiteral(jsDocTags.minLength.value),
+        jsDocTags.minLength.errorMessage
+      ),
     });
   }
   if (jsDocTags.maxLength !== undefined) {
     zodProperties.push({
       identifier: "max",
-      expressions: [f.createNumericLiteral(jsDocTags.maxLength)],
+      expressions: withErrorMessage(
+        f.createNumericLiteral(jsDocTags.maxLength.value),
+        jsDocTags.maxLength.errorMessage
+      ),
     });
   }
   if (jsDocTags.format) {
     zodProperties.push({
-      identifier: jsDocTags.format,
+      identifier: jsDocTags.format.value,
+      expressions: jsDocTags.format.errorMessage
+        ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+        : undefined,
     });
   }
   if (jsDocTags.pattern) {
@@ -213,4 +257,11 @@ export function jsDocTagToZodProperties(
   }
 
   return zodProperties;
+}
+
+function withErrorMessage(expression: ts.Expression, errorMessage?: string) {
+  if (errorMessage) {
+    return [expression, f.createStringLiteral(errorMessage)];
+  }
+  return [expression];
 }

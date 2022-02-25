@@ -669,11 +669,109 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate custom error message for `format` tag", () => {
+    const source = `export interface HeroContact {
+      /**
+       * The email of the hero.
+       *
+       * @format email Should be an email
+       */
+      heroEmail: string;
+
+      /**
+       * The email of the enemy.
+       *
+       * @format email, "Should be an email"
+       */
+      enemyEmail: string;
+      
+      /**
+       * The email of the superman.
+       *
+       * @format email "Should be an email"
+       */
+      supermanEmail: string;
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const heroContactSchema = z.object({
+          /**
+           * The email of the hero.
+           *
+           * @format email Should be an email
+           */
+          heroEmail: z.string().email(\\"Should be an email\\"),
+          /**
+           * The email of the enemy.
+           *
+           * @format email, \\"Should be an email\\"
+           */
+          enemyEmail: z.string().email(\\"Should be an email\\"),
+          /**
+           * The email of the superman.
+           *
+           * @format email \\"Should be an email\\"
+           */
+          supermanEmail: z.string().email(\\"Should be an email\\")
+      });"
+    `);
+  });
+
+  it("should generate custom error message based on jsdoc tags", () => {
+    const source = `export interface HeroContact {
+      /**
+       * The email of the hero.
+       *
+       * @format email should be an email
+       */
+      email: string;
+    
+      /**
+       * The name of the hero.
+       *
+       * @minLength 2, should be more than 2
+       * @maxLength 50 should be less than 50
+       */
+      name: string;
+    
+      /**
+       * The age of the hero
+       * 
+       * @minimum 0 you are too young
+       * @maximum 500, "you are too old"
+       */
+      age: number;
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const heroContactSchema = z.object({
+          /**
+           * The email of the hero.
+           *
+           * @format email should be an email
+           */
+          email: z.string().email(\\"should be an email\\"),
+          /**
+           * The name of the hero.
+           *
+           * @minLength 2, should be more than 2
+           * @maxLength 50 should be less than 50
+           */
+          name: z.string().min(2, \\"should be more than 2\\").max(50, \\"should be less than 50\\"),
+          /**
+           * The age of the hero
+           *
+           * @minimum 0 you are too young
+           * @maximum 500, \\"you are too old\\"
+           */
+          age: z.number().min(0, \\"you are too young\\").max(500, \\"you are too old\\")
+      });"
+    `);
+  });
+
   it("should generate validator on top-level types", () => {
     const source = `/**
     * @minLength 1
     */
-   export type NonEmptyString = string;`;
+    export type NonEmptyString = string;`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "/**
