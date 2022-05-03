@@ -27,7 +27,7 @@ To make sure the generated zod schemas are 100% compatible with your original ty
 Notes:
 
 - Only exported types/interface are tested (so you can have some private types/interface and just exports the composed type)
-- Even if this is not recommanded, you can skip this validation step with `--skipValidation`. (At your own risk!)
+- Even if this is not recommended, you can skip this validation step with `--skipValidation`. (At your own risk!)
 
 ## Validators
 
