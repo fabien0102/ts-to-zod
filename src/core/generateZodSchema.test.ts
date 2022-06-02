@@ -125,6 +125,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should map unknown type correctly", () => {
+    const source = `export type T = unknown;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const tSchema = z.unknown();"`
+    );
+  });
+
   it("should generate an array schema (T[] notation)", () => {
     const source = `export type Villains = string[];`;
     expect(generate(source)).toMatchInlineSnapshot(
