@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.10.0...v1.11.0) (2022-06-02)
+
+
+### Features
+
+* Add support for unknown type ([#83](https://www.github.com/fabien0102/ts-to-zod/issues/83)) ([f3bd8e6](https://www.github.com/fabien0102/ts-to-zod/commit/f3bd8e69ce28e1bd37b742e35ad5049ce6918dec))
+
 ## [1.10.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.9.0...v1.10.0) (2022-02-25)
 
 
