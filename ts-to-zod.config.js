@@ -8,6 +8,7 @@ module.exports = [
     name: "example",
     input: "example/heros.ts",
     output: "example/heros.zod.ts",
+    inferredTypes: "example/heros.types.ts",
   },
   { name: "config", input: "src/config.ts", output: "src/config.zod.ts" },
 ];
