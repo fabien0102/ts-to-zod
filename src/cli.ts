@@ -88,6 +88,9 @@ class TsToZod extends Command {
       default: false,
       description: "Skip the validation step (not recommended)",
     }),
+    inferredTypes: flags.string({
+      description: "Path of z.infer<> types file",
+    }),
     watch: flags.boolean({
       char: "w",
       default: false,
@@ -247,12 +250,16 @@ See more help with --help`,
     if (typeof flags.skipParseJSDoc === "boolean") {
       generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
     }
+    if (typeof flags.inferredTypes === "string") {
+      generateOptions.inferredTypes = flags.inferredTypes;
+    }
 
     const {
       errors,
       transformedSourceText,
       getZodSchemasFile,
       getIntegrationTestFile,
+      getInferredTypes,
       hasCircularDependencies,
     } = generate(generateOptions);
 
@@ -302,6 +309,27 @@ See more help with --help`,
     );
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
+
+    if (generateOptions.inferredTypes) {
+      const zodInferredTypesFile = getInferredTypes(
+        getImportPath(generateOptions.inferredTypes, outputPath)
+      );
+      await outputFile(
+        generateOptions.inferredTypes,
+        prettier.format(
+          hasExtensions(generateOptions.inferredTypes, javascriptExtensions)
+            ? ts.transpileModule(zodInferredTypesFile, {
+                compilerOptions: {
+                  target: ts.ScriptTarget.Latest,
+                  module: ts.ModuleKind.ESNext,
+                  newLine: ts.NewLineKind.LineFeed,
+                },
+              }).outputText
+            : zodInferredTypesFile,
+          { parser: "babel-ts", ...prettierConfig }
+        )
+      );
+    }
 
     if (output && hasExtensions(output, javascriptExtensions)) {
       await outputFile(
