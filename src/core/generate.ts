@@ -273,7 +273,7 @@ ${Array.from(statements.values())
     /**
      * Get the content of the zod inferred types files.
      *
-     * @param typesImportPath Relative path of the source file
+     * @param zodSchemasImportPath Relative path of the zod schemas file
      */
     getInferredTypes,
 
