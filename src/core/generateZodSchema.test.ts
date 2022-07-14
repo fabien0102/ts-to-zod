@@ -298,6 +298,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should fallback on Array for ReadonlyArray<T>", () => {
+    const source = `export type ReadonlySupermen = ReadonlyArray<Superman>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const readonlySupermenSchema = z.array(supermanSchema);"`
+    );
+  });
+
   it("should generate a partial schema", () => {
     const source = `export type SupermanUnderKryptonite = Partial<Hero>;`;
     expect(generate(source)).toMatchInlineSnapshot(
