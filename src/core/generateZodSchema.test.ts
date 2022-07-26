@@ -347,13 +347,15 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should generate a complex schema from an interface", () => {
+  it("should generate a complex schema from an interface (with maybe)", () => {
     const source = `export interface Superman {
      name: "superman" | "clark kent" | "kal-l";
      enemies: Record<string, Enemy>;
      age: number;
      underKryptonite?: boolean;
      needGlasses: true | null;
+     counters?: Maybe<EnemyPower[]>;
+     vulnerableTo: OtherMaybe<EnemyPower>;
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
@@ -361,7 +363,9 @@ describe("generateZodSchema", () => {
           enemies: z.record(enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
-          needGlasses: z.literal(true).nullable()
+          needGlasses: z.literal(true).nullable(),
+          counters: maybe(z.array(enemyPowerSchema)).optional(),
+          vulnerableTo: maybe(enemyPowerSchema)
       });"
     `);
   });
@@ -1044,6 +1048,11 @@ function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
     sourceFile,
     varName: zodConstName,
     skipParseJSDoc,
+    maybeConfig: {
+      typeNames: new Set(["Maybe", "OtherMaybe"]),
+      optional: true,
+      nullable: true,
+    },
   });
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })

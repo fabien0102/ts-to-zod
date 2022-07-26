@@ -155,6 +155,30 @@ export type ZodProperty = {
   expressions?: ts.Expression[];
 };
 
+export function zodPropertyIsOptional() {
+  return {
+    identifier: "optional",
+  };
+}
+
+export function zodPropertyIsNullable() {
+  return {
+    identifier: "nullable",
+  };
+}
+
+export function zodPropertyIsPartial() {
+  return {
+    identifier: "partial",
+  };
+}
+
+export function zodPropertyIsRequired() {
+  return {
+    identifier: "required",
+  };
+}
+
 /**
  * Convert a set of jsDocTags to zod properties
  *
@@ -223,24 +247,16 @@ export function jsDocTagToZodProperties(
     });
   }
   if (isOptional) {
-    zodProperties.push({
-      identifier: "optional",
-    });
+    zodProperties.push(zodPropertyIsOptional());
   }
   if (isNullable) {
-    zodProperties.push({
-      identifier: "nullable",
-    });
+    zodProperties.push(zodPropertyIsNullable());
   }
   if (isPartial) {
-    zodProperties.push({
-      identifier: "partial",
-    });
+    zodProperties.push(zodPropertyIsPartial());
   }
   if (isRequired) {
-    zodProperties.push({
-      identifier: "required",
-    });
+    zodProperties.push(zodPropertyIsRequired());
   }
   if (jsDocTags.default !== undefined) {
     zodProperties.push({

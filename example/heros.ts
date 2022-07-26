@@ -21,12 +21,15 @@ export type SupermanEnemy = Superman["enemies"][-1];
 export type SupermanName = Superman["name"];
 export type SupermanInvinciblePower = Superman["powers"][2];
 
+export type Maybe<T> = T | null | undefined;
+
 export interface Superman {
   name: "superman" | "clark kent" | "kal-l";
   enemies: Record<string, Enemy>;
   age: number;
   underKryptonite?: boolean;
   powers: ["fly", "laser", "invincible"];
+  counters?: Maybe<EnemyPower[]>;
 }
 
 export interface Villain {

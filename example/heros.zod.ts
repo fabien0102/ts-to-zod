@@ -2,6 +2,10 @@
 import { z } from "zod";
 import { EnemyPower, Villain } from "./heros";
 
+export const maybe = <T extends z.ZodTypeAny>(schema: T) => {
+  return schema.nullable().optional();
+};
+
 export const enemyPowerSchema = z.nativeEnum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
@@ -28,6 +32,7 @@ export const supermanSchema = z.object({
     z.literal("laser"),
     z.literal("invincible"),
   ]),
+  counters: maybe(z.array(enemyPowerSchema)).optional(),
 });
 
 export const villainSchema: z.ZodSchema<Villain> = z.lazy(() =>

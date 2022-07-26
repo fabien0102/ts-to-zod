@@ -6,7 +6,7 @@ import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
 import { generate, GenerateProps } from "./core/generate";
-import { TsToZodConfig, Config } from "./config";
+import { TsToZodConfig, Config, MaybeConfig } from "./config";
 import {
   tsToZodConfigSchema,
   getSchemaNameSchema,
@@ -75,6 +75,19 @@ class TsToZod extends Command {
     keepComments: flags.boolean({
       char: "k",
       description: "Keep parameters comments",
+    }),
+    maybeOptional: flags.boolean({
+      description:
+        "treat Maybe<T> as optional (can be undefined). Can be combined with maybeNullable",
+    }),
+    maybeNullable: flags.boolean({
+      description:
+        "treat Maybe<T> as optional (can be null). Can be combined with maybeOptional",
+    }),
+    maybeTypeName: flags.string({
+      multiple: true,
+      description:
+        "determines the name of the types to treat as 'Maybe'. Can be multiple.",
     }),
     init: flags.boolean({
       char: "i",
@@ -234,19 +247,11 @@ See more help with --help`,
 
     const sourceText = await readFile(inputPath, "utf-8");
 
-    const generateOptions: GenerateProps = {
+    const generateOptions = this.extractGenerateOptions(
       sourceText,
-      ...fileConfig,
-    };
-    if (typeof flags.maxRun === "number") {
-      generateOptions.maxRun = flags.maxRun;
-    }
-    if (typeof flags.keepComments === "boolean") {
-      generateOptions.keepComments = flags.keepComments;
-    }
-    if (typeof flags.skipParseJSDoc === "boolean") {
-      generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
-    }
+      fileConfig,
+      flags
+    );
 
     const {
       errors,
@@ -327,6 +332,54 @@ See more help with --help`,
       );
     }
     return { success: true };
+  }
+
+  private extractGenerateOptions(
+    sourceText: string,
+    givenFileConfig: Config | undefined,
+    flags: OutputFlags<typeof TsToZod.flags>
+  ) {
+    const { maybeOptional, maybeNullable, maybeTypeNames, ...fileConfig } =
+      givenFileConfig || {};
+
+    const maybeConfig: MaybeConfig = {
+      optional: maybeOptional ?? true,
+      nullable: maybeNullable ?? true,
+      typeNames: new Set(maybeTypeNames ?? []),
+    };
+    if (typeof flags.maybeTypeName === "string" && flags.maybeTypeName) {
+      maybeConfig.typeNames = new Set([flags.maybeTypeName]);
+    }
+    if (
+      flags.maybeTypeName &&
+      Array.isArray(flags.maybeTypeName) &&
+      flags.maybeTypeName.length
+    ) {
+      maybeConfig.typeNames = new Set(flags.maybeTypeName);
+    }
+    if (typeof flags.maybeOptional === "boolean") {
+      maybeConfig.optional = flags.maybeOptional;
+    }
+    if (typeof flags.maybeNullable === "boolean") {
+      maybeConfig.nullable = flags.maybeNullable;
+    }
+
+    const generateOptions: GenerateProps = {
+      sourceText,
+      maybeConfig,
+      ...fileConfig,
+    };
+
+    if (typeof flags.maxRun === "number") {
+      generateOptions.maxRun = flags.maxRun;
+    }
+    if (typeof flags.keepComments === "boolean") {
+      generateOptions.keepComments = flags.keepComments;
+    }
+    if (typeof flags.skipParseJSDoc === "boolean") {
+      generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
+    }
+    return generateOptions;
   }
 
   /**
