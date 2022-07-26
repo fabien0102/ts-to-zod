@@ -82,7 +82,7 @@ class TsToZod extends Command {
     }),
     maybeNullable: flags.boolean({
       description:
-        "treat Maybe<T> as optional (can be null). Can be combined with maybeOptional",
+        "treat Maybe<T> as nullable (can be null). Can be combined with maybeOptional",
     }),
     maybeTypeName: flags.string({
       multiple: true,
