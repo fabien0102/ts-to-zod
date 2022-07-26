@@ -1,14 +1,14 @@
 import { camel, lower } from "case";
+import uniq from "lodash/uniq";
 import * as ts from "typescript";
+import { findNode } from "../utils/findNode";
+import { isNotNull } from "../utils/isNotNull";
 import {
   getJSDocTags,
   JSDocTags,
   jsDocTagToZodProperties,
   ZodProperty,
 } from "./jsDocTags";
-import uniq from "lodash/uniq";
-import { findNode } from "../utils/findNode";
-import { isNotNull } from "../utils/isNotNull";
 
 const { factory: f } = ts;
 
@@ -306,6 +306,27 @@ function buildZodPrimitive({
         getDependencyName,
         skipParseJSDoc,
       });
+    }
+
+    // Deal with `ReadonlyArray<>` syntax
+    if (identifierName === "ReadonlyArray" && typeNode.typeArguments) {
+      return buildZodSchema(
+        z,
+        "array",
+        [
+          buildZodPrimitive({
+            z,
+            typeNode: typeNode.typeArguments[0],
+            isOptional: false,
+            jsDocTags: {},
+            sourceFile,
+            dependencies,
+            getDependencyName,
+            skipParseJSDoc,
+          }),
+        ],
+        zodProperties
+      );
     }
 
     // Deal with `Record<>` syntax
