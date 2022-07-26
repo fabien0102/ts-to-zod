@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.12.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.11.0...v1.12.0) (2022-07-26)
+
+
+### Features
+
+* Adds support and test for ReadonlyArray ([#88](https://www.github.com/fabien0102/ts-to-zod/issues/88)) ([513ebf9](https://www.github.com/fabien0102/ts-to-zod/commit/513ebf9134375960c721a6acf1ad5a78d1abf92a))
+
 ## [1.11.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.10.0...v1.11.0) (2022-06-02)
 
 
