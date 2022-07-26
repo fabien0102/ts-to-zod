@@ -40,7 +40,7 @@ List of supported keywords:
 | `@minimum {number}`                | `@minimum 42`     | `z.number().min(42)`         |
 | `@maximum {number}`                | `@maximum 42`     | `z.number().max(42)`         |
 | `@minLength {number}`              | `@minLength 42`   | `z.string().min(42)`         |
-| `@maxLength {number}`              | `@maxLength 42`   | `z.string().min(42)`         |
+| `@maxLength {number}`              | `@maxLength 42`   | `z.string().max(42)`         |
 | `@format {"email"\|"uuid"\|"url"}` | `@format email`   | `z.string().email()`         |
 | `@pattern {regex}`                 | `@pattern ^hello` | `z.string().regex(/^hello/)` |
 
