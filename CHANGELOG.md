@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.13.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.12.0...v1.13.0) (2022-08-26)
+
+
+### Features
+
+* add support for  `z.set` ([#94](https://www.github.com/fabien0102/ts-to-zod/issues/94)) ([762c69c](https://www.github.com/fabien0102/ts-to-zod/commit/762c69c1f8ed89d435251ee415dc7e2249a951f9))
+
+
+### Bug Fixes
+
+* Fix nullable ([#92](https://www.github.com/fabien0102/ts-to-zod/issues/92)) ([f2321a3](https://www.github.com/fabien0102/ts-to-zod/commit/f2321a355910418ddfb12cb93fcd4b4590469e68))
+
 ## [1.12.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.11.0...v1.12.0) (2022-07-26)
 
 
