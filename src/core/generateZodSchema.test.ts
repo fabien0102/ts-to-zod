@@ -831,6 +831,56 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with array of null or null", () => {
+    const source = `export type Example = {
+        field?: Array<string | null> | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.array(z.string().nullable()).optional().nullable()
+      });"
+    `);
+  });
+
+  it("should deal with partial or null", () => {
+    const source = `export type Example = {
+        field: Partial<{foo: string}> | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.object({
+              foo: z.string()
+          }).nullable().partial()
+      });"
+    `);
+  });
+
+  it("should deal with ReadonlyArray or null", () => {
+    const source = `export type Example = {
+        field: ReadonlyArray<"foo" | "bar"> | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.array(z.union([z.literal(\\"foo\\"), z.literal(\\"bar\\")])).nullable()
+      });"
+    `);
+  });
+
+  it("should deal with Record or null", () => {
+    const source = `export type Example = {
+        field: Record<string, string> | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.record(z.string()).nullable()
+      });"
+    `);
+  });
+
   it("should allow nullable on union properties", () => {
     const source = `export interface A {
       a: number | string | null;
