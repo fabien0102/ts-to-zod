@@ -831,6 +831,18 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with array of null or null", () => {
+    const source = `export type Example = {
+        field?: Array<string | null> | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.array(z.string().nullable()).optional().nullable()
+      });"
+    `);
+  });
+
   it("should allow nullable on union properties", () => {
     const source = `export interface A {
       a: number | string | null;
