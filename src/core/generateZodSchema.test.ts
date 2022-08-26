@@ -221,6 +221,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a set schema", () => {
+    const source = `export type EnemiesPowers = Set<string>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const enemiesPowersSchema = z.set(z.string());"`
+    );
+  });
+
   it("should generate a function schema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(

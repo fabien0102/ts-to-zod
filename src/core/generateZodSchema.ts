@@ -370,6 +370,28 @@ function buildZodPrimitive({
       return buildZodSchema(z, "date", [], zodProperties);
     }
 
+    // Deal with `Set<>` syntax
+    if (identifierName === "Set" && typeNode.typeArguments) {
+      return buildZodSchema(
+        z,
+        "set",
+        typeNode.typeArguments.map((i) =>
+          buildZodPrimitive({
+            z,
+            typeNode: i,
+            isOptional: false,
+            jsDocTags,
+            sourceFile,
+            dependencies,
+            getDependencyName,
+            skipParseJSDoc,
+            maybeConfig,
+          })
+        ),
+        zodProperties
+      );
+    }
+
     // Deal with `Promise<>` syntax
     if (identifierName === "Promise" && typeNode.typeArguments) {
       return buildZodSchema(
