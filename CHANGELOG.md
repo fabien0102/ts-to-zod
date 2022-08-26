@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.12.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.12.0...v1.12.1) (2022-08-26)
+
+
+### Bug Fixes
+
+* Fix nullable ([#92](https://www.github.com/fabien0102/ts-to-zod/issues/92)) ([f2321a3](https://www.github.com/fabien0102/ts-to-zod/commit/f2321a355910418ddfb12cb93fcd4b4590469e68))
+
 ## [1.12.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.11.0...v1.12.0) (2022-07-26)
 
 
