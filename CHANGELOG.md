@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.13.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.0...v1.13.1) (2022-08-26)
+
+
+### Bug Fixes
+
+* Fix bad cherry-pick ([ac5af38](https://www.github.com/fabien0102/ts-to-zod/commit/ac5af38a2737a52b707d287077397c9ad8314b6b))
+
 ## [1.13.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.12.0...v1.13.0) (2022-08-26)
 
 
