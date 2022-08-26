@@ -385,7 +385,6 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
-            maybeConfig,
           })
         ),
         zodProperties
