@@ -4,6 +4,7 @@ import ts from "typescript";
 import { JSDocTagFilter, NameFilter } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
+import { getExtractedTypeNames, TypeNode } from "../utils/traverseTypes";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
@@ -67,10 +68,23 @@ export function generate({
   const sourceFile = resolveModules(sourceText);
 
   // Extract the nodes (interface declarations & type aliases)
-  const nodes: Array<
-    ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration
-  > = [];
+  const nodes: Array<TypeNode> = [];
 
+  // declare a map to store the interface name and its corresponding zod schema
+  const typeNameMapping = new Map<string, TypeNode>();
+
+  const typesNeedToBeExtracted = new Set<string>();
+
+  const typeNameMapBuilder = (node: ts.Node) => {
+    if (
+      ts.isInterfaceDeclaration(node) ||
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isEnumDeclaration(node)
+    ) {
+      typeNameMapping.set(node.name.text, node as TypeNode);
+    }
+  };
+  ts.forEachChild(sourceFile, typeNameMapBuilder);
   const visitor = (node: ts.Node) => {
     if (
       ts.isInterfaceDeclaration(node) ||
@@ -81,10 +95,25 @@ export function generate({
       const tags = getSimplifiedJsDocTags(jsDoc);
       if (!jsDocTagFilter(tags)) return;
       if (!nameFilter(node.name.text)) return;
-      nodes.push(node);
+
+      const typeNames = getExtractedTypeNames(
+        node as TypeNode,
+        sourceFile,
+        typeNameMapping
+      );
+      typeNames.forEach((typeName) => {
+        typesNeedToBeExtracted.add(typeName);
+      });
     }
   };
   ts.forEachChild(sourceFile, visitor);
+
+  typesNeedToBeExtracted.forEach((typeName) => {
+    const node = typeNameMapping.get(typeName);
+    if (node) {
+      nodes.push(node);
+    }
+  });
 
   // Generate zod schemas
   const zodSchemas = nodes.map((node) => {
