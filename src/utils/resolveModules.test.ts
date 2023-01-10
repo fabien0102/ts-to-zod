@@ -63,12 +63,20 @@ describe("resolveModules", () => {
         hasPower: boolean;
         weakness: Weakness;
       }
+
+      export interface Clark {
+        hasGlasses: boolean
+      }
       
       export type SupermanBis = {
         fullName: Name;
         name: { first: Name; last: Name };
         hasPower: boolean;
         weakness: Weakness;
+      }
+
+      export interface ExtendedSuperman extends Superman, Clark {
+        hasEvenMorePower: boolean;
       }
     }`;
 
@@ -85,6 +93,9 @@ describe("resolveModules", () => {
           hasPower: boolean;
           weakness: Weakness;
       }
+      export interface MetropolisClark {
+          hasGlasses: boolean;
+      }
       export type MetropolisSupermanBis = {
           fullName: MetropolisName;
           name: {
@@ -94,6 +105,9 @@ describe("resolveModules", () => {
           hasPower: boolean;
           weakness: Weakness;
       };
+      export interface MetropolisExtendedSuperman extends MetropolisSuperman, MetropolisClark {
+          hasEvenMorePower: boolean;
+      }
       "
     `);
   });
