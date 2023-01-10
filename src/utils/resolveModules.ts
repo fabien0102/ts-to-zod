@@ -138,8 +138,30 @@ const moduleToPrefix = (
         node.modifiers,
         f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
         node.typeParameters,
-        node.heritageClauses,
+        ts.visitNodes(
+          node.heritageClauses,
+          prefixInterfacesAndTypes(moduleName)
+        ),
         ts.visitNodes(node.members, prefixInterfacesAndTypes(moduleName))
+      );
+    }
+
+    if (ts.isHeritageClause(node)) {
+      return f.updateHeritageClause(
+        node,
+        ts.visitNodes(node.types, prefixInterfacesAndTypes(moduleName))
+      );
+    }
+
+    if (
+      ts.isExpressionWithTypeArguments(node) &&
+      ts.isIdentifier(node.expression) &&
+      (declarationNames.get(moduleName) || []).includes(node.expression.text)
+    ) {
+      return f.updateExpressionWithTypeArguments(
+        node,
+        f.createIdentifier(pascal(moduleName) + pascal(node.expression.text)),
+        node.typeArguments
       );
     }
 
