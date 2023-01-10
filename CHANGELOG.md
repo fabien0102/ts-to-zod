@@ -1,5 +1,12 @@
 # Changelog
 
+### [1.13.2](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.1...v1.13.2) (2023-01-10)
+
+
+### Bug Fixes
+
+* extends interface inside namespace ([#106](https://www.github.com/fabien0102/ts-to-zod/issues/106)) ([958d5a5](https://www.github.com/fabien0102/ts-to-zod/commit/958d5a59e8df9b6f0183f64f794eaf26eb5350a8))
+
 ### [1.13.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.0...v1.13.1) (2022-08-26)
 
 
