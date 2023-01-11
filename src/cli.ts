@@ -67,11 +67,6 @@ class TsToZod extends Command {
   static flags = {
     version: flags.version({ char: "v" }),
     help: flags.help({ char: "h" }),
-    maxRun: flags.integer({
-      hidden: true,
-      default: 10,
-      description: "max iteration number to resolve the declaration order",
-    }),
     keepComments: flags.boolean({
       char: "k",
       description: "Keep parameters comments",
@@ -238,9 +233,6 @@ See more help with --help`,
       sourceText,
       ...fileConfig,
     };
-    if (typeof flags.maxRun === "number") {
-      generateOptions.maxRun = flags.maxRun;
-    }
     if (typeof flags.keepComments === "boolean") {
       generateOptions.keepComments = flags.keepComments;
     }
