@@ -13,6 +13,7 @@ import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
+import { standardBuiltInObjectVarNames } from "./const";
 
 export interface GenerateProps {
   /**
@@ -131,6 +132,43 @@ export function generate({
   });
   const zodSchemaNames = zodSchemas.map(({ varName }) => varName);
 
+  // Zod schemas with direct or indirect dependencies that are not in `zodSchemas`, won't be generated
+  const zodSchemasWithMissingDependencies = new Set<string>();
+  const standardBuiltInObjects = new Set<string>();
+  zodSchemas.forEach(
+    ({ varName, dependencies, statement, typeName, requiresImport }) => {
+      dependencies
+        .filter((dep) => !zodSchemaNames.includes(dep))
+        .forEach((dep) => {
+          if (standardBuiltInObjectVarNames.includes(dep)) {
+            standardBuiltInObjects.add(dep);
+          } else {
+            zodSchemasWithMissingDependencies.add(dep);
+            zodSchemasWithMissingDependencies.add(varName);
+          }
+        });
+    }
+  );
+  zodSchemaNames.push(...standardBuiltInObjects);
+
+  zodSchemas.push(
+    ...Array.from(standardBuiltInObjects).map((obj) => {
+      const typeName = obj[0].toUpperCase() + obj.substring(1, obj.length - 6);
+      return {
+        typeName,
+        varName: obj,
+        ...generateZodSchemaVariableStatement({
+          typeName,
+          zodImportValue: "z",
+          sourceFile,
+          varName: obj,
+          getDependencyName: getSchemaName,
+          skipParseJSDoc,
+        }),
+      };
+    })
+  );
+
   // Resolves statements order
   // A schema can't be declared if all the referenced schemas used inside this one are not previously declared.
   const statements = new Map<
@@ -138,9 +176,6 @@ export function generate({
     { typeName: string; value: ts.VariableStatement }
   >();
   const typeImports: Set<string> = new Set();
-
-  // Zod schemas with direct or indirect dependencies that are not in `zodSchemas`, won't be generated
-  const zodSchemasWithMissingDependencies = new Set<string>();
 
   let done = false;
   // Loop until no more schemas can be generated and no more schemas with direct or indirect missing dependencies are found

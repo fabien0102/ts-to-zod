@@ -9,6 +9,7 @@ import {
   jsDocTagToZodProperties,
   ZodProperty,
 } from "./jsDocTags";
+import { standardBuiltInObjects } from "./const";
 
 const { factory: f } = ts;
 
@@ -19,9 +20,14 @@ export interface GenerateZodSchemaProps {
   varName: string;
 
   /**
+   * Name of the standard built-in object
+   */
+  typeName?: string;
+
+  /**
    * Interface or type node
    */
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration;
+  node?: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration;
 
   /**
    * Zod import value.
@@ -59,6 +65,7 @@ export interface GenerateZodSchemaProps {
  */
 export function generateZodSchemaVariableStatement({
   node,
+  typeName,
   sourceFile,
   varName,
   zodImportValue = "z",
@@ -73,7 +80,14 @@ export function generateZodSchemaVariableStatement({
   let dependencies: string[] = [];
   let requiresImport = false;
 
-  if (ts.isInterfaceDeclaration(node)) {
+  if (!node) {
+    if (standardBuiltInObjects.includes(typeName!)) {
+      schema = buildZodSchema(zodImportValue, "instanceof", [
+        f.createIdentifier(typeName!),
+      ]);
+      requiresImport = false;
+    }
+  } else if (ts.isInterfaceDeclaration(node)) {
     let schemaExtensionClauses: string[] | undefined;
     if (node.typeParameters) {
       throw new Error("Interface with generics are not supported!");
@@ -108,9 +122,7 @@ export function generateZodSchemaVariableStatement({
       schemaExtensionClauses,
       skipParseJSDoc,
     });
-  }
-
-  if (ts.isTypeAliasDeclaration(node)) {
+  } else if (ts.isTypeAliasDeclaration(node)) {
     if (node.typeParameters) {
       throw new Error("Type with generics are not supported!");
     }
@@ -126,9 +138,7 @@ export function generateZodSchemaVariableStatement({
       getDependencyName,
       skipParseJSDoc,
     });
-  }
-
-  if (ts.isEnumDeclaration(node)) {
+  } else if (ts.isEnumDeclaration(node)) {
     schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
     requiresImport = true;
   }
@@ -136,7 +146,7 @@ export function generateZodSchemaVariableStatement({
   return {
     dependencies: uniq(dependencies),
     statement: f.createVariableStatement(
-      node.modifiers,
+      node?.modifiers,
       f.createVariableDeclarationList(
         [
           f.createVariableDeclaration(
