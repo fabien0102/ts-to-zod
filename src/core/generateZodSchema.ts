@@ -1,6 +1,7 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import * as ts from "typescript";
+import { DefaultMaybeConfig, MaybeConfig } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import {
@@ -8,6 +9,7 @@ import {
   JSDocTags,
   jsDocTagToZodProperties,
   ZodProperty,
+  zodPropertyIsOptional,
 } from "./jsDocTags";
 
 const { factory: f } = ts;
@@ -48,6 +50,28 @@ export interface GenerateZodSchemaProps {
    * @default false
    */
   skipParseJSDoc?: boolean;
+
+  /**
+   * If present, it will be used to support the `Maybe<T>` special case.
+   *
+   * e.g.
+   * ```ts
+   * // with maybe config: { typeNames: ["Maybe"], optional: true, nullable: true }
+   *
+   * export type X = { a: string; b: Maybe<string> };
+   *
+   * // output:
+   * const maybe = <T extends z.ZodTypeAny>(schema: T) => {
+   *   return schema.optional().nullable();
+   * };
+   *
+   * export const xSchema = zod.object({
+   *   a: zod.string(),
+   *   b: maybe(zod.string())
+   * })
+   * ```
+   */
+  maybeConfig?: MaybeConfig;
 }
 
 /**
@@ -61,6 +85,7 @@ export function generateZodSchemaVariableStatement({
   node,
   sourceFile,
   varName,
+  maybeConfig = DefaultMaybeConfig,
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
   skipParseJSDoc = false,
@@ -107,6 +132,7 @@ export function generateZodSchemaVariableStatement({
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
+      maybeConfig,
     });
   }
 
@@ -125,6 +151,7 @@ export function generateZodSchemaVariableStatement({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      maybeConfig,
     });
   }
 
@@ -160,6 +187,7 @@ function buildZodProperties({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  maybeConfig,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
   zodImportValue: string;
@@ -167,6 +195,7 @@ function buildZodProperties({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  maybeConfig: MaybeConfig;
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
@@ -195,6 +224,7 @@ function buildZodProperties({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       })
     );
   });
@@ -213,6 +243,7 @@ function buildZodPrimitive({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  maybeConfig,
 }: {
   z: string;
   typeNode: ts.TypeNode;
@@ -225,6 +256,7 @@ function buildZodPrimitive({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  maybeConfig: MaybeConfig;
 }): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
@@ -244,11 +276,31 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      maybeConfig,
     });
   }
 
   if (ts.isTypeReferenceNode(typeNode) && ts.isIdentifier(typeNode.typeName)) {
     const identifierName = typeNode.typeName.text;
+
+    // Deal with `Maybe<>`
+    if (maybeConfig.typeNames.has(identifierName) && typeNode.typeArguments) {
+      const innerType = typeNode.typeArguments[0];
+      return maybeCall(
+        buildZodPrimitive({
+          z,
+          typeNode: innerType,
+          isOptional: false,
+          jsDocTags: {},
+          sourceFile,
+          dependencies,
+          getDependencyName,
+          skipParseJSDoc,
+          maybeConfig,
+        }),
+        { isOptional }
+      );
+    }
 
     // Deal with `Array<>` syntax
     if (identifierName === "Array" && typeNode.typeArguments) {
@@ -262,6 +314,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       });
     }
 
@@ -278,6 +331,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       });
     }
 
@@ -294,6 +348,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       });
     }
 
@@ -309,6 +364,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       });
     }
 
@@ -327,6 +383,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            maybeConfig,
           }),
         ],
         zodProperties
@@ -359,6 +416,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            maybeConfig,
           }),
         ],
         zodProperties
@@ -406,6 +464,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            maybeConfig,
           })
         ),
         zodProperties
@@ -462,6 +521,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            maybeConfig,
           }),
           f.createIdentifier(lower(identifierName))
         ),
@@ -502,6 +562,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       });
     }
 
@@ -516,6 +577,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       })
     );
 
@@ -545,6 +607,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       })
     );
     return buildZodSchema(
@@ -613,6 +676,7 @@ function buildZodPrimitive({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          maybeConfig,
         }),
       ],
       zodProperties
@@ -628,6 +692,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       }),
       zodProperties
     );
@@ -644,6 +709,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      maybeConfig,
     });
 
     return rest.reduce(
@@ -664,6 +730,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
+              maybeConfig,
             }),
           ]
         ),
@@ -699,6 +766,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: Boolean(p.questionToken),
               skipParseJSDoc,
+              maybeConfig,
             })
           ),
         },
@@ -714,6 +782,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: false,
               skipParseJSDoc,
+              maybeConfig,
             }),
           ],
         },
@@ -728,6 +797,7 @@ function buildZodPrimitive({
       getDependencyName,
       sourceFile,
       dependencies,
+      maybeConfig,
     });
   }
 
@@ -782,6 +852,22 @@ function buildZodSchema(
     undefined,
     args
   );
+  return withZodProperties(zodCall, properties);
+}
+
+function maybeCall(
+  arg: ts.Expression,
+  opts: { isOptional: boolean }
+): ts.CallExpression {
+  const zodCall = f.createCallExpression(
+    f.createIdentifier("maybe"),
+    undefined,
+    [arg]
+  );
+  const properties = [] as ZodProperty[];
+  if (opts.isOptional) {
+    properties.push(zodPropertyIsOptional());
+  }
   return withZodProperties(zodCall, properties);
 }
 
@@ -849,6 +935,7 @@ function buildZodObject({
   getDependencyName,
   schemaExtensionClauses,
   skipParseJSDoc,
+  maybeConfig,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
@@ -857,6 +944,7 @@ function buildZodObject({
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   schemaExtensionClauses?: string[];
   skipParseJSDoc: boolean;
+  maybeConfig: MaybeConfig;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -890,6 +978,7 @@ function buildZodObject({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      maybeConfig,
     });
 
     if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
@@ -930,6 +1019,7 @@ function buildZodObject({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        maybeConfig,
       }),
     ]);
 
@@ -961,11 +1051,13 @@ function buildSchemaReference(
     dependencies,
     sourceFile,
     getDependencyName,
+    maybeConfig,
   }: {
     node: ts.IndexedAccessTypeNode;
     dependencies: string[];
     sourceFile: ts.SourceFile;
     getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
+    maybeConfig: MaybeConfig;
   },
   path = ""
 ): ts.PropertyAccessExpression | ts.Identifier {
@@ -1000,6 +1092,22 @@ function buildSchemaReference(
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
       if (member && ts.isPropertySignature(member) && member.type) {
+        // Maybe<type>
+        if (
+          ts.isTypeReferenceNode(member.type) &&
+          maybeConfig.typeNames.has(member.type.typeName.getText(sourceFile))
+        ) {
+          return buildSchemaReference(
+            {
+              node: node.objectType,
+              dependencies,
+              sourceFile,
+              getDependencyName,
+              maybeConfig,
+            },
+            `element.${path}`
+          );
+        }
         // Array<type>
         if (
           ts.isTypeReferenceNode(member.type) &&
@@ -1011,6 +1119,7 @@ function buildSchemaReference(
               dependencies,
               sourceFile,
               getDependencyName,
+              maybeConfig,
             },
             `element.${path}`
           );
@@ -1023,6 +1132,7 @@ function buildSchemaReference(
               dependencies,
               sourceFile,
               getDependencyName,
+              maybeConfig,
             },
             `element.${path}`
           );
@@ -1038,6 +1148,7 @@ function buildSchemaReference(
               dependencies,
               sourceFile,
               getDependencyName,
+              maybeConfig,
             },
             `valueSchema.${path}`
           );
@@ -1056,14 +1167,26 @@ function buildSchemaReference(
     ts.isIndexedAccessTypeNode(node.objectType)
   ) {
     return buildSchemaReference(
-      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      {
+        node: node.objectType,
+        dependencies,
+        sourceFile,
+        getDependencyName,
+        maybeConfig,
+      },
       `items[${indexTypeName}].${path}`
     );
   }
 
   if (ts.isIndexedAccessTypeNode(node.objectType)) {
     return buildSchemaReference(
-      { node: node.objectType, dependencies, sourceFile, getDependencyName },
+      {
+        node: node.objectType,
+        dependencies,
+        sourceFile,
+        getDependencyName,
+        maybeConfig,
+      },
       `shape.${indexTypeName}.${path}`
     );
   }
