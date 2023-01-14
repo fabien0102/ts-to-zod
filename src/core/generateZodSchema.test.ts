@@ -384,6 +384,13 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate an variable assignment if an extending type has no new fields", () => {
+    const source = "export interface Superman extends Clark {}";
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanSchema = clarkSchema;"`
+    );
+  });
+
   it("should generate a merged schema when two extends are used", () => {
     const source = `export interface Superman extends Clark extends KalL {
         withPower: boolean;
