@@ -17,7 +17,7 @@ describe("generate", () => {
          **/
         email: string;
       }
-      
+
       const fly = () => console.log("I can fly!");
       `;
 
@@ -79,7 +79,7 @@ describe("generate", () => {
 
   describe("with enums", () => {
     const sourceText = `
-      export enum Superhero { 
+      export enum Superhero {
         Superman = "superman"
         ClarkKent = "clark-kent"
       };
@@ -145,7 +145,7 @@ describe("generate", () => {
         powers: string[];
         friends: Villain[];
       }
-      
+
       export interface EvilPlan {
         owner: Villain;
         description: string;
@@ -262,7 +262,7 @@ describe("generate", () => {
 
       /**
        * Only this interface should be generated
-       * 
+       *
        * @zod
        */
       export interface Superman {
@@ -350,10 +350,10 @@ describe("generate", () => {
     const sourceText = `
       export namespace Metropolis {
         export type Name = "superman" | "clark kent" | "kal-l";
-  
+
         // Note that the Superman is declared after
         export type BadassSuperman = Omit<Superman, "underKryptonite">;
-  
+
         export interface Superman {
           name: Name;
           age: number;
@@ -363,7 +363,7 @@ describe("generate", () => {
            **/
           email: string;
         }
-        
+
         const fly = () => console.log("I can fly!");
       }
       `;
