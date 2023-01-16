@@ -4,7 +4,7 @@ export type TypeNode = (
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
   | ts.EnumDeclaration
-) & { visited: boolean | undefined };
+) & { visited?: boolean };
 
 export function getExtractedTypeNames(
   node: TypeNode,
