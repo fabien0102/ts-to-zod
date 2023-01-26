@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.1...v2.0.0) (2023-01-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* Inheritance and reference type search for name filtering (#104)
+
+### Features
+
+* Inheritance and reference type search for name filtering ([#104](https://www.github.com/fabien0102/ts-to-zod/issues/104)) ([038b9f6](https://www.github.com/fabien0102/ts-to-zod/commit/038b9f6c14df79d9fc9756f6c2c21d76e8c46cfe))
+
+
+### Bug Fixes
+
+* extends interface inside namespace ([#106](https://www.github.com/fabien0102/ts-to-zod/issues/106)) ([958d5a5](https://www.github.com/fabien0102/ts-to-zod/commit/958d5a59e8df9b6f0183f64f794eaf26eb5350a8))
+
 ### [1.13.1](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.0...v1.13.1) (2022-08-26)
 
 
