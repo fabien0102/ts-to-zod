@@ -6,6 +6,14 @@ export type TypeNode = (
   | ts.EnumDeclaration
 ) & { visited?: boolean };
 
+export function isTypeNode(node: ts.Node): node is TypeNode {
+  return (
+    ts.isInterfaceDeclaration(node) ||
+    ts.isTypeAliasDeclaration(node) ||
+    ts.isEnumDeclaration(node)
+  );
+}
+
 export function getExtractedTypeNames(
   node: TypeNode,
   sourceFile: ts.SourceFile,

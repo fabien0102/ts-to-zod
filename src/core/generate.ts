@@ -4,7 +4,11 @@ import ts from "typescript";
 import { JSDocTagFilter, NameFilter } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
-import { getExtractedTypeNames, TypeNode } from "../utils/traverseTypes";
+import {
+  getExtractedTypeNames,
+  isTypeNode,
+  TypeNode,
+} from "../utils/traverseTypes";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
@@ -76,12 +80,8 @@ export function generate({
   const typesNeedToBeExtracted = new Set<string>();
 
   const typeNameMapBuilder = (node: ts.Node) => {
-    if (
-      ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node) ||
-      ts.isEnumDeclaration(node)
-    ) {
-      typeNameMapping.set(node.name.text, node as TypeNode);
+    if (isTypeNode(node)) {
+      typeNameMapping.set(node.name.text, node);
     }
   };
   ts.forEachChild(sourceFile, typeNameMapBuilder);
@@ -97,7 +97,7 @@ export function generate({
       if (!nameFilter(node.name.text)) return;
 
       const typeNames = getExtractedTypeNames(
-        node as TypeNode,
+        node,
         sourceFile,
         typeNameMapping
       );
