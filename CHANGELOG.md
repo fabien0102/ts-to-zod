@@ -1,5 +1,12 @@
 # Changelog
 
+### [2.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v2.0.0...v2.0.1) (2023-01-30)
+
+
+### Bug Fixes
+
+* empty interfaces' extends statements are ignored [#108](https://www.github.com/fabien0102/ts-to-zod/issues/108) ([#109](https://www.github.com/fabien0102/ts-to-zod/issues/109)) ([4ad2d09](https://www.github.com/fabien0102/ts-to-zod/commit/4ad2d0962fd1a5efd1b14e4b89d2b642c227649a))
+
 ## [2.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v1.13.1...v2.0.0) (2023-01-26)
 
 
