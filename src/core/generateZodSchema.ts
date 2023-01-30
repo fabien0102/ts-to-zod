@@ -805,11 +805,13 @@ function buildZodExtendedSchema(
     );
   }
 
-  zodCall = f.createCallExpression(
-    f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-    undefined,
-    args
-  );
+  if (args?.length) {
+    zodCall = f.createCallExpression(
+      f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+      undefined,
+      args
+    );
+  }
 
   return withZodProperties(zodCall, properties);
 }
@@ -882,35 +884,41 @@ function buildZodObject({
 
   let objectSchema: ts.CallExpression | undefined;
 
-  if (properties.length > 0) {
-    const parsedProperties = buildZodProperties({
-      members: properties,
-      zodImportValue: z,
-      sourceFile,
-      dependencies,
-      getDependencyName,
-      skipParseJSDoc,
-    });
+  const parsedProperties =
+    properties.length > 0
+      ? buildZodProperties({
+          members: properties,
+          zodImportValue: z,
+          sourceFile,
+          dependencies,
+          getDependencyName,
+          skipParseJSDoc,
+        })
+      : undefined;
 
-    if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
-      objectSchema = buildZodExtendedSchema(schemaExtensionClauses, [
-        f.createObjectLiteralExpression(
-          Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
-            return f.createPropertyAssignment(key, tsCall);
-          }),
-          true
-        ),
-      ]);
-    } else {
-      objectSchema = buildZodSchema(z, "object", [
-        f.createObjectLiteralExpression(
-          Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
-            return f.createPropertyAssignment(key, tsCall);
-          }),
-          true
-        ),
-      ]);
-    }
+  if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
+    objectSchema = buildZodExtendedSchema(
+      schemaExtensionClauses,
+      properties.length > 0
+        ? [
+            f.createObjectLiteralExpression(
+              Array.from(parsedProperties!.entries()).map(([key, tsCall]) => {
+                return f.createPropertyAssignment(key, tsCall);
+              }),
+              true
+            ),
+          ]
+        : undefined
+    );
+  } else if (properties.length > 0) {
+    objectSchema = buildZodSchema(z, "object", [
+      f.createObjectLiteralExpression(
+        Array.from(parsedProperties!.entries()).map(([key, tsCall]) => {
+          return f.createPropertyAssignment(key, tsCall);
+        }),
+        true
+      ),
+    ]);
   }
 
   if (indexSignature) {

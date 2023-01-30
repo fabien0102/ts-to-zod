@@ -32,7 +32,7 @@ describe("resolveModules", () => {
 
   it("should prefix enum", () => {
     const sourceText = `export namespace Metropolis {
-      export enum Superhero { 
+      export enum Superhero {
         Superman = "superman",
         ClarkKent = "clark_kent",
       };
@@ -67,7 +67,7 @@ describe("resolveModules", () => {
       export interface Clark {
         hasGlasses: boolean
       }
-      
+
       export type SupermanBis = {
         fullName: Name;
         name: { first: Name; last: Name };

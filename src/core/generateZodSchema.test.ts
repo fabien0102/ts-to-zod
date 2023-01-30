@@ -109,7 +109,7 @@ describe("generateZodSchema", () => {
   });
 
   it("should generate a nativeEnum schema", () => {
-    const source = `export enum Superhero = { 
+    const source = `export enum Superhero = {
       Superman = "superman",
       ClarkKent = "clark_kent",
     };`;
@@ -384,6 +384,13 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate an variable assignment if an extending type has no new fields", () => {
+    const source = "export interface Superman extends Clark {}";
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanSchema = clarkSchema;"`
+    );
+  });
+
   it("should generate a merged schema when two extends are used", () => {
     const source = `export interface Superman extends Clark extends KalL {
         withPower: boolean;
@@ -449,7 +456,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: Array<Power>
     };`;
@@ -461,7 +468,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (array item bis)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: Power[]
     };`;
@@ -473,7 +480,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (record item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: Record<string, Power>
     };`;
@@ -485,7 +492,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (record item) (interface)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export interface Superman {
       powers: Record<string, Power>
     };`;
@@ -497,7 +504,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (tuple)", () => {
     const source = `export type SupermanPower = Superman["powers"][1];
-    
+
     export type Superman = {
       powers: ["fly", "burnStuff"]
     };`;
@@ -510,7 +517,7 @@ describe("generateZodSchema", () => {
   // TODO
   it.skip("should deal with index access type (nested array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1][-1];
-    
+
     export type Superman = {
       powers: Power[][]
     };`;
@@ -522,7 +529,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (inline array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: Array<{type: string}>
     };`;
@@ -534,7 +541,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (inline array item bis)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: {type: string}[]
     };`;
@@ -546,7 +553,7 @@ describe("generateZodSchema", () => {
 
   it("should deal with index access type (inline record)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
-    
+
     export type Superman = {
       powers: Record<string, {type: string}>
     };`;
@@ -621,7 +628,7 @@ describe("generateZodSchema", () => {
        * @format email
        */
       email: string;
-    
+
       /**
        * The name of the hero.
        *
@@ -629,24 +636,24 @@ describe("generateZodSchema", () => {
        * @maxLength 50
        */
       name: string;
-    
+
       /**
        * The phone number of the hero.
        *
        * @pattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
        */
       phoneNumber: string;
-    
+
       /**
        * Does the hero has super power?
        *
        * @default true
        */
       hasSuperPower?: boolean;
-      
+
       /**
        * The age of the hero
-       * 
+       *
        * @minimum 0
        * @maximum 500
        */
@@ -705,7 +712,7 @@ describe("generateZodSchema", () => {
        * @format email, "Should be an email"
        */
       enemyEmail: string;
-      
+
       /**
        * The email of the superman.
        *
@@ -745,7 +752,7 @@ describe("generateZodSchema", () => {
        * @format email should be an email
        */
       email: string;
-    
+
       /**
        * The name of the hero.
        *
@@ -753,10 +760,10 @@ describe("generateZodSchema", () => {
        * @maxLength 50 should be less than 50
        */
       name: string;
-    
+
       /**
        * The age of the hero
-       * 
+       *
        * @minimum 0 you are too young
        * @maximum 500, "you are too old"
        */

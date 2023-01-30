@@ -43,7 +43,7 @@ try {
     oclifError(
       `"${tsToZodConfigJs}" invalid:
   ${e.message}
-  
+
   Please fix the invalid configuration
   You can generate a new config with --init`,
       { exit: false }
