@@ -21,17 +21,28 @@ import { eachSeries } from "async";
 import { createConfig } from "./createConfig";
 import chokidar from "chokidar";
 
+type ConfigExt = ".js" | ".cjs";
+
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
-const tsToZodConfigJs = "ts-to-zod.config.js";
-const configPath = join(process.cwd(), tsToZodConfigJs);
+const tsToZodConfig = "ts-to-zod.config";
+const configPath = join(process.cwd(), tsToZodConfig);
 let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
+let configExt: ConfigExt | undefined;
 try {
-  if (existsSync(configPath)) {
-    const rawConfig = require(slash(relative(__dirname, configPath)));
+  if (existsSync(`${configPath}.js`)) {
+    configExt = ".js";
+  } else if (existsSync(`${configPath}.cjs`)) {
+    configExt = ".cjs";
+  }
+
+  if (configExt) {
+    const rawConfig = require(slash(
+      relative(__dirname, `${configPath}${configExt}`)
+    ));
     config = tsToZodConfigSchema.parse(rawConfig);
     if (Array.isArray(config)) {
       haveMultiConfig = true;
@@ -41,7 +52,7 @@ try {
 } catch (e) {
   if (e instanceof Error) {
     oclifError(
-      `"${tsToZodConfigJs}" invalid:
+      `"${tsToZodConfig}${configExt}" invalid:
   ${e.message}
 
   Please fix the invalid configuration
@@ -123,7 +134,7 @@ class TsToZod extends Command {
       return;
     }
 
-    const fileConfig = await this.loadFileConfig(config, flags);
+    const fileConfig = await this.loadFileConfig(config, flags, configExt!);
 
     if (Array.isArray(fileConfig)) {
       if (args.input || args.output) {
@@ -354,7 +365,8 @@ See more help with --help`,
    */
   async loadFileConfig(
     config: TsToZodConfig | undefined,
-    flags: OutputFlags<typeof TsToZod.flags>
+    flags: OutputFlags<typeof TsToZod.flags>,
+    ext: ConfigExt
   ): Promise<TsToZodConfig | undefined> {
     if (!config) {
       return undefined;
@@ -366,7 +378,7 @@ See more help with --help`,
         }>([
           {
             name: "mode",
-            message: `You have multiple configs available in "${tsToZodConfigJs}"\n What do you want?`,
+            message: `You have multiple configs available in "${tsToZodConfig}${ext}"\n What do you want?`,
             type: "list",
             choices: [
               {
