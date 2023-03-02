@@ -1,8 +1,12 @@
 import { generate } from "./generate";
 
 describe("generate", () => {
+  let getZodSchemasFile: (s: string) => string | undefined;
+  let getIntegrationTestFile: (s: string, t: string) => string | undefined;
+  let errors: Array<string> | undefined;
   describe("simple case", () => {
-    const sourceText = `
+    beforeAll(async () => {
+      const sourceText = `
       export type Name = "superman" | "clark kent" | "kal-l";
 
       // Note that the Superman is declared after
@@ -21,8 +25,16 @@ describe("generate", () => {
       const fly = () => console.log("I can fly!");
       `;
 
-    const { getZodSchemasFile, getIntegrationTestFile, errors } = generate({
-      sourceText,
+      const res = await generate({
+        input: {
+          type: "sourceText",
+          payload: sourceText,
+        },
+      });
+
+      getZodSchemasFile = res.getZodSchemasFile;
+      getIntegrationTestFile = res.getIntegrationTestFile;
+      errors = res.errors;
     });
 
     it("should generate the zod schemas", () => {
@@ -78,7 +90,11 @@ describe("generate", () => {
   });
 
   describe("with enums", () => {
-    const sourceText = `
+    let getZodSchemasFile: (s: string) => string | undefined;
+    let getIntegrationTestFile: (s: string, t: string) => string | undefined;
+    let errors: Array<string> | undefined;
+    beforeAll(async () => {
+      const sourceText = `
       export enum Superhero {
         Superman = "superman"
         ClarkKent = "clark-kent"
@@ -89,8 +105,15 @@ describe("generate", () => {
       };
       `;
 
-    const { getZodSchemasFile, getIntegrationTestFile, errors } = generate({
-      sourceText,
+      const res = await generate({
+        input: {
+          type: "sourceText",
+          payload: sourceText,
+        },
+      });
+      getZodSchemasFile = res.getZodSchemasFile;
+      getIntegrationTestFile = res.getIntegrationTestFile;
+      errors = res.errors;
     });
 
     it("should generate the zod schemas", () => {
@@ -139,7 +162,11 @@ describe("generate", () => {
   });
 
   describe("with circular references", () => {
-    const sourceText = `
+    let getZodSchemasFile: (s: string) => string | undefined;
+    let getIntegrationTestFile: (s: string, t: string) => string | undefined;
+    let errors: Array<string> | undefined;
+    beforeAll(async () => {
+      const sourceText = `
       export interface Villain {
         name: string;
         powers: string[];
@@ -158,9 +185,17 @@ describe("generate", () => {
       }
       `;
 
-    const { getZodSchemasFile, getIntegrationTestFile, errors } = generate({
-      sourceText,
-      maxRun: 3,
+      const res = await generate({
+        input: {
+          type: "sourceText",
+          payload: sourceText,
+        },
+        maxRun: 3,
+      });
+
+      getZodSchemasFile = res.getZodSchemasFile;
+      getIntegrationTestFile = res.getIntegrationTestFile;
+      errors = res.errors;
     });
 
     it("should generate the zod schemas", () => {
@@ -211,7 +246,9 @@ describe("generate", () => {
   });
 
   describe("with options", () => {
-    const sourceText = `export interface Superman {
+    let getZodSchemasFile: (s: string) => string | undefined;
+    beforeAll(async () => {
+      const sourceText = `export interface Superman {
       /**
        * Name of superman
        */
@@ -224,11 +261,19 @@ describe("generate", () => {
     }
     `;
 
-    const { getZodSchemasFile } = generate({
-      sourceText,
-      nameFilter: (id) => id === "Superman",
-      getSchemaName: (id) => id.toLowerCase(),
-      keepComments: true,
+      const res = await generate({
+        input: {
+          type: "sourceText",
+          payload: sourceText,
+        },
+        nameFilter: (id) => id === "Superman",
+        getSchemaName: (id) => id.toLowerCase(),
+        keepComments: true,
+      });
+
+      getZodSchemasFile = res.getZodSchemasFile;
+      getIntegrationTestFile = res.getIntegrationTestFile;
+      errors = res.errors;
     });
 
     it("should generate superman schema", () => {
@@ -248,17 +293,21 @@ describe("generate", () => {
   });
 
   describe("inheritance and reference type search", () => {
-    const sourceText = `
+    let getZodSchemasFile: (s: string) => string | undefined;
+    beforeAll(async () => {
+      const sourceText = `
     export type Name = "superman" | "clark kent" | "kal-l";
     export interface Superman {
       name: Name;
     }`;
 
-    const { getZodSchemasFile } = generate({
-      sourceText,
-      nameFilter: (id) => id === "Superman",
-      getSchemaName: (id) => id.toLowerCase(),
-      keepComments: true,
+      const res = await generate({
+        input: { type: "sourceText", payload: sourceText },
+        nameFilter: (id) => id === "Superman",
+        getSchemaName: (id) => id.toLowerCase(),
+        keepComments: true,
+      });
+      getZodSchemasFile = res.getZodSchemasFile;
     });
 
     it("should generate superman schema", () => {
@@ -277,7 +326,7 @@ describe("generate", () => {
   });
 
   describe("with jsdocTags filter", () => {
-    it("should generate only types with @zod", () => {
+    it("should generate only types with @zod", async () => {
       const sourceText = `
       /**
        * @zod
@@ -305,8 +354,8 @@ describe("generate", () => {
       }
       `;
 
-      const { getZodSchemasFile } = generate({
-        sourceText,
+      const { getZodSchemasFile } = await generate({
+        input: { type: "sourceText", payload: sourceText },
         jsDocTagFilter: (tags) => tags.map((tag) => tag.name).includes("zod"),
       });
 
@@ -328,7 +377,7 @@ describe("generate", () => {
   });
 
   describe("with non-exported types", () => {
-    it("should generate tests for exported schemas", () => {
+    it("should generate tests for exported schemas", async () => {
       const sourceText = `
       export type Name = "superman" | "clark kent" | "kal-l";
 
@@ -346,8 +395,8 @@ describe("generate", () => {
       }
       `;
 
-      const { getIntegrationTestFile } = generate({
-        sourceText,
+      const { getIntegrationTestFile } = await generate({
+        input: { type: "sourceText", payload: sourceText },
       });
 
       expect(getIntegrationTestFile("./source", "./source.zod"))
@@ -376,7 +425,11 @@ describe("generate", () => {
   });
 
   describe("with namespace", () => {
-    const sourceText = `
+    let getZodSchemasFile: (s: string) => string | undefined;
+    let getIntegrationTestFile: (s: string, t: string) => string | undefined;
+    let errors: Array<string> | undefined;
+    beforeAll(async () => {
+      const sourceText = `
       export namespace Metropolis {
         export type Name = "superman" | "clark kent" | "kal-l";
 
@@ -397,8 +450,13 @@ describe("generate", () => {
       }
       `;
 
-    const { getZodSchemasFile, getIntegrationTestFile, errors } = generate({
-      sourceText,
+      const res = await generate({
+        input: { type: "sourceText", payload: sourceText },
+      });
+
+      getZodSchemasFile = res.getZodSchemasFile;
+      getIntegrationTestFile = res.getIntegrationTestFile;
+      errors = res.errors;
     });
 
     it("should generate the zod schemas", () => {
