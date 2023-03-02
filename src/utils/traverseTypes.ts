@@ -4,7 +4,14 @@ export type TypeNode = (
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
   | ts.EnumDeclaration
-) & { visited?: boolean };
+) & {
+  visited?: boolean;
+
+  /**
+   * if mappedName is set we use this for determining the typeName
+   */
+  mappedName?: string;
+};
 
 export function isTypeNode(node: ts.Node): node is TypeNode {
   return (

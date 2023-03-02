@@ -1,7 +1,7 @@
 import { Command, flags } from "@oclif/command";
 import { OutputFlags } from "@oclif/parser";
 import { error as oclifError } from "@oclif/errors";
-import { readFile, outputFile, existsSync } from "fs-extra";
+import { outputFile, existsSync } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
@@ -106,6 +106,11 @@ class TsToZod extends Command {
       description: "Execute all configs",
       hidden: !haveMultiConfig,
     }),
+    multiFileTypes: flags.boolean({
+      char: "m",
+      default: false,
+      description: "Used with types that span across multiple files",
+    }),
   };
 
   static args = [
@@ -118,6 +123,7 @@ class TsToZod extends Command {
 
   async run() {
     const { args, flags } = this.parse(TsToZod);
+    console.log("running");
     if (flags.init) {
       (await createConfig(configPath))
         ? this.log(`🧐 ts-to-zod.config.js created!`)
@@ -232,20 +238,22 @@ See more help with --help`,
       };
     }
 
-    const sourceText = await readFile(inputPath, "utf-8");
-
-    const generateOptions: GenerateProps = {
-      sourceText,
+    const options: GenerateProps = {
       ...fileConfig,
+      input: {
+        type: "inputPath",
+        payload: inputPath,
+      },
     };
+
     if (typeof flags.maxRun === "number") {
-      generateOptions.maxRun = flags.maxRun;
+      options.maxRun = flags.maxRun;
     }
     if (typeof flags.keepComments === "boolean") {
-      generateOptions.keepComments = flags.keepComments;
+      options.keepComments = flags.keepComments;
     }
     if (typeof flags.skipParseJSDoc === "boolean") {
-      generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
+      options.skipParseJSDoc = flags.skipParseJSDoc;
     }
 
     const {
@@ -254,7 +262,7 @@ See more help with --help`,
       getZodSchemasFile,
       getIntegrationTestFile,
       hasCircularDependencies,
-    } = generate(generateOptions);
+    } = await generate(options);
 
     if (hasCircularDependencies && !output) {
       return {
@@ -282,7 +290,7 @@ See more help with --help`,
           sourceText: getZodSchemasFile("./source"),
           relativePath: "./source.zod.ts",
         },
-        skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
+        skipParseJSDoc: Boolean(options.skipParseJSDoc),
       });
 
       generationErrors.length

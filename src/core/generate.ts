@@ -1,6 +1,7 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
-import ts from "typescript";
+import ts, { ImportDeclaration } from "typescript";
+import { readFile } from "fs-extra";
 import { JSDocTagFilter, NameFilter } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
@@ -13,12 +14,31 @@ import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
+import { nodeFileResolution } from "../utils/nodeFileResolution";
+
+/**
+ * Internal representation for imports
+ */
+interface ImportPayload {
+  name: string;
+  type: "relative" | "absolute";
+  node: ImportDeclaration;
+  outerName?: string;
+  pathText: string;
+  required?: boolean;
+  resolvedNode?: TypeNode;
+}
+
+type GeneratePropsInput = {
+  type: "inputPath" | "sourceText";
+  payload: string;
+};
 
 export interface GenerateProps {
   /**
-   * Content of the typescript source file.
+   * Input, the fileName, or typescript source file(used in tests).
    */
-  sourceText: string;
+  input: GeneratePropsInput;
 
   /**
    * Max iteration number to resolve the declaration order.
@@ -54,51 +74,135 @@ export interface GenerateProps {
   skipParseJSDoc?: boolean;
 }
 
-/**
- * Generate zod schemas and integration tests from a typescript file.
- *
- * This function take care of the sorting of the `const` declarations and solved potential circular references
- */
-export function generate({
-  sourceText,
-  maxRun = 10,
-  nameFilter = () => true,
-  jsDocTagFilter = () => true,
-  getSchemaName = (id) => camel(id) + "Schema",
-  keepComments = false,
-  skipParseJSDoc = false,
-}: GenerateProps) {
-  // Create a source file and deal with modules
-  const sourceFile = resolveModules(sourceText);
+type IterateZodSchemasProps = {
+  /**
+   * Input, the fileName, or typescript source file(used in tests).
+   */
+  input: GeneratePropsInput;
 
-  // Extract the nodes (interface declarations & type aliases)
-  const nodes: Array<TypeNode> = [];
+  /**
+   * the ts.SourceFile for inputPath
+   */
+  sourceFile?: ts.SourceFile;
+
+  /**
+   * Filter on type/interface name.
+   */
+  nameFilter: NameFilter;
+
+  /**
+   * Filter on JSDocTag.
+   */
+  jsDocTagFilter: JSDocTagFilter;
+
+  /**
+   * Schema name generator.
+   */
+  getSchemaName: (identifier: string) => string;
+
+  /**
+   * Skip the creation of zod validators from JSDoc annotations
+   *
+   * @default false
+   */
+  skipParseJSDoc: boolean;
+
+  /**
+   * Accumulator during recursion
+   *
+   * @default []
+   */
+  zSchemas?: Array<IterateZodSchemaResult>;
+};
+
+/**
+ * Recursive function we use the retrieve the nodes, it recurses through external module (if any)
+ */
+
+type IterateZodSchemaResult = ReturnType<
+  typeof generateZodSchemaVariableStatement
+> & { varName: string; typeName: string };
+
+async function iterateZodSchemas({
+  input,
+  sourceFile,
+  nameFilter,
+  jsDocTagFilter,
+  getSchemaName,
+  skipParseJSDoc,
+  zSchemas = [],
+}: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
+  const inputPath = input.type === "inputPath" && input.payload;
+  const sourceText = await (input.type === "sourceText"
+    ? Promise.resolve(input.payload)
+    : readFile(input.payload, "utf8"));
+
+  const cohercedSourceFile = sourceFile
+    ? sourceFile
+    : resolveModules(sourceText as string);
 
   // declare a map to store the interface name and its corresponding zod schema
   const typeNameMapping = new Map<string, TypeNode>();
 
+  // save the references to external modules
+  const importNameMapping = new Map<string, ImportPayload>();
+
   const typesNeedToBeExtracted = new Set<string>();
 
+  const nodes: Array<TypeNode> = [];
+
   const typeNameMapBuilder = (node: ts.Node) => {
+    // if we were to accumulate the node import here it would be available afterward
+    // but we'd endup traversing many files which are probably not needed
+    // we maintain the reference to imports only, we'll do something later with it
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    ) {
+      const { text: pathText } = node.moduleSpecifier;
+      const type =
+        pathText.startsWith(".") || pathText.startsWith("/")
+          ? "relative"
+          : "absolute";
+
+      if (
+        node?.importClause?.namedBindings &&
+        ts.isNamedImports(node.importClause.namedBindings)
+      ) {
+        node.importClause.namedBindings.elements;
+        node.importClause.namedBindings.elements.forEach((x) => {
+          const name = x.name.escapedText.toString();
+          const outerName = x.propertyName?.escapedText.toString() || name;
+          importNameMapping.set(name, {
+            name,
+            pathText,
+            outerName,
+            type,
+            node,
+          });
+        });
+      }
+    }
     if (isTypeNode(node)) {
       typeNameMapping.set(node.name.text, node);
     }
   };
-  ts.forEachChild(sourceFile, typeNameMapBuilder);
+  ts.forEachChild(cohercedSourceFile, typeNameMapBuilder);
+
   const visitor = (node: ts.Node) => {
     if (
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
       ts.isEnumDeclaration(node)
     ) {
-      const jsDoc = getJsDoc(node, sourceFile);
+      const jsDoc = getJsDoc(node, cohercedSourceFile);
       const tags = getSimplifiedJsDocTags(jsDoc);
       if (!jsDocTagFilter(tags)) return;
       if (!nameFilter(node.name.text)) return;
 
       const typeNames = getExtractedTypeNames(
         node,
-        sourceFile,
+        cohercedSourceFile,
         typeNameMapping
       );
       typeNames.forEach((typeName) => {
@@ -106,29 +210,101 @@ export function generate({
       });
     }
   };
-  ts.forEachChild(sourceFile, visitor);
+  ts.forEachChild(cohercedSourceFile, visitor);
 
   typesNeedToBeExtracted.forEach((typeName) => {
+    // if we're dealing with an external module we need to go get the source
+    const externalNode = importNameMapping.get(typeName);
+    if (externalNode) {
+      // here we have 2 options:
+      //   -> 1. get the node and generate the schema locally (but should eventually deal with branching out toward other externa modules)
+      //   2. iterate the generation process for the interested file and import the schema (should refactor the whole code because this would mean doing a first pass to check how many times the process needs to be done for a certain file)
+      // option 1 wins
+      externalNode.required = true;
+    }
     const node = typeNameMapping.get(typeName);
     if (node) {
       nodes.push(node);
     }
   });
 
+  /**
+   * Resolve externalModules
+   *
+   * @todo parallelize
+   */
+  if (inputPath) {
+    for await (const v of importNameMapping.values()) {
+      if (!v.required || v.resolvedNode) continue;
+
+      const importPath = nodeFileResolution({
+        containingFile: inputPath,
+        importName: v.pathText,
+      });
+      const externalSchemas = await iterateZodSchemas({
+        input: {
+          type: "inputPath",
+          payload: importPath,
+        },
+        nameFilter: (n) => v.outerName === n,
+        jsDocTagFilter,
+        getSchemaName,
+        skipParseJSDoc,
+        zSchemas,
+      });
+      zSchemas.push(...externalSchemas);
+    }
+  }
+
   // Generate zod schemas
-  const zodSchemas = nodes.map((node) => {
-    const typeName = node.name.text;
+  return nodes.reduce<Array<IterateZodSchemaResult>>((ac, node) => {
+    const typeName = node.mappedName || node.name.text;
     const varName = getSchemaName(typeName);
+
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
       node,
-      sourceFile,
+      sourceFile: cohercedSourceFile,
       varName,
       getDependencyName: getSchemaName,
       skipParseJSDoc,
     });
 
-    return { typeName, varName, ...zodSchema };
+    const res = {
+      typeName,
+      varName,
+      ...zodSchema,
+    };
+    return [...ac, res];
+  }, zSchemas);
+}
+
+/**
+ * Generate zod schemas and integration tests from multiple typescript files.
+ *
+ * This function take care of the sorting of the `const` declarations and solved potential circular references
+ */
+export async function generate({
+  input,
+  maxRun = 10,
+  nameFilter = () => true,
+  jsDocTagFilter = () => true,
+  getSchemaName = (id) => camel(id) + "Schema",
+  keepComments = false,
+  skipParseJSDoc = false,
+}: GenerateProps) {
+  const sourceText = await (input.type === "inputPath"
+    ? readFile(input.payload, "utf8")
+    : Promise.resolve(input.payload));
+  const sourceFile = resolveModules(sourceText);
+
+  const zodSchemas = await iterateZodSchemas({
+    input,
+    sourceFile,
+    nameFilter,
+    jsDocTagFilter,
+    getSchemaName,
+    skipParseJSDoc,
   });
 
   // Resolves statements order
@@ -167,6 +343,9 @@ export function generate({
       );
 
     n++; // Just a safety net to avoid infinity loops
+    if (n === maxRun) {
+      console.log("Hitting maxRun limit");
+    }
   }
 
   // Warn the user of possible not resolvable loops
