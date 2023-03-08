@@ -12,7 +12,6 @@ import {
   getSchemaNameSchema,
   nameFilterSchema,
 } from "./config.zod";
-import { getImportPath } from "./utils/getImportPath";
 import ora from "ora";
 import prettier from "prettier";
 import * as worker from "./worker";
@@ -105,11 +104,6 @@ class TsToZod extends Command {
       default: false,
       description: "Execute all configs",
       hidden: !haveMultiConfig,
-    }),
-    multiFileTypes: flags.boolean({
-      char: "m",
-      default: false,
-      description: "Used with types that span across multiple files",
     }),
   };
 
@@ -240,10 +234,7 @@ See more help with --help`,
 
     const options: GenerateProps = {
       ...fileConfig,
-      input: {
-        type: "inputPath",
-        payload: inputPath,
-      },
+      inputPath,
     };
 
     if (typeof flags.maxRun === "number") {
@@ -305,9 +296,7 @@ See more help with --help`,
       }
     }
 
-    const zodSchemasFile = getZodSchemasFile(
-      getImportPath(outputPath, inputPath)
-    );
+    const zodSchemasFile = getZodSchemasFile(outputPath);
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
 

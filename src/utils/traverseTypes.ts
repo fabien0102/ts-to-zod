@@ -8,9 +8,9 @@ export type TypeNode = (
   visited?: boolean;
 
   /**
-   * if mappedName is set we use this for determining the typeName
+   * this flag indicates if the type is exported from the file
    */
-  mappedName?: string;
+  exported?: boolean;
 };
 
 export function isTypeNode(node: ts.Node): node is TypeNode {

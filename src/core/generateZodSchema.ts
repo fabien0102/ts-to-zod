@@ -9,6 +9,7 @@ import {
   jsDocTagToZodProperties,
   ZodProperty,
 } from "./jsDocTags";
+import { TypeNode } from "../utils/traverseTypes";
 
 const { factory: f } = ts;
 
@@ -21,7 +22,7 @@ export interface GenerateZodSchemaProps {
   /**
    * Interface or type node
    */
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration;
+  node: TypeNode;
 
   /**
    * Zod import value.
@@ -133,10 +134,18 @@ export function generateZodSchemaVariableStatement({
     requiresImport = true;
   }
 
+  let modifiers = node.modifiers || ([] as ts.Modifier[]);
+  if (
+    node.exported &&
+    !modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)
+  ) {
+    modifiers = [...modifiers, f.createToken(ts.SyntaxKind.ExportKeyword)];
+  }
+
   return {
     dependencies: uniq(dependencies),
     statement: f.createVariableStatement(
-      node.modifiers,
+      modifiers,
       f.createVariableDeclarationList(
         [
           f.createVariableDeclaration(

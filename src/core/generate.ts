@@ -15,30 +15,26 @@ import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
 import { nodeFileResolution } from "../utils/nodeFileResolution";
+import { getImportPath } from "../utils/getImportPath";
 
 /**
  * Internal representation for imports
  */
 interface ImportPayload {
   name: string;
-  type: "relative" | "absolute";
+  isRelative: boolean;
   node: ImportDeclaration;
   outerName?: string;
   pathText: string;
   required?: boolean;
-  resolvedNode?: TypeNode;
+  default?: boolean;
 }
-
-type GeneratePropsInput = {
-  type: "inputPath" | "sourceText";
-  payload: string;
-};
 
 export interface GenerateProps {
   /**
    * Input, the fileName, or typescript source file(used in tests).
    */
-  input: GeneratePropsInput;
+  inputPath: string;
 
   /**
    * Max iteration number to resolve the declaration order.
@@ -78,7 +74,7 @@ type IterateZodSchemasProps = {
   /**
    * Input, the fileName, or typescript source file(used in tests).
    */
-  input: GeneratePropsInput;
+  inputPath: string;
 
   /**
    * the ts.SourceFile for inputPath
@@ -108,6 +104,15 @@ type IterateZodSchemasProps = {
   skipParseJSDoc: boolean;
 
   /**
+   * indicates if we're parsing the entrypoint file
+   */
+  isRootFile: boolean;
+
+  /**
+   * true if we need to the default export from the file we're traversing
+   */
+  extractDefault?: boolean;
+  /**
    * Accumulator during recursion
    *
    * @default []
@@ -115,79 +120,151 @@ type IterateZodSchemasProps = {
   zSchemas?: Array<IterateZodSchemaResult>;
 };
 
+type IterateZodSchemaResult = ReturnType<
+  typeof generateZodSchemaVariableStatement
+> & {
+  varName: string;
+  typeName: string;
+  /**
+   * sourceText will be used later in the pipeline
+   */
+  sourceText: string;
+
+  /**
+   * inputPath will be used later in the pipeline
+   */
+  inputPath: string;
+};
+
+function getModuleRelativity(pathText: string) {
+  return pathText.startsWith(".") || pathText.startsWith("/");
+}
+
 /**
  * Recursive function we use the retrieve the nodes, it recurses through external module (if any)
  */
-
-type IterateZodSchemaResult = ReturnType<
-  typeof generateZodSchemaVariableStatement
-> & { varName: string; typeName: string };
-
 async function iterateZodSchemas({
-  input,
+  inputPath,
   sourceFile,
   nameFilter,
   jsDocTagFilter,
   getSchemaName,
   skipParseJSDoc,
+  isRootFile,
+  extractDefault = false,
   zSchemas = [],
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
-  const inputPath = input.type === "inputPath" && input.payload;
-  const sourceText = await (input.type === "sourceText"
-    ? Promise.resolve(input.payload)
-    : readFile(input.payload, "utf8"));
+  const checkExportability = !isRootFile;
+  const sourceText = await readFile(inputPath, "utf8");
 
   const cohercedSourceFile = sourceFile
     ? sourceFile
-    : resolveModules(sourceText as string);
+    : resolveModules(sourceText);
 
   // declare a map to store the interface name and its corresponding zod schema
   const typeNameMapping = new Map<string, TypeNode>();
 
-  // save the references to external modules
-  const importNameMapping = new Map<string, ImportPayload>();
+  // references to external modules grouped by path
+  const importNameMappingByPath = new Map<string, Map<string, ImportPayload>>();
+  const addToImportNameMapping = addToNestedMap(importNameMappingByPath);
 
+  // exportability info, relevant when we're importing
+  const exportInfo = {
+    clauses: {} as Record<string, boolean>,
+    defaultExportName: undefined as string | undefined,
+  };
+
+  // this is the store of the types that need to be extracted from the file
   const typesNeedToBeExtracted = new Set<string>();
 
-  const nodes: Array<TypeNode> = [];
-
   const typeNameMapBuilder = (node: ts.Node) => {
-    // if we were to accumulate the node import here it would be available afterward
-    // but we'd endup traversing many files which are probably not needed
-    // we maintain the reference to imports only, we'll do something later with it
+    // import case
     if (
       ts.isImportDeclaration(node) &&
       ts.isStringLiteral(node.moduleSpecifier)
     ) {
       const { text: pathText } = node.moduleSpecifier;
-      const type =
-        pathText.startsWith(".") || pathText.startsWith("/")
-          ? "relative"
-          : "absolute";
+      const isRelative = getModuleRelativity(pathText);
 
+      // case for default imports
+      if (node?.importClause?.name && ts.isIdentifier(node.importClause.name)) {
+        const name = node.importClause.name.escapedText.toString();
+        const payload = {
+          name,
+          pathText,
+          isRelative,
+          node,
+          default: true,
+        };
+        addToImportNameMapping({ outerKey: pathText, innerKey: name, payload });
+      }
+      // case for named imports
       if (
         node?.importClause?.namedBindings &&
         ts.isNamedImports(node.importClause.namedBindings)
       ) {
-        node.importClause.namedBindings.elements;
         node.importClause.namedBindings.elements.forEach((x) => {
           const name = x.name.escapedText.toString();
           const outerName = x.propertyName?.escapedText.toString() || name;
-          importNameMapping.set(name, {
+          const payload = {
             name,
             pathText,
             outerName,
-            type,
+            isRelative,
             node,
+          };
+          addToImportNameMapping({
+            outerKey: pathText,
+            innerKey: name,
+            payload,
           });
         });
       }
     }
+
+    // export cases
+    if (ts.isExportDeclaration(node)) {
+      // named: ex: export { named }
+      if (node.exportClause && "elements" in node.exportClause) {
+        node.exportClause.elements.forEach((el) => {
+          const esName = el.name.escapedText;
+          if (esName) {
+            exportInfo.clauses[esName] = true;
+          }
+        });
+      }
+      // relay: ex: export * from './module.ts'
+      if (node.moduleSpecifier) {
+        // @todo handle this case
+        throw new Error("relay export not supported");
+      }
+    }
+    // default: "export default" assignments here
+    if (ts.isExportAssignment(node) && ts.isIdentifier(node.expression)) {
+      exportInfo.defaultExportName = node.expression.escapedText.toString();
+    }
+
     if (isTypeNode(node)) {
       typeNameMapping.set(node.name.text, node);
     }
   };
   ts.forEachChild(cohercedSourceFile, typeNameMapBuilder);
+
+  // if we're parsing an imported file, we need to validate the exports
+  if (checkExportability) {
+    typeNameMapping.forEach((node) => {
+      const modifiers = ts.getCombinedModifierFlags(node);
+      const name = node.name.text;
+
+      if (
+        (modifiers && ts.ModifierFlags.Export) ||
+        exportInfo.clauses[name] ||
+        name === exportInfo.defaultExportName
+      ) {
+        node.exported = true;
+      }
+    });
+  }
 
   const visitor = (node: ts.Node) => {
     if (
@@ -197,8 +274,10 @@ async function iterateZodSchemas({
     ) {
       const jsDoc = getJsDoc(node, cohercedSourceFile);
       const tags = getSimplifiedJsDocTags(jsDoc);
-      if (!jsDocTagFilter(tags)) return;
-      if (!nameFilter(node.name.text)) return;
+      if (isRootFile && !jsDocTagFilter(tags)) return;
+      if (isRootFile && !nameFilter(node.name.text)) {
+        return;
+      }
 
       const typeNames = getExtractedTypeNames(
         node,
@@ -212,14 +291,23 @@ async function iterateZodSchemas({
   };
   ts.forEachChild(cohercedSourceFile, visitor);
 
+  const nodes: Array<TypeNode> = [];
+
+  // references to external modules flattened by name
+  const importNameMapping = Array.from(importNameMappingByPath.values()).reduce(
+    (ac, x) => {
+      x.forEach((x) => ac.set(x.name, x));
+      return ac;
+    },
+    new Map<string, ImportPayload>()
+  );
+
+  // the schema are currently being generated in a single file,
+  // current implementation does NOT give an option to do the generation in separate files.
   typesNeedToBeExtracted.forEach((typeName) => {
-    // if we're dealing with an external module we need to go get the source
+    // if we're dealing with an external module we need to go get the source, the reference is stored in importNameMapping
     const externalNode = importNameMapping.get(typeName);
     if (externalNode) {
-      // here we have 2 options:
-      //   -> 1. get the node and generate the schema locally (but should eventually deal with branching out toward other externa modules)
-      //   2. iterate the generation process for the interested file and import the schema (should refactor the whole code because this would mean doing a first pass to check how many times the process needs to be done for a certain file)
-      // option 1 wins
       externalNode.required = true;
     }
     const node = typeNameMapping.get(typeName);
@@ -228,38 +316,50 @@ async function iterateZodSchemas({
     }
   });
 
+  // // references to external modules flattened by name
+  // const importNameMappingByOuterNameWithFallback = Array.from(
+  //   importNameMappingByPath.values()
+  // ).reduce((ac, x) => {
+  //   x.forEach((x) => ac.set((x.outerName || x.name), x))
+  //   return ac
+  // }, new Map<string, ImportPayload>());
+
   /**
    * Resolve externalModules
    *
-   * @todo parallelize
+   * @todo improve performance
    */
-  if (inputPath) {
-    for await (const v of importNameMapping.values()) {
-      if (!v.required || v.resolvedNode) continue;
+  for await (const [pathText, v] of importNameMappingByPath.entries()) {
+    const isNeeded = Array.from(v.values()).some((x) => x.required);
+    if (!isNeeded) continue;
 
-      const importPath = nodeFileResolution({
-        containingFile: inputPath,
-        importName: v.pathText,
-      });
-      const externalSchemas = await iterateZodSchemas({
-        input: {
-          type: "inputPath",
-          payload: importPath,
-        },
-        nameFilter: (n) => v.outerName === n,
-        jsDocTagFilter,
-        getSchemaName,
-        skipParseJSDoc,
-        zSchemas,
-      });
-      zSchemas.push(...externalSchemas);
-    }
+    const importPath = nodeFileResolution({
+      containingFile: inputPath,
+      importName: pathText,
+    });
+    const extractDefault = Array.from(v.values()).some((x) => x.default);
+    const externalSchemas = await iterateZodSchemas({
+      inputPath: importPath,
+      nameFilter: () => true,
+      getSchemaName,
+      isRootFile: false,
+      extractDefault,
+      jsDocTagFilter,
+      skipParseJSDoc,
+      zSchemas,
+    });
+    zSchemas.push(...externalSchemas);
   }
 
   // Generate zod schemas
   return nodes.reduce<Array<IterateZodSchemaResult>>((ac, node) => {
-    const typeName = node.mappedName || node.name.text;
-    const varName = getSchemaName(typeName);
+    const typeName = node.name.text;
+    const typeNameMappingNode =
+      typeNameMapping.has(typeName) && typeNameMapping.get(typeName);
+    const varNameArg = typeNameMappingNode
+      ? typeNameMappingNode.name.escapedText.toString()
+      : typeName;
+    const varName = getSchemaName(varNameArg);
 
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
@@ -273,6 +373,8 @@ async function iterateZodSchemas({
     const res = {
       typeName,
       varName,
+      sourceText, // we use this later to do some validation
+      inputPath,
       ...zodSchema,
     };
     return [...ac, res];
@@ -285,7 +387,7 @@ async function iterateZodSchemas({
  * This function take care of the sorting of the `const` declarations and solved potential circular references
  */
 export async function generate({
-  input,
+  inputPath,
   maxRun = 10,
   nameFilter = () => true,
   jsDocTagFilter = () => true,
@@ -293,18 +395,17 @@ export async function generate({
   keepComments = false,
   skipParseJSDoc = false,
 }: GenerateProps) {
-  const sourceText = await (input.type === "inputPath"
-    ? readFile(input.payload, "utf8")
-    : Promise.resolve(input.payload));
+  const sourceText = await readFile(inputPath, "utf8");
   const sourceFile = resolveModules(sourceText);
 
   const zodSchemas = await iterateZodSchemas({
-    input,
+    inputPath,
     sourceFile,
     nameFilter,
     jsDocTagFilter,
     getSchemaName,
     skipParseJSDoc,
+    isRootFile: true,
   });
 
   // Resolves statements order
@@ -313,28 +414,54 @@ export async function generate({
     string,
     { typeName: string; value: ts.VariableStatement }
   >();
-  const typeImports: Set<string> = new Set();
+  const typeImports: Map<string, Set<string>> = new Map();
+  /*
+   * Abstraction to add types related to paths in typeImports
+   * @todo check if there could be issues with localNamespaced types
+   */
+  const addTypeToTypeImports = (args: {
+    typeName: string;
+    inputPath: string;
+  }) => {
+    const { typeName, inputPath } = args;
+    const pathSet: Set<string> = typeImports.has(inputPath)
+      ? (typeImports.get(inputPath) as Set<string>)
+      : new Set();
+    pathSet.add(typeName);
+    typeImports.set(inputPath, pathSet);
+  };
 
+  const sourceTexts: Map<string, string> = new Map();
+  sourceTexts.set(inputPath, sourceText);
   let n = 0;
   while (statements.size !== zodSchemas.length && n < maxRun) {
     zodSchemas
       .filter(({ varName }) => !statements.has(varName))
       .forEach(
-        ({ varName, dependencies, statement, typeName, requiresImport }) => {
+        ({
+          varName,
+          dependencies,
+          statement,
+          typeName,
+          requiresImport,
+          inputPath,
+          sourceText,
+        }) => {
+          sourceTexts.set(inputPath, sourceText);
           const isCircular = dependencies.includes(varName);
           const missingDependencies = dependencies
             .filter((dep) => dep !== varName)
             .filter((dep) => !statements.has(dep));
           if (missingDependencies.length === 0) {
             if (isCircular) {
-              typeImports.add(typeName);
+              addTypeToTypeImports({ typeName, inputPath });
               statements.set(varName, {
                 value: transformRecursiveSchema("z", statement, typeName),
                 typeName,
               });
             } else {
               if (requiresImport) {
-                typeImports.add(typeName);
+                addTypeToTypeImports({ typeName, inputPath });
               }
               statements.set(varName, { value: statement, typeName });
             }
@@ -343,9 +470,6 @@ export async function generate({
       );
 
     n++; // Just a safety net to avoid infinity loops
-    if (n === maxRun) {
-      console.log("Hitting maxRun limit");
-    }
   }
 
   // Warn the user of possible not resolvable loops
@@ -372,25 +496,34 @@ ${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
     newLine: ts.NewLineKind.LineFeed,
   });
 
+  const globalSourceFile = resolveModules(
+    Array.from(sourceTexts.values()).join("\n")
+  );
   const print = (node: ts.Node) =>
-    printer.printNode(ts.EmitHint.Unspecified, node, sourceFile);
+    printer.printNode(ts.EmitHint.Unspecified, node, globalSourceFile);
 
-  const transformedSourceText = printerWithComments.printFile(sourceFile);
+  const transformedSourceText = printerWithComments.printFile(globalSourceFile);
 
-  const imports = Array.from(typeImports.values());
-  const getZodSchemasFile = (
-    typesImportPath: string
-  ) => `// Generated by ts-to-zod
+  const getZodSchemasFile = (from: string) => {
+    const multiImports = Array.from(
+      typeImports.entries(),
+      ([to, moduleImports]) => {
+        const typesImportPath = getImportPath(from, to);
+        return moduleImports.size
+          ? `import { ${Array.from(moduleImports.values()).join(
+              ", "
+            )} } from "${typesImportPath}";\n`
+          : "";
+      }
+    );
+    return `// Generated by ts-to-zod
 import { z } from "zod";
-${
-  imports.length
-    ? `import { ${imports.join(", ")} } from "${typesImportPath}";\n`
-    : ""
-}
+${multiImports.join("")}
 ${Array.from(statements.values())
   .map((statement) => print(statement.value))
   .join("\n\n")}
 `;
+  };
 
   const testCases = generateIntegrationTests(
     Array.from(statements.values())
@@ -430,7 +563,6 @@ ${Array.from(statements.values())
   .join("\n\n")}
 ${testCases.map(print).join("\n")}
 `;
-
   return {
     /**
      * Source text with pre-process applied.
@@ -460,7 +592,7 @@ ${testCases.map(print).join("\n")}
     /**
      * `true` if zodSchemaFile have some resolvable circular dependencies
      */
-    hasCircularDependencies: imports.length > 0,
+    hasCircularDependencies: typeImports.size > 0,
   };
 }
 
@@ -471,3 +603,15 @@ ${testCases.map(print).join("\n")}
  */
 const isExported = (i: { typeName: string; value: ts.VariableStatement }) =>
   i.value.modifiers?.find((mod) => mod.kind === ts.SyntaxKind.ExportKeyword);
+
+// utility to add a key/value pair to a nested map
+function addToNestedMap<K>(map: Map<string, Map<string, K>>) {
+  return function (args: { outerKey: string; innerKey: string; payload: K }) {
+    const { outerKey, innerKey, payload } = args;
+    const nestedMap: Map<string, K> = map.has(outerKey)
+      ? (map.get(outerKey) as Map<string, K>)
+      : new Map();
+    nestedMap.set(innerKey, payload);
+    map.set(outerKey, nestedMap);
+  };
+}
