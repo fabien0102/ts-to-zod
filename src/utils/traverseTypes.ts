@@ -28,6 +28,24 @@ export function getExtractedTypeNames(
 ) {
   const referenceTypeNames: string[] = [];
 
+  const eventuallyAddType = (childNode: ts.Node) => {
+    if (
+      ts.isPropertySignature(childNode) &&
+      childNode.type &&
+      ts.isTypeReferenceNode(childNode.type) &&
+      ts.isIdentifier(childNode.type.typeName)
+    ) {
+      const escapedName = childNode.type.typeName.escapedText.toString();
+      referenceTypeNames.push(escapedName);
+
+      const typeNode = typeNameMapping.get(escapedName);
+      if (typeNode) {
+        typeNode.visited = true;
+        recursiveExtract(typeNode);
+      }
+    }
+  };
+
   const recursiveExtract = (node: TypeNode) => {
     if (node.visited) {
       return;
@@ -53,22 +71,10 @@ export function getExtractedTypeNames(
     }
 
     node.forEachChild((child) => {
-      const childNode = child as ts.PropertySignature;
-      if (childNode.kind !== ts.SyntaxKind.PropertySignature) {
-        return;
-      }
-
-      if (childNode.type?.kind === ts.SyntaxKind.TypeReference) {
-        const typeNode = typeNameMapping.get(
-          childNode.type.getText(sourceFile)
-        );
-
-        referenceTypeNames.push(childNode.type.getText(sourceFile));
-
-        if (typeNode) {
-          typeNode.visited = true;
-          recursiveExtract(typeNode);
-        }
+      if (ts.isTypeLiteralNode(child)) {
+        child.members.forEach(eventuallyAddType);
+      } else {
+        eventuallyAddType(child);
       }
     });
   };
