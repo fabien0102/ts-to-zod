@@ -109,9 +109,10 @@ type IterateZodSchemasProps = {
   isRootFile: boolean;
 
   /**
-   * true if we need to the default export from the file we're traversing
+   * if we need to extract the default export this will be the varSchema name,
+   * in case we don't need it will be undefined
    */
-  extractDefault?: boolean;
+  extractDefaultName?: string;
   /**
    * Accumulator during recursion
    *
@@ -151,7 +152,7 @@ async function iterateZodSchemas({
   getSchemaName,
   skipParseJSDoc,
   isRootFile,
-  extractDefault = false,
+  extractDefaultName,
   zSchemas = [],
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
   const checkExportability = !isRootFile;
@@ -337,13 +338,14 @@ async function iterateZodSchemas({
       containingFile: inputPath,
       importName: pathText,
     });
-    const extractDefault = Array.from(v.values()).some((x) => x.default);
+    const extractDefault = Array.from(v.values()).find((x) => x.default);
+
     const externalSchemas = await iterateZodSchemas({
       inputPath: importPath,
       nameFilter: () => true,
       getSchemaName,
       isRootFile: false,
-      extractDefault,
+      extractDefaultName: extractDefault?.name,
       jsDocTagFilter,
       skipParseJSDoc,
       zSchemas,
@@ -369,7 +371,6 @@ async function iterateZodSchemas({
       getDependencyName: getSchemaName,
       skipParseJSDoc,
     });
-
     const res = {
       typeName,
       varName,
@@ -377,6 +378,29 @@ async function iterateZodSchemas({
       inputPath,
       ...zodSchema,
     };
+
+    // if we're dealing with default export, we need to add a special case
+    if (extractDefaultName && typeName === exportInfo.defaultExportName) {
+      const defVarName = getSchemaName(extractDefaultName);
+      const defTypeName = extractDefaultName;
+      const defZodSchema = generateZodSchemaVariableStatement({
+        zodImportValue: "z",
+        node,
+        sourceFile: cohercedSourceFile,
+        varName: defVarName,
+        getDependencyName: getSchemaName,
+        skipParseJSDoc,
+      });
+      const resDefault = {
+        typeName: defTypeName,
+        varName: defVarName,
+        sourceText,
+        inputPath,
+        ...defZodSchema,
+      };
+      ac.push(resDefault);
+    }
+
     return [...ac, res];
   }, zSchemas);
 }
