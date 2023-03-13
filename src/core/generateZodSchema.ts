@@ -169,14 +169,18 @@ function buildZodProperties({
   skipParseJSDoc: boolean;
 }) {
   const properties = new Map<
-    ts.Identifier | ts.StringLiteral,
+    ts.Identifier | ts.StringLiteral | ts.NumericLiteral,
     ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression
   >();
   members.forEach((member) => {
     if (
       !ts.isPropertySignature(member) ||
       !member.type ||
-      !(ts.isIdentifier(member.name) || ts.isStringLiteral(member.name))
+      !(
+        ts.isIdentifier(member.name) ||
+        ts.isStringLiteral(member.name) ||
+        ts.isNumericLiteral(member.name)
+      )
     ) {
       return;
     }
@@ -894,7 +898,7 @@ function buildZodObject({
           getDependencyName,
           skipParseJSDoc,
         })
-      : undefined;
+      : new Map();
 
   if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
     objectSchema = buildZodExtendedSchema(
@@ -902,7 +906,7 @@ function buildZodObject({
       properties.length > 0
         ? [
             f.createObjectLiteralExpression(
-              Array.from(parsedProperties!.entries()).map(([key, tsCall]) => {
+              Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
                 return f.createPropertyAssignment(key, tsCall);
               }),
               true
@@ -913,7 +917,7 @@ function buildZodObject({
   } else if (properties.length > 0) {
     objectSchema = buildZodSchema(z, "object", [
       f.createObjectLiteralExpression(
-        Array.from(parsedProperties!.entries()).map(([key, tsCall]) => {
+        Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
           return f.createPropertyAssignment(key, tsCall);
         }),
         true
