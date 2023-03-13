@@ -119,6 +119,11 @@ type IterateZodSchemasProps = {
    * @default []
    */
   zSchemas?: Array<IterateZodSchemaResult>;
+
+  /**
+   * this is a map we hand down to the recursive function to keep track of the imported aliases
+   */
+  aliasingNameMapping?: Record<string, string>;
 };
 
 type IterateZodSchemaResult = ReturnType<
@@ -154,6 +159,7 @@ async function iterateZodSchemas({
   isRootFile,
   extractDefaultName,
   zSchemas = [],
+  aliasingNameMapping = {},
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
   const checkExportability = !isRootFile;
   const sourceText = await readFile(inputPath, "utf8");
@@ -317,13 +323,18 @@ async function iterateZodSchemas({
     }
   });
 
-  // // references to external modules flattened by name
-  // const importNameMappingByOuterNameWithFallback = Array.from(
-  //   importNameMappingByPath.values()
-  // ).reduce((ac, x) => {
-  //   x.forEach((x) => ac.set((x.outerName || x.name), x))
-  //   return ac
-  // }, new Map<string, ImportPayload>());
+  // references to external modules flattened by name
+  // we use this to resolve external modules which have been aliased
+  const importAliasingNameMap = Array.from(
+    importNameMappingByPath.values()
+  ).reduce<Record<string, string>>((ac, x) => {
+    x.forEach((x) => {
+      if (x.outerName && x.outerName !== x.name) {
+        ac[x.outerName] = x.name;
+      }
+    });
+    return ac;
+  }, {});
 
   /**
    * Resolve externalModules
@@ -349,6 +360,7 @@ async function iterateZodSchemas({
       jsDocTagFilter,
       skipParseJSDoc,
       zSchemas,
+      aliasingNameMapping: importAliasingNameMap,
     });
     zSchemas.push(...externalSchemas);
   }
@@ -363,41 +375,47 @@ async function iterateZodSchemas({
       : typeName;
     const varName = getSchemaName(varNameArg);
 
-    const zodSchema = generateZodSchemaVariableStatement({
-      zodImportValue: "z",
+    const res = generateZodSchemaVarStatementWrapper({
       node,
       sourceFile: cohercedSourceFile,
       varName,
-      getDependencyName: getSchemaName,
+      getSchemaName,
       skipParseJSDoc,
-    });
-    const res = {
-      typeName,
-      varName,
-      sourceText, // we use this later to do some validation
+      sourceText,
       inputPath,
-      ...zodSchema,
-    };
+      typeName,
+    });
+
+    // if the typename is present in the aliasingNameMapping, we need to generate a new schema for it
+    if (aliasingNameMapping[typeName]) {
+      const alisedTypeName = aliasingNameMapping[typeName];
+      const aliasedVarName = getSchemaName(alisedTypeName);
+      const aliasedRes = generateZodSchemaVarStatementWrapper({
+        node,
+        sourceFile: cohercedSourceFile,
+        getSchemaName,
+        skipParseJSDoc,
+        sourceText,
+        inputPath,
+        typeName: alisedTypeName,
+        varName: aliasedVarName,
+      });
+      ac.push(aliasedRes);
+    }
 
     // if we're dealing with default export, we need to add a special case
     if (extractDefaultName && typeName === exportInfo.defaultExportName) {
       const defVarName = getSchemaName(extractDefaultName);
-      const defTypeName = extractDefaultName;
-      const defZodSchema = generateZodSchemaVariableStatement({
-        zodImportValue: "z",
+      const resDefault = generateZodSchemaVarStatementWrapper({
         node,
         sourceFile: cohercedSourceFile,
-        varName: defVarName,
-        getDependencyName: getSchemaName,
+        getSchemaName,
         skipParseJSDoc,
-      });
-      const resDefault = {
-        typeName: defTypeName,
-        varName: defVarName,
         sourceText,
         inputPath,
-        ...defZodSchema,
-      };
+        typeName: extractDefaultName,
+        varName: defVarName,
+      });
       ac.push(resDefault);
     }
 
@@ -637,5 +655,47 @@ function addToNestedMap<K>(map: Map<string, Map<string, K>>) {
       : new Map();
     nestedMap.set(innerKey, payload);
     map.set(outerKey, nestedMap);
+  };
+}
+/**
+ * utility to retrieve the zodSchemaVariableStatement together with other fields that are needed downstream
+ * @param args
+ */
+function generateZodSchemaVarStatementWrapper(args: {
+  node: TypeNode;
+  typeName: string;
+  sourceFile: ts.SourceFile;
+  varName: string;
+  zodImportValue?: string;
+  getSchemaName: (s: string) => string;
+  skipParseJSDoc?: boolean;
+  sourceText: string;
+  inputPath: string;
+}) {
+  const {
+    node,
+    typeName,
+    sourceFile,
+    varName,
+    zodImportValue = "z",
+    getSchemaName,
+    skipParseJSDoc,
+    sourceText,
+    inputPath,
+  } = args;
+  const zodSchema = generateZodSchemaVariableStatement({
+    zodImportValue,
+    node,
+    sourceFile,
+    varName,
+    getDependencyName: getSchemaName,
+    skipParseJSDoc,
+  });
+  return {
+    typeName,
+    varName,
+    sourceText,
+    inputPath,
+    ...zodSchema,
   };
 }
