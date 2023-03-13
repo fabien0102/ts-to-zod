@@ -61,6 +61,11 @@ export type Config = {
    * @default false
    */
   skipParseJSDoc?: boolean;
+
+  /**
+   * Path of z.infer<> types file.
+   */
+  inferredTypes?: string;
 };
 
 export type Configs = Array<
