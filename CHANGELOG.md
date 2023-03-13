@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v2.0.1...v3.0.0) (2023-03-13)
+
+
+### ⚠ BREAKING CHANGES
+
+* Support circular dependencies with loops of length > 1 (#114)
+
+### Features
+
+* Generate inferred types ([#85](https://www.github.com/fabien0102/ts-to-zod/issues/85)) ([250f64d](https://www.github.com/fabien0102/ts-to-zod/commit/250f64d6f6850a15440d3b0f7602c6b92cd173fe))
+* Support circular dependencies with loops of length > 1 ([#114](https://www.github.com/fabien0102/ts-to-zod/issues/114)) ([b0eb555](https://www.github.com/fabien0102/ts-to-zod/commit/b0eb555b0e060b5dee18ff41c702e46df6ac1150))
+
 ### [2.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v2.0.0...v2.0.1) (2023-01-30)
 
 
