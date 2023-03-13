@@ -35,11 +35,6 @@ export type Config = {
   skipValidation?: boolean;
 
   /**
-   * Max iteration number to resolve the declaration order.
-   */
-  maxRun?: number;
-
-  /**
    * Filter on type/interface name.
    */
   nameFilter?: NameFilter;

@@ -21,11 +21,6 @@ export interface GenerateProps {
   sourceText: string;
 
   /**
-   * Max iteration number to resolve the declaration order.
-   */
-  maxRun?: number;
-
-  /**
    * Filter on type/interface name.
    */
   nameFilter?: NameFilter;
@@ -61,7 +56,6 @@ export interface GenerateProps {
  */
 export function generate({
   sourceText,
-  maxRun = 10,
   nameFilter = () => true,
   jsDocTagFilter = () => true,
   getSchemaName = (id) => camel(id) + "Schema",
@@ -130,6 +124,7 @@ export function generate({
 
     return { typeName, varName, ...zodSchema };
   });
+  const zodSchemaNames = zodSchemas.map(({ varName }) => varName);
 
   // Resolves statements order
   // A schema can't be declared if all the referenced schemas used inside this one are not previously declared.
@@ -139,17 +134,31 @@ export function generate({
   >();
   const typeImports: Set<string> = new Set();
 
-  let n = 0;
-  while (statements.size !== zodSchemas.length && n < maxRun) {
+  // Zod schemas with direct or indirect dependencies that are not in `zodSchemas`, won't be generated
+  const zodSchemasWithMissingDependencies = new Set<string>();
+
+  let done = false;
+  // Loop until no more schemas can be generated and no more schemas with direct or indirect missing dependencies are found
+  while (
+    !done &&
+    statements.size + zodSchemasWithMissingDependencies.size !==
+      zodSchemas.length
+  ) {
+    done = true;
     zodSchemas
-      .filter(({ varName }) => !statements.has(varName))
+      .filter(
+        ({ varName }) =>
+          !statements.has(varName) &&
+          !zodSchemasWithMissingDependencies.has(varName)
+      )
       .forEach(
         ({ varName, dependencies, statement, typeName, requiresImport }) => {
           const isCircular = dependencies.includes(varName);
-          const missingDependencies = dependencies
+          const notGeneratedDependencies = dependencies
             .filter((dep) => dep !== varName)
             .filter((dep) => !statements.has(dep));
-          if (missingDependencies.length === 0) {
+          if (notGeneratedDependencies.length === 0) {
+            done = false;
             if (isCircular) {
               typeImports.add(typeName);
               statements.set(varName, {
@@ -162,24 +171,45 @@ export function generate({
               }
               statements.set(varName, { value: statement, typeName });
             }
+          } else if (
+            // Check if every dependency is (in `zodSchemas` and not in `zodSchemasWithMissingDependencies`)
+            !notGeneratedDependencies.every(
+              (dep) =>
+                zodSchemaNames.includes(dep) &&
+                !zodSchemasWithMissingDependencies.has(dep)
+            )
+          ) {
+            done = false;
+            zodSchemasWithMissingDependencies.add(varName);
           }
         }
       );
-
-    n++; // Just a safety net to avoid infinity loops
   }
 
-  // Warn the user of possible not resolvable loops
-  const missingStatements = zodSchemas.filter(
-    ({ varName }) => !statements.has(varName)
-  );
+  // Generate remaining schemas, which have circular dependencies with loop of length > 1 like: A->B—>C->A
+  zodSchemas
+    .filter(
+      ({ varName }) =>
+        !statements.has(varName) &&
+        !zodSchemasWithMissingDependencies.has(varName)
+    )
+    .forEach(
+      ({ varName, dependencies, statement, typeName, requiresImport }) => {
+        typeImports.add(typeName);
+        statements.set(varName, {
+          value: transformRecursiveSchema("z", statement, typeName),
+          typeName,
+        });
+      }
+    );
 
+  // Warn the user of possible not resolvable loops
   const errors: string[] = [];
 
-  if (missingStatements.length) {
+  if (zodSchemasWithMissingDependencies.size > 0) {
     errors.push(
-      `Some schemas can't be generated due to circular dependencies:
-${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
+      `Some schemas can't be generated due to direct or indirect missing dependencies:
+${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
     );
   }
 
@@ -249,6 +279,7 @@ ${Array.from(statements.values())
     return print(zodInferredSchema);
   })
   .join("\n\n")}
+
 ${testCases.map(print).join("\n")}
 `;
 
