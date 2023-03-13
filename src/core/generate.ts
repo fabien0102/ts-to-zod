@@ -198,15 +198,13 @@ export function generate({
         !statements.has(varName) &&
         !zodSchemasWithMissingDependencies.has(varName)
     )
-    .forEach(
-      ({ varName, dependencies, statement, typeName, requiresImport }) => {
-        typeImports.add(typeName);
-        statements.set(varName, {
-          value: transformRecursiveSchema("z", statement, typeName),
-          typeName,
-        });
-      }
-    );
+    .forEach(({ varName, statement, typeName }) => {
+      typeImports.add(typeName);
+      statements.set(varName, {
+        value: transformRecursiveSchema("z", statement, typeName),
+        typeName,
+      });
+    });
 
   // Warn the user of possible not resolvable loops
   const errors: string[] = [];
