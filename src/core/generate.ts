@@ -24,7 +24,7 @@ interface ImportPayload {
   name: string;
   isRelative: boolean;
   node: ImportDeclaration;
-  outerName?: string;
+  outerName: string;
   pathText: string;
   required?: boolean;
   default?: boolean;
@@ -113,15 +113,10 @@ type IterateZodSchemasProps = {
    * in case we don't need it will be undefined
    */
   extractDefaultName?: string;
-  /**
-   * Accumulator during recursion
-   *
-   * @default []
-   */
-  zSchemas?: Array<IterateZodSchemaResult>;
 
   /**
-   * this is a map we hand down to the recursive function to keep track of the imported aliases
+   * this is a map we hand down to the recursive function to track of the imported types, and aliases
+   * we also use this as a way to clean out the imports that are not used
    */
   aliasingNameMapping?: Record<string, string>;
 };
@@ -140,6 +135,12 @@ type IterateZodSchemaResult = ReturnType<
    * inputPath will be used later in the pipeline
    */
   inputPath: string;
+
+  /**
+   * indicates if the schema is a default export,
+   * in case we're dealing with a enum we'll need to consider this during imports
+   */
+  isDefault?: boolean;
 };
 
 function getModuleRelativity(pathText: string) {
@@ -158,7 +159,6 @@ async function iterateZodSchemas({
   skipParseJSDoc,
   isRootFile,
   extractDefaultName,
-  zSchemas = [],
   aliasingNameMapping = {},
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
   const checkExportability = !isRootFile;
@@ -198,6 +198,7 @@ async function iterateZodSchemas({
         const name = node.importClause.name.escapedText.toString();
         const payload = {
           name,
+          outerName: name,
           pathText,
           isRelative,
           node,
@@ -285,6 +286,13 @@ async function iterateZodSchemas({
       if (isRootFile && !nameFilter(node.name.text)) {
         return;
       }
+      if (
+        !isRootFile &&
+        !aliasingNameMapping[node.name.text] &&
+        node.name.text !== exportInfo.defaultExportName
+      ) {
+        return;
+      }
 
       const typeNames = getExtractedTypeNames(
         node,
@@ -327,15 +335,14 @@ async function iterateZodSchemas({
   // we use this to resolve external modules which have been aliased
   const importAliasingNameMap = Array.from(
     importNameMappingByPath.values()
-  ).reduce<Record<string, string>>((ac, x) => {
-    x.forEach((x) => {
-      if (x.outerName && x.outerName !== x.name) {
-        ac[x.outerName] = x.name;
-      }
+  ).reduce<Record<string, string>>((ac, pathNodes) => {
+    pathNodes.forEach((x) => {
+      ac[x.outerName] = x.name;
     });
     return ac;
   }, {});
 
+  const foreignSchemas = [];
   /**
    * Resolve externalModules
    *
@@ -359,68 +366,66 @@ async function iterateZodSchemas({
       extractDefaultName: extractDefault?.name,
       jsDocTagFilter,
       skipParseJSDoc,
-      zSchemas,
       aliasingNameMapping: importAliasingNameMap,
     });
-    zSchemas.push(...externalSchemas);
+    foreignSchemas.push(...externalSchemas);
   }
 
   // Generate zod schemas
-  return nodes.reduce<Array<IterateZodSchemaResult>>((ac, node) => {
-    const typeName = node.name.text;
-    const typeNameMappingNode =
-      typeNameMapping.has(typeName) && typeNameMapping.get(typeName);
-    const varNameArg = typeNameMappingNode
-      ? typeNameMappingNode.name.escapedText.toString()
-      : typeName;
-    const varName = getSchemaName(varNameArg);
+  const localSchemas = nodes.reduce<Array<IterateZodSchemaResult>>(
+    (ac, node) => {
+      const typeName = node.name.text;
+      const typeNameMappingNode =
+        typeNameMapping.has(typeName) && typeNameMapping.get(typeName);
+      const varNameArg = typeNameMappingNode
+        ? typeNameMappingNode.name.escapedText.toString()
+        : typeName;
+      const varName = aliasingNameMapping[typeName]
+        ? getSchemaName(aliasingNameMapping[typeName])
+        : getSchemaName(varNameArg);
 
-    const res = generateZodSchemaVarStatementWrapper({
-      node,
-      sourceFile: cohercedSourceFile,
-      varName,
-      getSchemaName,
-      skipParseJSDoc,
-      sourceText,
-      inputPath,
-      typeName,
-    });
+      const isDefaultExport =
+        extractDefaultName && typeName === exportInfo.defaultExportName;
 
-    // if the typename is present in the aliasingNameMapping, we need to generate a new schema for it
-    if (aliasingNameMapping[typeName]) {
-      const alisedTypeName = aliasingNameMapping[typeName];
-      const aliasedVarName = getSchemaName(alisedTypeName);
-      const aliasedRes = generateZodSchemaVarStatementWrapper({
-        node,
-        sourceFile: cohercedSourceFile,
-        getSchemaName,
-        skipParseJSDoc,
-        sourceText,
-        inputPath,
-        typeName: alisedTypeName,
-        varName: aliasedVarName,
-      });
-      ac.push(aliasedRes);
-    }
+      // we've already done the check on the
+      if (!(isDefaultExport && !aliasingNameMapping[typeName])) {
+        const res = generateZodSchemaVarStatementWrapper({
+          node,
+          sourceFile: cohercedSourceFile,
+          varName,
+          getSchemaName,
+          skipParseJSDoc,
+          sourceText,
+          inputPath,
+          typeName,
+        });
+        ac.push(res);
+      }
+      // if we're dealing with default export, we need to add a special case
+      if (isDefaultExport) {
+        const defVarName = getSchemaName(extractDefaultName);
+        const updatedNode = updateReadonlyNode(node, {
+          name: ts.factory.createIdentifier(extractDefaultName),
+        });
+        const resDefault = generateZodSchemaVarStatementWrapper({
+          node: updatedNode,
+          sourceFile: cohercedSourceFile,
+          getSchemaName,
+          skipParseJSDoc,
+          sourceText,
+          inputPath,
+          typeName: extractDefaultName,
+          varName: defVarName,
+          isDefault: true,
+        });
+        ac.push(resDefault);
+      }
 
-    // if we're dealing with default export, we need to add a special case
-    if (extractDefaultName && typeName === exportInfo.defaultExportName) {
-      const defVarName = getSchemaName(extractDefaultName);
-      const resDefault = generateZodSchemaVarStatementWrapper({
-        node,
-        sourceFile: cohercedSourceFile,
-        getSchemaName,
-        skipParseJSDoc,
-        sourceText,
-        inputPath,
-        typeName: extractDefaultName,
-        varName: defVarName,
-      });
-      ac.push(resDefault);
-    }
-
-    return [...ac, res];
-  }, zSchemas);
+      return ac;
+    },
+    []
+  );
+  return [...foreignSchemas, ...localSchemas];
 }
 
 /**
@@ -456,7 +461,10 @@ export async function generate({
     string,
     { typeName: string; value: ts.VariableStatement }
   >();
-  const typeImports: Map<string, Set<string>> = new Map();
+  const typeImports: Map<
+    string,
+    { names: Set<string>; defaultName?: string }
+  > = new Map();
   /*
    * Abstraction to add types related to paths in typeImports
    * @todo check if there could be issues with localNamespaced types
@@ -464,12 +472,22 @@ export async function generate({
   const addTypeToTypeImports = (args: {
     typeName: string;
     inputPath: string;
+    isDefault?: boolean;
   }) => {
-    const { typeName, inputPath } = args;
-    const pathSet: Set<string> = typeImports.has(inputPath)
-      ? (typeImports.get(inputPath) as Set<string>)
-      : new Set();
-    pathSet.add(typeName);
+    const { typeName, inputPath, isDefault } = args;
+    const pathSet: {
+      names: Set<string>;
+      defaultName?: string;
+    } = typeImports.has(inputPath)
+      ? (typeImports.get(inputPath) as { names: Set<string> })
+      : { names: new Set() };
+
+    if (isDefault) {
+      pathSet.defaultName = typeName;
+    } else {
+      pathSet.names.add(typeName);
+    }
+
     typeImports.set(inputPath, pathSet);
   };
 
@@ -488,6 +506,7 @@ export async function generate({
           requiresImport,
           inputPath,
           sourceText,
+          isDefault,
         }) => {
           sourceTexts.set(inputPath, sourceText);
           const isCircular = dependencies.includes(varName);
@@ -496,14 +515,14 @@ export async function generate({
             .filter((dep) => !statements.has(dep));
           if (missingDependencies.length === 0) {
             if (isCircular) {
-              addTypeToTypeImports({ typeName, inputPath });
+              addTypeToTypeImports({ typeName, inputPath, isDefault });
               statements.set(varName, {
                 value: transformRecursiveSchema("z", statement, typeName),
                 typeName,
               });
             } else {
               if (requiresImport) {
-                addTypeToTypeImports({ typeName, inputPath });
+                addTypeToTypeImports({ typeName, inputPath, isDefault });
               }
               statements.set(varName, { value: statement, typeName });
             }
@@ -551,11 +570,16 @@ ${missingStatements.map(({ varName }) => `${varName}`).join("\n")}`
       typeImports.entries(),
       ([to, moduleImports]) => {
         const typesImportPath = getImportPath(from, to);
-        return moduleImports.size
-          ? `import { ${Array.from(moduleImports.values()).join(
-              ", "
-            )} } from "${typesImportPath}";\n`
+        const defaultImport = moduleImports.defaultName;
+        if (!defaultImport && !moduleImports.names.size) {
+          return "";
+        }
+        const namedImports = moduleImports.names.size
+          ? `{ ${Array.from(moduleImports.names.values()).join(", ")} }`
           : "";
+        return `import ${[defaultImport, namedImports]
+          .filter(Boolean)
+          .join(", ")} from "${typesImportPath}";\n`;
       }
     );
     return `// Generated by ts-to-zod
@@ -671,6 +695,7 @@ function generateZodSchemaVarStatementWrapper(args: {
   skipParseJSDoc?: boolean;
   sourceText: string;
   inputPath: string;
+  isDefault?: boolean;
 }) {
   const {
     node,
@@ -682,6 +707,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     skipParseJSDoc,
     sourceText,
     inputPath,
+    isDefault,
   } = args;
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue,
@@ -696,6 +722,25 @@ function generateZodSchemaVarStatementWrapper(args: {
     varName,
     sourceText,
     inputPath,
+    isDefault,
     ...zodSchema,
   };
+}
+
+/**
+ * This is a workaround for modifying a readonly node
+ * I couldn't find a better way to modify a readonly node...
+ *
+ * @param node the typescript node to update
+ * @param props the props to update
+ */
+function updateReadonlyNode<K extends TypeNode>(
+  node: K,
+  props: { name: ts.Identifier }
+): K {
+  const newNode = node as any;
+  Object.entries(props).forEach(([key, value]) => {
+    newNode[key] = value;
+  });
+  return newNode as K;
 }
