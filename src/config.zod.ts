@@ -24,6 +24,7 @@ export const jSDocTagFilterSchema = z
 export const configSchema = z.object({
   input: z.string(),
   output: z.string(),
+  esm: z.boolean().optional().default(false),
   skipValidation: z.boolean().optional(),
   nameFilter: nameFilterSchema.optional(),
   jsDocTagFilter: jSDocTagFilterSchema.optional(),

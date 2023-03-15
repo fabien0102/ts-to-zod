@@ -78,6 +78,11 @@ class TsToZod extends Command {
   static flags = {
     version: flags.version({ char: "v" }),
     help: flags.help({ char: "h" }),
+    esm: flags.boolean({
+      default: false,
+      description:
+        'Generate TypeScript import statements in ESM format (with ".js" extension)',
+    }),
     keepComments: flags.boolean({
       char: "k",
       description: "Keep parameters comments",
@@ -308,7 +313,7 @@ See more help with --help`,
     }
 
     const zodSchemasFile = getZodSchemasFile(
-      getImportPath(outputPath, inputPath)
+      getImportPath(outputPath, inputPath) + (flags.esm ? ".js" : "")
     );
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
