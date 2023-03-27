@@ -30,6 +30,8 @@ export interface JSDocTags {
   maxLength?: TagWithError<number>;
   format?: TagWithError<typeof formats[-1]>;
   pattern?: string;
+  discriminator?: string;
+  schema?: string;
 }
 
 /**
@@ -46,6 +48,8 @@ function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
     "maxLength",
     "format",
     "pattern",
+    "discriminator",
+    "schema",
   ];
   return (keys as string[]).includes(tagName);
 }
@@ -139,6 +143,16 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = tag.comment.slice(1, -1);
             } else if (tag.comment) {
               // string without quotes
+              jsDocTags[tagName] = tag.comment;
+            }
+            break;
+          case "discriminator":
+            if (tag.comment) {
+              jsDocTags[tagName] = tag.comment;
+            }
+            break;
+          case "schema":
+            if (tag.comment) {
               jsDocTags[tagName] = tag.comment;
             }
             break;

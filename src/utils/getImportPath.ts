@@ -12,5 +12,6 @@ export function getImportPath(from: string, to: string) {
   const relativePath = slash(relative(from, to).slice(1));
   const { dir, name } = parse(relativePath);
 
-  return `${dir}/${name}`;
+  // NB: import from the full path
+  return `${dir}/${name}.ts`;
 }
