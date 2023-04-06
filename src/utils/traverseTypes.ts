@@ -32,10 +32,22 @@ export function getExtractedTypeNames(
     if (
       ts.isPropertySignature(childNode) &&
       childNode.type &&
-      ts.isTypeReferenceNode(childNode.type) &&
-      ts.isIdentifier(childNode.type.typeName)
+      ts.isTypeReferenceNode(childNode.type)
     ) {
-      const escapedName = childNode.type.typeName.escapedText.toString();
+      let escapedName = "";
+      if (ts.isIdentifier(childNode.type.typeName)) {
+        escapedName = childNode.type.typeName.escapedText.toString();
+      }
+      if (
+        ts.isQualifiedName(childNode.type.typeName) &&
+        ts.isIdentifier(childNode.type.typeName.left)
+      ) {
+        const left = childNode.type.typeName.left.escapedText.toString();
+        escapedName = left;
+      }
+      if (!escapedName) {
+        return;
+      }
       referenceTypeNames.push(escapedName);
 
       const typeNode = typeNameMapping.get(escapedName);
@@ -81,4 +93,24 @@ export function getExtractedTypeNames(
 
   recursiveExtract(node);
   return [node.name.text, ...referenceTypeNames];
+}
+
+export function getExtractedTypeNamesFromExportDeclaration(
+  node: ts.ExportDeclaration & { moduleSpecifier: ts.StringLiteral }
+) {
+  const referenceTypeNames: string[] = [];
+
+  const eventuallyAddType = (childNode: ts.Node) => {
+    if (ts.isNamedExports(childNode)) {
+      childNode.elements.forEach((element) => {
+        if (ts.isIdentifier(element.name)) {
+          referenceTypeNames.push(element.name.escapedText.toString());
+        }
+      });
+    }
+  };
+
+  node.forEachChild(eventuallyAddType);
+
+  return referenceTypeNames;
 }

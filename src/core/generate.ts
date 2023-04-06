@@ -1,12 +1,13 @@
-import { camel } from "case";
+import { camel, pascal } from "case";
 import { getJsDoc } from "tsutils";
-import ts, { ImportDeclaration } from "typescript";
+import ts from "typescript";
 import { readFile } from "fs-extra";
 import { JSDocTagFilter, NameFilter } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
 import {
   getExtractedTypeNames,
+  getExtractedTypeNamesFromExportDeclaration,
   isTypeNode,
   TypeNode,
 } from "../utils/traverseTypes";
@@ -23,7 +24,6 @@ import { getImportPath } from "../utils/getImportPath";
 interface ImportPayload {
   name: string;
   isRelative: boolean;
-  node: ImportDeclaration;
   outerName: string;
   pathText: string;
   required?: boolean;
@@ -119,6 +119,11 @@ type IterateZodSchemasProps = {
    * we also use this as a way to clean out the imports that are not used
    */
   aliasingNameMapping?: Record<string, string>;
+
+  /**
+   * this is a prefix with all the concatenated namespaces we're currently in
+   */
+  previousNamespace?: string;
 };
 
 type IterateZodSchemaResult = ReturnType<
@@ -148,7 +153,7 @@ function getModuleRelativity(pathText: string) {
 }
 
 /**
- * Recursive function we use the retrieve the nodes, it recurses through external module (if any)
+ * Recursive function we use the retrieve the nodes, it recurses through external module (ij any)
  */
 async function iterateZodSchemas({
   inputPath,
@@ -160,9 +165,13 @@ async function iterateZodSchemas({
   isRootFile,
   extractDefaultName,
   aliasingNameMapping = {},
+  previousNamespace = "",
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
   const checkExportability = !isRootFile;
   const sourceText = await readFile(inputPath, "utf8");
+
+  const inheritedNamespace =
+    previousNamespace + (aliasingNameMapping["*"] || "");
 
   const cohercedSourceFile = sourceFile
     ? sourceFile
@@ -201,7 +210,6 @@ async function iterateZodSchemas({
           outerName: name,
           pathText,
           isRelative,
-          node,
           default: true,
         };
         addToImportNameMapping({ outerKey: pathText, innerKey: name, payload });
@@ -219,13 +227,30 @@ async function iterateZodSchemas({
             pathText,
             outerName,
             isRelative,
-            node,
           };
           addToImportNameMapping({
             outerKey: pathText,
             innerKey: name,
             payload,
           });
+        });
+      }
+      // case for namespace imports
+      if (
+        node?.importClause?.namedBindings &&
+        ts.isNamespaceImport(node.importClause.namedBindings)
+      ) {
+        const namespace = node.importClause.namedBindings.name.escapedText.toString();
+        const payload = {
+          name: namespace,
+          pathText,
+          outerName: "*",
+          isRelative,
+        };
+        addToImportNameMapping({
+          outerKey: pathText,
+          innerKey: namespace,
+          payload,
         });
       }
     }
@@ -275,6 +300,21 @@ async function iterateZodSchemas({
   }
 
   const visitor = (node: ts.Node) => {
+    // we need to mark exported types in non root files as exported
+    if (
+      ts.isExportDeclaration(node) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      !isRootFile
+    ) {
+      // named exports
+      const typeNames = getExtractedTypeNamesFromExportDeclaration(
+        node as ts.ExportDeclaration & { moduleSpecifier: ts.StringLiteral }
+      );
+      typeNames.forEach((typeName) => {
+        typesNeedToBeExtracted.add(typeName);
+      });
+    }
     if (
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
@@ -288,6 +328,7 @@ async function iterateZodSchemas({
       }
       if (
         !isRootFile &&
+        !aliasingNameMapping["*"] &&
         !aliasingNameMapping[node.name.text] &&
         node.name.text !== exportInfo.defaultExportName
       ) {
@@ -331,24 +372,24 @@ async function iterateZodSchemas({
     }
   });
 
-  // references to external modules flattened by name
-  // we use this to resolve external modules which have been aliased
-  const importAliasingNameMap = Array.from(
-    importNameMappingByPath.values()
-  ).reduce<Record<string, string>>((ac, pathNodes) => {
-    pathNodes.forEach((x) => {
-      ac[x.outerName] = x.name;
-    });
-    return ac;
-  }, {});
-
   const foreignSchemas = [];
   /**
    * Resolve externalModules
-   *
-   * @todo improve performance
    */
   for await (const [pathText, v] of importNameMappingByPath.entries()) {
+    // we use this dict to map external to internal names
+    const importAliasingNameMap = Array.from(v.values()).reduce<
+      Record<string, string>
+    >(
+      (ac, v) => ({
+        ...ac,
+        // in case we have a namespace containing a namespace we should nest the names
+        [v.outerName]:
+          v.name === "*" ? pascal(`${inheritedNamespace} ${v.name}`) : v.name,
+      }),
+      {}
+    );
+
     const isNeeded = Array.from(v.values()).some((x) => x.required);
     if (!isNeeded) continue;
 
@@ -371,6 +412,14 @@ async function iterateZodSchemas({
     foreignSchemas.push(...externalSchemas);
   }
 
+  const availableNameSpaces = new Map<string, (x: string) => string>();
+  importNameMapping.forEach((x) => {
+    if (x.outerName === "*") {
+      availableNameSpaces.set(x.name, (id) =>
+        getSchemaName(camel(`${x.name}_${id}`))
+      );
+    }
+  });
   // Generate zod schemas
   const localSchemas = nodes.reduce<Array<IterateZodSchemaResult>>(
     (ac, node) => {
@@ -387,17 +436,24 @@ async function iterateZodSchemas({
       const isDefaultExport =
         extractDefaultName && typeName === exportInfo.defaultExportName;
 
-      // we've already done the check on the
-      if (!(isDefaultExport && !aliasingNameMapping[typeName])) {
+      if (!isDefaultExport || aliasingNameMapping[typeName]) {
         const res = generateZodSchemaVarStatementWrapper({
           node,
           sourceFile: cohercedSourceFile,
-          varName,
-          getSchemaName,
+          varName: inheritedNamespace
+            ? camel(`${inheritedNamespace} ${varName}`)
+            : varName,
+          getSchemaName: (id) =>
+            getSchemaName(
+              inheritedNamespace ? [inheritedNamespace, id].join(" ") : id
+            ),
           skipParseJSDoc,
           sourceText,
           inputPath,
-          typeName,
+          typeName: inheritedNamespace
+            ? camel(`${inheritedNamespace} ${typeName}`)
+            : typeName,
+          getNamespaceSchemeName: availableNameSpaces,
         });
         ac.push(res);
       }
@@ -467,7 +523,6 @@ export async function generate({
   > = new Map();
   /*
    * Abstraction to add types related to paths in typeImports
-   * @todo check if there could be issues with localNamespaced types
    */
   const addTypeToTypeImports = (args: {
     typeName: string;
@@ -696,6 +751,7 @@ function generateZodSchemaVarStatementWrapper(args: {
   sourceText: string;
   inputPath: string;
   isDefault?: boolean;
+  getNamespaceSchemeName?: Map<string, (x: string) => string>;
 }) {
   const {
     node,
@@ -708,6 +764,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     sourceText,
     inputPath,
     isDefault,
+    getNamespaceSchemeName = new Map(),
   } = args;
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue,
@@ -716,6 +773,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     varName,
     getDependencyName: getSchemaName,
     skipParseJSDoc,
+    getNamespaceSchemaName: getNamespaceSchemeName,
   });
   return {
     typeName,

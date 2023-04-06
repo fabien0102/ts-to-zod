@@ -49,6 +49,12 @@ export interface GenerateZodSchemaProps {
    * @default false
    */
   skipParseJSDoc?: boolean;
+
+  /**
+   * We use this to check if there is an available nameSpace while parsing,
+   * the value is a function that generates the schemeName scoped to the namespace
+   */
+  getNamespaceSchemaName: Map<string, (x: string) => string>;
 }
 
 /**
@@ -65,6 +71,7 @@ export function generateZodSchemaVariableStatement({
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
   skipParseJSDoc = false,
+  getNamespaceSchemaName,
 }: GenerateZodSchemaProps) {
   let schema:
     | ts.CallExpression
@@ -108,6 +115,7 @@ export function generateZodSchemaVariableStatement({
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
+      getNamespaceSchemaName,
     });
   }
 
@@ -126,6 +134,7 @@ export function generateZodSchemaVariableStatement({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      getNamespaceSchemaName,
     });
   }
 
@@ -169,6 +178,7 @@ function buildZodProperties({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  getNamespaceSchemaName,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
   zodImportValue: string;
@@ -176,6 +186,7 @@ function buildZodProperties({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  getNamespaceSchemaName: Map<string, (x: string) => string>;
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral,
@@ -204,6 +215,7 @@ function buildZodProperties({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       })
     );
   });
@@ -222,6 +234,7 @@ function buildZodPrimitive({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  getNamespaceSchemaName,
 }: {
   z: string;
   typeNode: ts.TypeNode;
@@ -234,6 +247,7 @@ function buildZodPrimitive({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  getNamespaceSchemaName: Map<string, (x: string) => string>;
 }): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
@@ -253,6 +267,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      getNamespaceSchemaName,
     });
   }
 
@@ -271,6 +286,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       });
     }
 
@@ -287,6 +303,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       });
     }
 
@@ -303,6 +320,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       });
     }
 
@@ -318,6 +336,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       });
     }
 
@@ -336,6 +355,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           }),
         ],
         zodProperties
@@ -368,6 +388,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           }),
         ],
         zodProperties
@@ -394,6 +415,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           })
         ),
         zodProperties
@@ -415,6 +437,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           })
         ),
         zodProperties
@@ -471,6 +494,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           }),
           f.createIdentifier(lower(identifierName))
         ),
@@ -480,6 +504,7 @@ function buildZodPrimitive({
     }
 
     const dependencyName = getDependencyName(identifierName);
+    // --->  switch dependency name
     dependencies.push(dependencyName);
     const zodSchema: ts.Identifier | ts.CallExpression = f.createIdentifier(
       dependencyName
@@ -511,6 +536,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       });
     }
 
@@ -525,6 +551,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       })
     );
 
@@ -554,6 +581,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       })
     );
     return buildZodSchema(
@@ -588,13 +616,22 @@ function buildZodPrimitive({
       return buildZodSchema(z, "literal", [f.createFalse()], zodProperties);
     }
   }
-
+  /// we switch the name here based on if a namespace is available
   // Deal with enums used as literals
   if (
     ts.isTypeReferenceNode(typeNode) &&
     ts.isQualifiedName(typeNode.typeName) &&
     ts.isIdentifier(typeNode.typeName.left)
   ) {
+    const leftText = typeNode.typeName.left.text;
+    if (getNamespaceSchemaName.has(leftText)) {
+      const getSchemaName = getNamespaceSchemaName.get(leftText) as (
+        x: string
+      ) => string;
+      const rightText = typeNode.typeName.right.text;
+      const n = getSchemaName(camel(rightText));
+      return f.createIdentifier(n);
+    }
     return buildZodSchema(
       z,
       "literal",
@@ -622,6 +659,7 @@ function buildZodPrimitive({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          getNamespaceSchemaName,
         }),
       ],
       zodProperties
@@ -637,6 +675,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       }),
       zodProperties
     );
@@ -653,6 +692,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      getNamespaceSchemaName,
     });
 
     return rest.reduce(
@@ -673,6 +713,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
+              getNamespaceSchemaName,
             }),
           ]
         ),
@@ -708,6 +749,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: Boolean(p.questionToken),
               skipParseJSDoc,
+              getNamespaceSchemaName,
             })
           ),
         },
@@ -723,6 +765,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: false,
               skipParseJSDoc,
+              getNamespaceSchemaName,
             }),
           ],
         },
@@ -860,6 +903,7 @@ function buildZodObject({
   getDependencyName,
   schemaExtensionClauses,
   skipParseJSDoc,
+  getNamespaceSchemaName,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
@@ -868,6 +912,7 @@ function buildZodObject({
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   schemaExtensionClauses?: string[];
   skipParseJSDoc: boolean;
+  getNamespaceSchemaName: Map<string, (x: string) => string>;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -902,6 +947,7 @@ function buildZodObject({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          getNamespaceSchemaName,
         })
       : undefined;
 
@@ -947,6 +993,7 @@ function buildZodObject({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        getNamespaceSchemaName,
       }),
     ]);
 
@@ -1089,6 +1136,8 @@ function buildSchemaReference(
     const dependencyName = getDependencyName(
       node.objectType.typeName.getText(sourceFile)
     );
+    // --> dependency.push
+
     dependencies.push(dependencyName);
     return f.createPropertyAccessExpression(
       f.createIdentifier(dependencyName),
