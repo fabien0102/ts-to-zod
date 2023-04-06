@@ -283,7 +283,6 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
             valueImports.push(item);
           }
         }
-        console.log(11);
       } catch {
         console.warn(inputPath + "does not exist");
       }
