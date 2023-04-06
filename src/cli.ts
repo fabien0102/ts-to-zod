@@ -311,9 +311,9 @@ See more help with --help`,
         };
       }
     }
-
     const zodSchemasFile = getZodSchemasFile(
-      getImportPath(outputPath, inputPath) + (flags.esm ? ".js" : "")
+      getImportPath(outputPath, inputPath) + (flags.esm ? ".js" : ""),
+      inputPath
     );
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
