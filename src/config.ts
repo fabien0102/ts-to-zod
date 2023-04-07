@@ -35,11 +35,6 @@ export type Config = {
   skipValidation?: boolean;
 
   /**
-   * Max iteration number to resolve the declaration order.
-   */
-  maxRun?: number;
-
-  /**
    * Filter on type/interface name.
    */
   nameFilter?: NameFilter;
@@ -66,6 +61,11 @@ export type Config = {
    * @default false
    */
   skipParseJSDoc?: boolean;
+
+  /**
+   * Path of z.infer<> types file.
+   */
+  inferredTypes?: string;
 };
 
 export type Configs = Array<

@@ -179,14 +179,13 @@ export interface Superman {
 }
 ```
 
-/!\ Please note: if your exported interface/type have a reference to a non-exported interface/type, ts-to-zod will not be able to generate anything (a circular dependency will be report due to the missing reference).
+/!\ Please note: if your exported interface/type have a reference to a non-exported interface/type, ts-to-zod will not be able to generate anything (missing dependencies will be reported).
 
 ## Limitation
 
 Since we are generating Zod schemas, we are limited by what Zod actually supports:
 
 - No type generics
-- No complex circular dependencies (you will be warn if you have some in your types)
 - No `Record<number, …>`
 - …
 

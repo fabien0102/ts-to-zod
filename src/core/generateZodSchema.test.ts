@@ -177,6 +177,30 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate a numerical key", () => {
+    const source = `export type responses = {
+     200: {
+      content: {
+        "application/json": {
+          id: string
+        }
+      }
+     }
+   };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const responsesSchema = z.object({
+          200: z.object({
+              content: z.object({
+                  \\"application/json\\": z.object({
+                      id: z.string()
+                  })
+              })
+          })
+      });"
+    `);
+  });
+
   it("should generate a promise schema", () => {
     const source = `export type KrytonResponse = Promise<boolean>`;
     expect(generate(source)).toMatchInlineSnapshot(

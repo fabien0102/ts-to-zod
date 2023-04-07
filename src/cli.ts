@@ -19,6 +19,7 @@ import inquirer from "inquirer";
 import { eachSeries } from "async";
 import { createConfig } from "./createConfig";
 import chokidar from "chokidar";
+import { getImportPath } from "./utils/getImportPath";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
@@ -66,11 +67,6 @@ class TsToZod extends Command {
   static flags = {
     version: flags.version({ char: "v" }),
     help: flags.help({ char: "h" }),
-    maxRun: flags.integer({
-      hidden: true,
-      default: 10,
-      description: "max iteration number to resolve the declaration order",
-    }),
     keepComments: flags.boolean({
       char: "k",
       description: "Keep parameters comments",
@@ -86,6 +82,9 @@ class TsToZod extends Command {
     skipValidation: flags.boolean({
       default: false,
       description: "Skip the validation step (not recommended)",
+    }),
+    inferredTypes: flags.string({
+      description: "Path of z.infer<> types file",
     }),
     watch: flags.boolean({
       char: "w",
@@ -117,7 +116,6 @@ class TsToZod extends Command {
 
   async run() {
     const { args, flags } = this.parse(TsToZod);
-    console.log("running");
     if (flags.init) {
       (await createConfig(configPath))
         ? this.log(`🧐 ts-to-zod.config.js created!`)
@@ -236,15 +234,14 @@ See more help with --help`,
       ...fileConfig,
       inputPath,
     };
-
-    if (typeof flags.maxRun === "number") {
-      options.maxRun = flags.maxRun;
-    }
     if (typeof flags.keepComments === "boolean") {
       options.keepComments = flags.keepComments;
     }
     if (typeof flags.skipParseJSDoc === "boolean") {
       options.skipParseJSDoc = flags.skipParseJSDoc;
+    }
+    if (typeof flags.inferredTypes === "string") {
+      options.inferredTypes = flags.inferredTypes;
     }
 
     const {
@@ -252,6 +249,7 @@ See more help with --help`,
       transformedSourceText,
       getZodSchemasFile,
       getIntegrationTestFile,
+      getInferredTypes,
       hasCircularDependencies,
     } = await generate(options);
 
@@ -299,6 +297,27 @@ See more help with --help`,
     const zodSchemasFile = getZodSchemasFile(outputPath);
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
+
+    if (options.inferredTypes) {
+      const zodInferredTypesFile = getInferredTypes(
+        getImportPath(options.inferredTypes, outputPath)
+      );
+      await outputFile(
+        options.inferredTypes,
+        prettier.format(
+          hasExtensions(options.inferredTypes, javascriptExtensions)
+            ? ts.transpileModule(zodInferredTypesFile, {
+                compilerOptions: {
+                  target: ts.ScriptTarget.Latest,
+                  module: ts.ModuleKind.ESNext,
+                  newLine: ts.NewLineKind.LineFeed,
+                },
+              }).outputText
+            : zodInferredTypesFile,
+          { parser: "babel-ts", ...prettierConfig }
+        )
+      );
+    }
 
     if (output && hasExtensions(output, javascriptExtensions)) {
       await outputFile(

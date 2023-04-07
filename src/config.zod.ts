@@ -25,12 +25,12 @@ export const configSchema = z.object({
   input: z.string(),
   output: z.string(),
   skipValidation: z.boolean().optional(),
-  maxRun: z.number().optional(),
   nameFilter: nameFilterSchema.optional(),
   jsDocTagFilter: jSDocTagFilterSchema.optional(),
   getSchemaName: getSchemaNameSchema.optional(),
   keepComments: z.boolean().optional().default(false),
   skipParseJSDoc: z.boolean().optional().default(false),
+  inferredTypes: z.string().optional(),
 });
 
 export const configsSchema = z.array(
