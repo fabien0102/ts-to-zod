@@ -1132,6 +1132,7 @@ function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
     sourceFile,
     varName: zodConstName,
     skipParseJSDoc,
+    getNamespaceSchemaName: new Map(),
   });
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })

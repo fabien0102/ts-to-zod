@@ -453,7 +453,7 @@ async function iterateZodSchemas({
           typeName: inheritedNamespace
             ? camel(`${inheritedNamespace} ${typeName}`)
             : typeName,
-          getNamespaceSchemeName: availableNameSpaces,
+          getNamespaceSchemaName: availableNameSpaces,
         });
         ac.push(res);
       }
@@ -815,7 +815,7 @@ function generateZodSchemaVarStatementWrapper(args: {
   sourceText: string;
   inputPath: string;
   isDefault?: boolean;
-  getNamespaceSchemeName?: Map<string, (x: string) => string>;
+  getNamespaceSchemaName?: Map<string, (x: string) => string>;
 }) {
   const {
     node,
@@ -828,7 +828,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     sourceText,
     inputPath,
     isDefault,
-    getNamespaceSchemeName = new Map(),
+    getNamespaceSchemaName = new Map(),
   } = args;
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue,
@@ -837,7 +837,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     varName,
     getDependencyName: getSchemaName,
     skipParseJSDoc,
-    getNamespaceSchemaName: getNamespaceSchemeName,
+    getNamespaceSchemaName,
   });
   return {
     typeName,
