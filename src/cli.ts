@@ -294,7 +294,7 @@ See more help with --help`,
           relativePath: "./source.integration.ts",
         },
         zodSchemas: {
-          sourceText: getZodSchemasFile("./source"),
+          sourceText: getZodSchemasFile("./source", sourceText),
           relativePath: "./source.zod.ts",
         },
         skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
@@ -311,9 +311,10 @@ See more help with --help`,
         };
       }
     }
+
     const zodSchemasFile = getZodSchemasFile(
       getImportPath(outputPath, inputPath) + (flags.esm ? ".js" : ""),
-      inputPath
+      sourceText,
     );
 
     const prettierConfig = await prettier.resolveConfig(process.cwd());
