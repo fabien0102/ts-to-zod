@@ -81,6 +81,14 @@ describe("generateZodSchema", () => {
     );
   });
 
+
+  it("should generate a literal schema (negative number)", () => {
+    const source = `export type IdentitiesCount = -1;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const identitiesCountSchema = z.literal(-1);"`
+    );
+  });
+
   it("should generate a literal schema (true)", () => {
     const source = `export type IsSuperman = true;`;
     expect(generate(source)).toMatchInlineSnapshot(

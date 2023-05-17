@@ -576,6 +576,28 @@ function buildZodPrimitive({
         zodProperties
       );
     }
+    // Deal with -XX values
+    if (typeNode.literal.kind === ts.SyntaxKind.PrefixUnaryExpression) {
+      const expression = typeNode.literal as ts.PrefixUnaryExpression;
+
+      if (
+        expression.operator === ts.SyntaxKind.MinusToken &&
+        ts.isNumericLiteral(expression.operand)
+      ) {
+        return buildZodSchema(
+          z,
+          "literal",
+          [
+            f.createPrefixUnaryExpression(
+              ts.SyntaxKind.MinusToken,
+              f.createNumericLiteral(expression.operand.text)
+            ),
+          ],
+          zodProperties
+        );
+      }
+    }
+
     if (typeNode.literal.kind === ts.SyntaxKind.TrueKeyword) {
       return buildZodSchema(z, "literal", [f.createTrue()], zodProperties);
     }
