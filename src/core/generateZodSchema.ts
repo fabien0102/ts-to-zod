@@ -576,6 +576,25 @@ function buildZodPrimitive({
         zodProperties
       );
     }
+    if (ts.isPrefixUnaryExpression(typeNode.literal)) {
+      if (
+        typeNode.literal.operator === ts.SyntaxKind.MinusToken &&
+        ts.isNumericLiteral(typeNode.literal.operand)
+      ) {
+        return buildZodSchema(
+          z,
+          "literal",
+          [
+            f.createPrefixUnaryExpression(
+              ts.SyntaxKind.MinusToken,
+              f.createNumericLiteral(typeNode.literal.operand.text)
+            ),
+          ],
+          zodProperties
+        );
+      }
+    }
+
     if (typeNode.literal.kind === ts.SyntaxKind.TrueKeyword) {
       return buildZodSchema(z, "literal", [f.createTrue()], zodProperties);
     }
