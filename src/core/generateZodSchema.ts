@@ -69,15 +69,13 @@ export function generateZodSchemaVariableStatement({
     | ts.CallExpression
     | ts.Identifier
     | ts.PropertyAccessExpression
+    | ts.ArrowFunction
     | undefined;
   let dependencies: string[] = [];
   let requiresImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
     let schemaExtensionClauses: string[] | undefined;
-    if (node.typeParameters) {
-      throw new Error("Interface with generics are not supported!");
-    }
     if (node.heritageClauses) {
       // Looping on heritageClauses browses the "extends" keywords
       schemaExtensionClauses = node.heritageClauses.reduce(
@@ -111,9 +109,6 @@ export function generateZodSchemaVariableStatement({
   }
 
   if (ts.isTypeAliasDeclaration(node)) {
-    if (node.typeParameters) {
-      throw new Error("Type with generics are not supported!");
-    }
     const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(node, sourceFile);
 
     schema = buildZodPrimitive({
@@ -131,6 +126,39 @@ export function generateZodSchemaVariableStatement({
   if (ts.isEnumDeclaration(node)) {
     schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
     requiresImport = true;
+  }
+
+  // process generic dependencies
+  if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
+    if (schema !== undefined && node.typeParameters) {
+      const genericTypes = node
+        .typeParameters.map((p) => `${p.name.escapedText}`)
+      const genericDependencies = genericTypes.map((p) => getDependencyName(p))
+      dependencies = dependencies
+        .filter((dep) => !genericDependencies.includes(dep));
+      schema = f.createArrowFunction(
+        undefined,
+        genericTypes.map((dep) => f.createIdentifier(dep)),
+        genericTypes.map((dep) => f.createParameterDeclaration(
+          undefined,
+          undefined,
+          undefined,
+          f.createIdentifier(getDependencyName(dep)),
+          undefined,
+          f.createTypeReferenceNode(
+            f.createQualifiedName(
+              f.createIdentifier(zodImportValue),
+              f.createIdentifier(`ZodSchema<${dep}> = z.any()`)
+            ),
+            undefined
+          ),
+          undefined
+        )),
+        undefined,
+        f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+        schema
+      );
+    }
   }
 
   return {
@@ -205,7 +233,37 @@ function buildZodProperties({
   return properties;
 }
 
-function buildZodPrimitive({
+// decorate builder to allow for schema appending/overriding
+function buildZodPrimitive(opts: {
+  z: string;
+  typeNode: ts.TypeNode;
+  isOptional: boolean;
+  isNullable?: boolean;
+  isPartial?: boolean;
+  isRequired?: boolean;
+  jsDocTags: JSDocTags;
+  sourceFile: ts.SourceFile;
+  dependencies: string[];
+  getDependencyName: (identifierName: string) => string;
+  skipParseJSDoc: boolean;
+}) {
+  const schema = opts.jsDocTags.schema
+  delete opts.jsDocTags.schema
+  const generatedSchema = _buildZodPrimitive(opts);
+  // schema not specified? return generated one
+  if (!schema) return generatedSchema;
+  // schema starts with dot? append it
+  if (schema.startsWith(".")) {
+    return f.createPropertyAccessExpression(generatedSchema, f.createIdentifier(schema.slice(1)));
+  }
+  // otherwise use schema verbatim
+  return f.createPropertyAccessExpression(
+    f.createIdentifier(opts.z),
+    f.createIdentifier(schema)
+  );
+}
+
+function _buildZodPrimitive({
   z,
   typeNode,
   isOptional,
@@ -493,6 +551,18 @@ function buildZodPrimitive({
 
     const nodes = typeNode.types.filter(isNotNull);
 
+    // string-only enum? issue z.enum
+    if (typeNode.types.every((i) =>
+      ts.isLiteralTypeNode(i) && i.literal.kind === ts.SyntaxKind.StringLiteral
+    )) {
+      return buildZodSchema(
+        z,
+        "enum",
+        [f.createArrayLiteralExpression(nodes.map((i) => (i as any)["literal"]))],
+        zodProperties
+      );
+    }
+
     // type A = | 'b' is a valid typescript definition
     // Zod does not allow `z.union(['b']), so we have to return just the value
     if (nodes.length === 1) {
@@ -530,10 +600,16 @@ function buildZodPrimitive({
       });
     }
 
+    // discriminator specified? use discriminatedUnion
     return buildZodSchema(
       z,
-      "union",
-      [f.createArrayLiteralExpression(values)],
+      jsDocTags.discriminator !== undefined
+        ? "discriminatedUnion"
+        : "union",
+      jsDocTags.discriminator !== undefined
+        ? [f.createStringLiteral(jsDocTags.discriminator),
+           f.createArrayLiteralExpression(values)]
+        : [f.createArrayLiteralExpression(values)],
       zodProperties
     );
   }
