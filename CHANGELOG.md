@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.1.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.1...v3.1.0) (2023-05-17)
+
+
+### Features
+
+* Adding JSDoc tag `useStrict` to output `strict()` modifier ([#131](https://www.github.com/fabien0102/ts-to-zod/issues/131)) ([f73a676](https://www.github.com/fabien0102/ts-to-zod/commit/f73a67656c3ae351a02a6435ee0fe4202a55b6d6))
+
 ### [3.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.0...v3.0.1) (2023-05-17)
 
 
