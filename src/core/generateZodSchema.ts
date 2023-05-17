@@ -576,13 +576,10 @@ function buildZodPrimitive({
         zodProperties
       );
     }
-    // Deal with -XX values
-    if (typeNode.literal.kind === ts.SyntaxKind.PrefixUnaryExpression) {
-      const expression = typeNode.literal as ts.PrefixUnaryExpression;
-
+    if (ts.isPrefixUnaryExpression(typeNode.literal)) {
       if (
-        expression.operator === ts.SyntaxKind.MinusToken &&
-        ts.isNumericLiteral(expression.operand)
+        typeNode.literal.operator === ts.SyntaxKind.MinusToken &&
+        ts.isNumericLiteral(typeNode.literal.operand)
       ) {
         return buildZodSchema(
           z,
@@ -590,7 +587,7 @@ function buildZodPrimitive({
           [
             f.createPrefixUnaryExpression(
               ts.SyntaxKind.MinusToken,
-              f.createNumericLiteral(expression.operand.text)
+              f.createNumericLiteral(typeNode.literal.operand.text)
             ),
           ],
           zodProperties
