@@ -847,6 +847,47 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate add strict() validation when @strict is used", () => {
+    const source = `/**
+    * @strict
+    */
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "/**
+           * @strict
+           */
+       export const supermanSchema = z.object({
+           name: z.literal(\\"superman\\"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           enemies: z.array(z.string())
+       }).strict();"
+     `);
+  });
+
+  it("should generate add strict() validation when @strict is used on subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a: {
+        b: number
+      }
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict()
+      });"
+    `);
+  });
+
   it("should deal with nullable", () => {
     const source = `export interface A {
       /** @minimum 0 */
