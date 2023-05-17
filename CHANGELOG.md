@@ -1,5 +1,13 @@
 # Changelog
 
+### [3.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.0...v3.0.1) (2023-05-17)
+
+
+### Bug Fixes
+
+* Handling negative literals ([#132](https://www.github.com/fabien0102/ts-to-zod/issues/132)) ([a1ad399](https://www.github.com/fabien0102/ts-to-zod/commit/a1ad3993db02f9a144cdc0f36dff0324f124f84d))
+* support numeric literal keys ([#120](https://www.github.com/fabien0102/ts-to-zod/issues/120)) ([7bbed16](https://www.github.com/fabien0102/ts-to-zod/commit/7bbed16db6243a7c09312d49d95a5fc61b62ba09))
+
 ## [3.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v2.0.1...v3.0.0) (2023-03-13)
 
 
