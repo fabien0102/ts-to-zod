@@ -30,7 +30,7 @@ export interface JSDocTags {
   maxLength?: TagWithError<number>;
   format?: TagWithError<typeof formats[-1]>;
   pattern?: string;
-  useStrict?: boolean;
+  strict?: boolean;
 }
 
 /**
@@ -100,7 +100,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
         const tagName = tag.tagName.escapedText.toString();
 
         // Handling "unary operator" tag first (no tag.comment part needed)
-        if (tagName === "useStrict") {
+        if (tagName === "strict") {
           jsDocTags[tagName] = true;
           return;
         }
@@ -263,7 +263,7 @@ export function jsDocTagToZodProperties(
           : [f.createStringLiteral(jsDocTags.default)],
     });
   }
-  if (jsDocTags.useStrict) {
+  if (jsDocTags.strict) {
     zodProperties.push({ identifier: "strict" });
   }
 

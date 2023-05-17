@@ -847,9 +847,9 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate add strict() validation when @useStrict is used", () => {
+  it("should generate add strict() validation when @strict is used", () => {
     const source = `/**
-    * @useStrict
+    * @strict
     */
     export type Superman = {
       name: "superman";
@@ -859,7 +859,7 @@ describe("generateZodSchema", () => {
     };`;
     expect(generate(source)).toMatchInlineSnapshot(`
        "/**
-           * @useStrict
+           * @strict
            */
        export const supermanSchema = z.object({
            name: z.literal(\\"superman\\"),
@@ -870,9 +870,9 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should generate add strict() validation when @useStrict is used on subtype", () => {
+  it("should generate add strict() validation when @strict is used on subtype", () => {
     const source = `export interface A {
-      /** @useStrict */
+      /** @strict */
       a: {
         b: number
       }
@@ -880,7 +880,7 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
-          /** @useStrict */
+          /** @strict */
           a: z.object({
               b: z.number()
           }).strict()

@@ -135,7 +135,7 @@ Other JSDoc tags are available:
 | JSDoc keyword      | JSDoc Example | Description                               | Generated Zod            |
 | ------------------ | ------------- | ----------------------------------------- | ------------------------ |
 | `@default {value}` | `@default 42` | Sets a default value for the property     | `z.number().default(42)` |
-| `@useStrict`       | `@useStrict`  | Adds the `strict()` modifier to an object | `z.object().strict()`    |
+| `@strict`          | `@strict`     | Adds the `strict()` modifier to an object | `z.object().strict()`    |
 
 ## Advanced configuration
 
