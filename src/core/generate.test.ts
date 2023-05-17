@@ -160,7 +160,7 @@ describe("generate", () => {
       }
 
       export interface IHaveUnknownDependency {
-        dep: UnknwonDependency; // <- Missing dependency
+        dep: UnknownDependency; // <- Missing dependency
       }
       `;
 
@@ -228,6 +228,7 @@ describe("generate", () => {
       expect(errors).toMatchInlineSnapshot(`
         Array [
           "Some schemas can't be generated due to direct or indirect missing dependencies:
+        unknownDependencySchema
         iHaveUnknownDependencySchema",
         ]
       `);
