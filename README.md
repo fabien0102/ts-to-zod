@@ -388,6 +388,28 @@ export const heroSchema = z.object({
 });
 ```
 
+It can also reference classes imported from non-relative modules:
+
+```ts
+// source.ts
+import { Person } from "@3rdparty/person";
+
+export interface Hero {
+  name: string;
+  realPerson: Person;
+}
+
+//output.ts
+import { Person } from "@3rdparty/person";
+
+const personSchema = z.instanceof(Person);
+
+export const heroSchema = z.object({
+  name: z.string(),
+  realPerson: personSchema,
+});
+```
+
 ## Programmatic API
 
 You need more than one file? Want even more power? No problem, just use the tool as a library.
