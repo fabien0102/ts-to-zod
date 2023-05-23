@@ -174,6 +174,42 @@ export function generateZodSchemaVariableStatement({
   };
 }
 
+/**
+ * Generate zod schema declaration for imported classes
+ *
+ * ```ts
+ * const ${varName} = ${zodImportValue}.instanceof(${importName})
+ * ```
+ */
+export function generateZodSchemaVariableStatementForClass({
+  className,
+  varName,
+  zodImportValue = "z",
+}: {
+  className: string;
+  varName: string;
+  zodImportValue: string;
+}) {
+  const schema = buildZodSchema(zodImportValue, "instanceof", [
+    f.createIdentifier(className),
+  ]);
+
+  return f.createVariableStatement(
+    undefined, // No modifier expected
+    f.createVariableDeclarationList(
+      [
+        f.createVariableDeclaration(
+          f.createIdentifier(varName),
+          undefined,
+          undefined,
+          schema
+        ),
+      ],
+      ts.NodeFlags.Const
+    )
+  );
+}
+
 function buildZodProperties({
   members,
   zodImportValue: z,
