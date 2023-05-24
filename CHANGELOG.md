@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.1.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.0...v3.1.1) (2023-05-24)
+
+
+### Bug Fixes
+
+* strict() keyword working root interfaces ([#134](https://www.github.com/fabien0102/ts-to-zod/issues/134)) ([a9f6f03](https://www.github.com/fabien0102/ts-to-zod/commit/a9f6f030c85f1fb199c902348e6ff23c99c1a335))
+
 ## [3.1.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.1...v3.1.0) (2023-05-17)
 
 
