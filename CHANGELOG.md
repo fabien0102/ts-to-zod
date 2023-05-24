@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.1.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.1...v3.1.2) (2023-05-24)
+
+
+### Bug Fixes
+
+* strict() modifier should come before optional/nullable ([#137](https://www.github.com/fabien0102/ts-to-zod/issues/137)) ([f8be6bd](https://www.github.com/fabien0102/ts-to-zod/commit/f8be6bde6f8fa65310ac0a17f679ed61a3be3480))
+
 ### [3.1.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.0...v3.1.1) (2023-05-24)
 
 
