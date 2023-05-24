@@ -870,7 +870,7 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should generate add strict() validation when @strict is used on subtype", () => {
+  it("should add strict() validation when @strict is used on subtype", () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -884,6 +884,42 @@ describe("generateZodSchema", () => {
           a: z.object({
               b: z.number()
           }).strict()
+      });"
+    `);
+  });
+
+  it("should add strict() before optional() validation when @strict is used on optional subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a?: {
+        b: number
+      }
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict().optional()
+      });"
+    `);
+  });
+
+  it("should add strict() before nullable() validation when @strict is used on nullable subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a: {
+        b: number
+      } | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict().nullable()
       });"
     `);
   });

@@ -230,6 +230,10 @@ export function jsDocTagToZodProperties(
       expressions: [f.createRegularExpressionLiteral(`/${jsDocTags.pattern}/`)],
     });
   }
+  // strict() must be before optional() and nullable()
+  if (jsDocTags.strict) {
+    zodProperties.push({ identifier: "strict" });
+  }
   if (isOptional) {
     zodProperties.push({
       identifier: "optional",
@@ -262,9 +266,6 @@ export function jsDocTagToZodProperties(
           ? [f.createNumericLiteral(jsDocTags.default)]
           : [f.createStringLiteral(jsDocTags.default)],
     });
-  }
-  if (jsDocTags.strict) {
-    zodProperties.push({ identifier: "strict" });
   }
 
   return zodProperties;
