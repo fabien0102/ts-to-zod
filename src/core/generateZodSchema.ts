@@ -108,6 +108,20 @@ export function generateZodSchemaVariableStatement({
       schemaExtensionClauses,
       skipParseJSDoc,
     });
+
+    if (!skipParseJSDoc) {
+      const jsDocTags = getJSDocTags(node, sourceFile);
+      if (jsDocTags.strict) {
+        schema = f.createCallExpression(
+          f.createPropertyAccessExpression(
+            schema,
+            f.createIdentifier("strict")
+          ),
+          undefined,
+          undefined
+        );
+      }
+    }
   }
 
   if (ts.isTypeAliasDeclaration(node)) {
