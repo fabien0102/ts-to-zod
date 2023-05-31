@@ -95,11 +95,7 @@ export function generate({
       if (!jsDocTagFilter(tags)) return;
       if (!nameFilter(node.name.text)) return;
 
-      const typeNames = getExtractedTypeNames(
-        node,
-        sourceFile,
-        typeNameMapping
-      );
+      const typeNames = getExtractedTypeNames(node, sourceFile);
       typeNames.forEach((typeName) => {
         typesNeedToBeExtracted.add(typeName);
       });

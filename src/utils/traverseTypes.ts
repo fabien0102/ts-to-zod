@@ -1,10 +1,9 @@
 import ts from "typescript";
 
-export type TypeNode = (
+export type TypeNode =
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
-  | ts.EnumDeclaration
-) & { visited?: boolean };
+  | ts.EnumDeclaration;
 
 export function isTypeNode(node: ts.Node): node is TypeNode {
   return (
@@ -17,12 +16,8 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
 export function getExtractedTypeNames(
   node: TypeNode,
   sourceFile: ts.SourceFile
-) {
-  const referenceTypeNames: string[] = [];
-
-  if (node.visited) {
-    return;
-  }
+): string[] {
+  const referenceTypeNames: string[] = [node.name.text];
 
   const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
 
@@ -48,5 +43,5 @@ export function getExtractedTypeNames(
     }
   });
 
-  return [node.name.text, ...referenceTypeNames];
+  return referenceTypeNames;
 }
