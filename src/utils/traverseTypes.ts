@@ -39,11 +39,11 @@ export function getExtractedTypeNames(
 
   node.forEachChild((child) => {
     const childNode = child as ts.PropertySignature;
-    if (childNode.kind !== ts.SyntaxKind.PropertySignature) {
+    if (!ts.isPropertySignature(childNode)) {
       return;
     }
 
-    if (childNode.type?.kind === ts.SyntaxKind.TypeReference) {
+    if (childNode.type && ts.isTypeReferenceNode(childNode.type)) {
       referenceTypeNames.push(childNode.type.getText(sourceFile));
     }
   });
