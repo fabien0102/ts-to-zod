@@ -33,7 +33,7 @@ export function getExtractedTypeNames(
     });
   }
 
-  node.forEachChild((child) => {
+  const visitorExtract = (child: ts.Node) => {
     const childNode = child as ts.PropertySignature;
     if (!ts.isPropertySignature(childNode)) {
       return;
@@ -47,9 +47,13 @@ export function getExtractedTypeNames(
         ts.isTypeNode(childNode.type.elementType)
       ) {
         referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
+      } else if (ts.isTypeLiteralNode(childNode.type)) {
+        childNode.type.forEachChild(visitorExtract);
       }
     }
-  });
+  };
+
+  node.forEachChild(visitorExtract);
 
   return Array.from(referenceTypeNames);
 }

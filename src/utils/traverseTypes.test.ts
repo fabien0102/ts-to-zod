@@ -74,6 +74,18 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Superhero", "Person"]);
     });
 
+    it("should extract nested type reference", () => {
+      const source = `
+          export interface Superhero {
+              id: number,
+              person: {
+                type: Person,
+              }
+          }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
   });
 });
 
