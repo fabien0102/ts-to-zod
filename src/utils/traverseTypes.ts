@@ -49,6 +49,15 @@ export function getExtractedTypeNames(
         referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
       } else if (ts.isTypeLiteralNode(childNode.type)) {
         childNode.type.forEachChild(visitorExtract);
+      } else if (
+        ts.isIntersectionTypeNode(childNode.type) ||
+        ts.isUnionTypeNode(childNode.type)
+      ) {
+        childNode.type.types.forEach((typeNode: ts.TypeNode) => {
+          if (ts.isTypeReferenceNode(typeNode)) {
+            referenceTypeNames.add(typeNode.getText(sourceFile));
+          } else typeNode.forEachChild(visitorExtract);
+        });
       }
     }
   };
