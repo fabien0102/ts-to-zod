@@ -89,10 +89,10 @@ describe("traverseTypes", () => {
 
     it("should extract union type reference", () => {
       const source = `
-            export interface Person {
-                id: number,
-                t: SuperHero | Villain
-            }`;
+        export interface Person {
+            id: number,
+            t: SuperHero | Villain
+        }`;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero", "Villain"]);
@@ -100,10 +100,10 @@ describe("traverseTypes", () => {
 
     it("should extract intersection type reference", () => {
       const source = `
-              export interface Person {
-                  id: number,
-                  t: SuperHero & Villain
-              }`;
+        export interface Person {
+            id: number,
+            t: SuperHero & Villain
+        }`;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero", "Villain"]);
@@ -111,10 +111,10 @@ describe("traverseTypes", () => {
 
     it("should extract intersection type reference with type literal", () => {
       const source = `
-                export interface Person {
-                    id: number,
-                    t: SuperHero & { counter: Villain }
-                }`;
+        export interface Person {
+            id: number,
+            t: SuperHero & { counter: Villain }
+        }`;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero", "Villain"]);
