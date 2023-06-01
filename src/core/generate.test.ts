@@ -735,7 +735,7 @@ describe("generate", () => {
       }
       `;
 
-      const { getZodSchemasFile, errors } = generate({
+      const { getZodSchemasFile } = generate({
         sourceText,
       });
 
