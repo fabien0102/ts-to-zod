@@ -39,8 +39,15 @@ export function getExtractedTypeNames(
       return;
     }
 
-    if (childNode.type && ts.isTypeReferenceNode(childNode.type)) {
-      referenceTypeNames.add(childNode.type.getText(sourceFile));
+    if (childNode.type) {
+      if (ts.isTypeReferenceNode(childNode.type)) {
+        referenceTypeNames.add(childNode.type.getText(sourceFile));
+      } else if (
+        ts.isArrayTypeNode(childNode.type) &&
+        ts.isTypeNode(childNode.type.elementType)
+      ) {
+        referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
+      }
     }
   });
 

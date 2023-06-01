@@ -62,6 +62,18 @@ describe("traverseTypes", () => {
       const result = extractNames(source);
       expect(result).toEqual(["Superhero", "Person", "Person2"]);
     });
+
+    it("should extract type referenced in property as array", () => {
+      const source = `
+            export interface Superhero {
+                id: number,
+                sidekicks: Person[],
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
+
   });
 });
 
