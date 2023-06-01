@@ -17,7 +17,8 @@ export function getExtractedTypeNames(
   node: TypeNode,
   sourceFile: ts.SourceFile
 ): string[] {
-  const referenceTypeNames: string[] = [node.name.text];
+  const referenceTypeNames = new Set<string>();
+  referenceTypeNames.add(node.name.text);
 
   const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
 
@@ -27,7 +28,7 @@ export function getExtractedTypeNames(
       extensionTypes.forEach((extensionTypeNode) => {
         const typeName = extensionTypeNode.expression.getText(sourceFile);
 
-        referenceTypeNames.push(typeName);
+        referenceTypeNames.add(typeName);
       });
     });
   }
@@ -39,9 +40,9 @@ export function getExtractedTypeNames(
     }
 
     if (childNode.type && ts.isTypeReferenceNode(childNode.type)) {
-      referenceTypeNames.push(childNode.type.getText(sourceFile));
+      referenceTypeNames.add(childNode.type.getText(sourceFile));
     }
   });
 
-  return referenceTypeNames;
+  return Array.from(referenceTypeNames);
 }
