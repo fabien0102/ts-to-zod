@@ -1,10 +1,9 @@
 import ts from "typescript";
 
-export type TypeNode = (
+export type TypeNode =
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
-  | ts.EnumDeclaration
-) & { visited?: boolean };
+  | ts.EnumDeclaration;
 
 export function isTypeNode(node: ts.Node): node is TypeNode {
   return (
@@ -16,56 +15,54 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
 
 export function getExtractedTypeNames(
   node: TypeNode,
-  sourceFile: ts.SourceFile,
-  typeNameMapping: Map<string, TypeNode>
-) {
-  const referenceTypeNames: string[] = [];
+  sourceFile: ts.SourceFile
+): string[] {
+  const referenceTypeNames = new Set<string>();
+  referenceTypeNames.add(node.name.text);
 
-  const recursiveExtract = (node: TypeNode) => {
-    if (node.visited) {
+  const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
+
+  if (heritageClauses) {
+    heritageClauses.forEach((clause) => {
+      const extensionTypes = clause.types;
+      extensionTypes.forEach((extensionTypeNode) => {
+        const typeName = extensionTypeNode.expression.getText(sourceFile);
+
+        referenceTypeNames.add(typeName);
+      });
+    });
+  }
+
+  const visitorExtract = (child: ts.Node) => {
+    const childNode = child as ts.PropertySignature;
+    if (!ts.isPropertySignature(childNode)) {
       return;
     }
 
-    const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
-
-    if (heritageClauses) {
-      heritageClauses.forEach((clause) => {
-        const extensionTypes = clause.types;
-        extensionTypes.forEach((extensionTypeNode) => {
-          const typeName = extensionTypeNode.expression.getText(sourceFile);
-          const typeNode = typeNameMapping.get(typeName);
-
-          referenceTypeNames.push(typeName);
-
-          if (typeNode) {
-            typeNode.visited = true;
-            recursiveExtract(typeNode);
-          }
+    if (childNode.type) {
+      if (ts.isTypeReferenceNode(childNode.type)) {
+        referenceTypeNames.add(childNode.type.getText(sourceFile));
+      } else if (
+        ts.isArrayTypeNode(childNode.type) &&
+        ts.isTypeNode(childNode.type.elementType)
+      ) {
+        referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
+      } else if (ts.isTypeLiteralNode(childNode.type)) {
+        childNode.type.forEachChild(visitorExtract);
+      } else if (
+        ts.isIntersectionTypeNode(childNode.type) ||
+        ts.isUnionTypeNode(childNode.type)
+      ) {
+        childNode.type.types.forEach((typeNode: ts.TypeNode) => {
+          if (ts.isTypeReferenceNode(typeNode)) {
+            referenceTypeNames.add(typeNode.getText(sourceFile));
+          } else typeNode.forEachChild(visitorExtract);
         });
-      });
+      }
     }
-
-    node.forEachChild((child) => {
-      const childNode = child as ts.PropertySignature;
-      if (childNode.kind !== ts.SyntaxKind.PropertySignature) {
-        return;
-      }
-
-      if (childNode.type?.kind === ts.SyntaxKind.TypeReference) {
-        const typeNode = typeNameMapping.get(
-          childNode.type.getText(sourceFile)
-        );
-
-        referenceTypeNames.push(childNode.type.getText(sourceFile));
-
-        if (typeNode) {
-          typeNode.visited = true;
-          recursiveExtract(typeNode);
-        }
-      }
-    });
   };
 
-  recursiveExtract(node);
-  return [node.name.text, ...referenceTypeNames];
+  node.forEachChild(visitorExtract);
+
+  return Array.from(referenceTypeNames);
 }
