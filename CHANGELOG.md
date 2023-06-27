@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.1.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.2...v3.1.3) (2023-06-27)
+
+
+### Bug Fixes
+
+* relax any type validation ([#142](https://www.github.com/fabien0102/ts-to-zod/issues/142)) ([7e75f90](https://www.github.com/fabien0102/ts-to-zod/commit/7e75f90ff0a00e2e60c2b5e329880364e1acd15e))
+
 ### [3.1.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.1...v3.1.2) (2023-05-24)
 
 
