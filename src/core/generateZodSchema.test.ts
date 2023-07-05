@@ -696,6 +696,34 @@ describe("generateZodSchema", () => {
        * @maximum 500
        */
       age: number;
+
+      /**
+       * The hero's birthday.
+       *
+       * @format date-time
+       */
+      birthday: string;
+
+      /**
+       * The hero's ipv4 address.
+       *
+       * @format ipv4
+       */
+      ipv4: string;
+
+      /**
+       * The hero's ipv6 address.
+       *
+       * @format ipv6
+       */
+      ipv6: string;
+
+      /**
+       * The hero's ip address.
+       *
+       * @format ip
+       */
+      ip: string;
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -730,7 +758,31 @@ describe("generateZodSchema", () => {
            * @minimum 0
            * @maximum 500
            */
-          age: z.number().min(0).max(500)
+          age: z.number().min(0).max(500),
+          /**
+           * The hero's birthday.
+           *
+           * @format date-time
+           */
+          birthday: z.string().datetime(),
+          /**
+           * The hero's ipv4 address.
+           *
+           * @format ipv4
+           */
+          ipv4: z.string().ip({ version: \\"v4\\" }),
+          /**
+           * The hero's ipv6 address.
+           *
+           * @format ipv6
+           */
+          ipv6: z.string().ip({ version: \\"v6\\" }),
+          /**
+           * The hero's ip address.
+           *
+           * @format ip
+           */
+          ip: z.string().ip()
       });"
     `);
   });
@@ -757,6 +809,20 @@ describe("generateZodSchema", () => {
        * @format email "Should be an email"
        */
       supermanEmail: string;
+
+      /**
+       * The hero's ipv6 address.
+       *
+       * @format ipv6 Must be an ipv6 address
+       */
+      ipv6: string;
+
+      /**
+       * The hero's ip address.
+       *
+       * @format ip "Must be a ipv4 or an ipv6 address"
+       */
+      ip: string;
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -777,7 +843,19 @@ describe("generateZodSchema", () => {
            *
            * @format email \\"Should be an email\\"
            */
-          supermanEmail: z.string().email(\\"Should be an email\\")
+          supermanEmail: z.string().email(\\"Should be an email\\"),
+          /**
+           * The hero's ipv6 address.
+           *
+           * @format ipv6 Must be an ipv6 address
+           */
+          ipv6: z.string().ip({ version: \\"v6\\", message: \\"Must be an ipv6 address\\" }),
+          /**
+           * The hero's ip address.
+           *
+           * @format ip \\"Must be a ipv4 or an ipv6 address\\"
+           */
+          ip: z.string().ip(\\"Must be a ipv4 or an ipv6 address\\")
       });"
     `);
   });
