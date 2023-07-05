@@ -911,6 +911,45 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate custom error messages for custom jsdoc format types", () => {
+    const source = `export interface Info {
+      /**
+       * A birthday.
+       *
+       * @format date Must be in YYYY-MM-DD format.
+       */
+      birthday: string;
+
+      /**
+       * Some time.
+       *
+       * @format time
+       */
+      time: string;
+    }`;
+    expect(
+      generate(source, undefined, undefined, {
+        date: "^\\d{4}-\\d{2}-\\d{2}$",
+        time: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+      })
+    ).toMatchInlineSnapshot(`
+      "export const infoSchema = z.object({
+          /**
+           * A birthday.
+           *
+           * @format date Must be in YYYY-MM-DD format.
+           */
+          birthday: z.string().regex(/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/, \\"Must be in YYYY-MM-DD format.\\"),
+          /**
+           * Some time.
+           *
+           * @format time
+           */
+          time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      });"
+    `);
+  });
+
   it("should generate validator on top-level types", () => {
     const source = `/**
     * @minLength 1
@@ -1271,7 +1310,12 @@ describe("generateZodSchema", () => {
  * @param sourceText Typescript interface or type
  * @returns Generated Zod schema
  */
-function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
+function generate(
+  sourceText: string,
+  z?: string,
+  skipParseJSDoc?: boolean,
+  customJSDocFormats: Record<string, string> = {}
+) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
     sourceText,
@@ -1301,6 +1345,7 @@ function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
     sourceFile,
     varName: zodConstName,
     skipParseJSDoc,
+    customJSDocFormats,
   });
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })

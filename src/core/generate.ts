@@ -5,9 +5,9 @@ import { JSDocTagFilter, NameFilter } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
 import {
+  TypeNode,
   getExtractedTypeNames,
   isTypeNode,
-  TypeNode,
 } from "../utils/traverseTypes";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
@@ -52,6 +52,11 @@ export interface GenerateProps {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
+
+  /**
+   * A record of custom `@format` types with their corresponding regex patterns.
+   */
+  customJSDocFormats?: Record<string, string>;
 }
 
 /**
@@ -66,6 +71,7 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
   skipParseJSDoc = false,
+  customJSDocFormats = {},
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -121,6 +127,7 @@ export function generate({
       varName,
       getDependencyName: getSchemaName,
       skipParseJSDoc,
+      customJSDocFormats,
     });
 
     return { typeName, varName, ...zodSchema };

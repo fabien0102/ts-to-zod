@@ -132,4 +132,11 @@ export interface HeroContact {
    * @maximum 500
    */
   age: number;
+
+  /**
+   * The hero's birthday in YYYY-MM-DD format.
+   *
+   * @format date
+   */
+  birthday: string;
 }

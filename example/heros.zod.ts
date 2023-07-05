@@ -81,6 +81,7 @@ export const heroContactSchema = z.object({
   phoneNumber: z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/),
   hasSuperPower: z.boolean().optional().default(true),
   age: z.number().min(0).max(500),
+  birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
 export const supermanEnemySchema = supermanSchema.shape.enemies.valueSchema;

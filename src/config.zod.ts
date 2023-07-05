@@ -31,6 +31,7 @@ export const configSchema = z.object({
   keepComments: z.boolean().optional().default(false),
   skipParseJSDoc: z.boolean().optional().default(false),
   inferredTypes: z.string().optional(),
+  customJSDocFormats: z.record(z.string()).optional(),
 });
 
 export const configsSchema = z.array(

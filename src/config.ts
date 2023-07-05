@@ -66,6 +66,11 @@ export type Config = {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
+
+  /**
+   * A record of custom `@format` types with their corresponding regex patterns.
+   */
+  customJSDocFormats?: Record<string, string>;
 };
 
 export type Configs = Array<

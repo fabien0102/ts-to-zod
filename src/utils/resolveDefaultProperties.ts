@@ -22,7 +22,7 @@ export function resolveDefaultProperties(sourceText: string) {
       node = ts.visitEachChild(node, visit, context);
 
       if (ts.isPropertySignature(node)) {
-        const jsDocTags = getJSDocTags(node, sourceFile);
+        const jsDocTags = getJSDocTags(node, sourceFile, {});
         if (jsDocTags.default !== undefined) {
           const type = node.type
             ? ts.visitEachChild(node.type, omitUndefinedKeyword, context)

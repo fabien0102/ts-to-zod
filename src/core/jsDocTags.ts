@@ -6,7 +6,7 @@ const { factory: f } = ts;
 /**
  * List of formats that can be translated in zod functions.
  */
-const supportedJSDocFormats = [
+const builtInJSDocFormatsTypes = [
   "email" as const,
   "uuid" as const,
   // "uri" as const,
@@ -32,7 +32,11 @@ export interface JSDocTags {
   default?: number | string | boolean;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
-  format?: TagWithError<typeof supportedJSDocFormats[-1]>;
+  format?: TagWithError<string>;
+  /**
+   * Due to parsing ambiguities, `@pattern`
+   * does not support custom error messages.
+   */
   pattern?: string;
   strict?: boolean;
 }
@@ -58,12 +62,24 @@ function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
 /**
  * Typeguard to filter supported JSDoc format tag values.
  *
- * @param format
+ * @param formatType
  */
-function isSupportedFormat(
-  format = ""
-): format is Required<JSDocTags>["format"]["value"] {
-  return (supportedJSDocFormats as string[]).includes(format);
+function isBuiltInFormatType(
+  formatType = ""
+): formatType is Required<JSDocTags>["format"]["value"] {
+  return (builtInJSDocFormatsTypes as string[]).includes(formatType);
+}
+
+/**
+ * Helper to check whether a string is a custom format type.
+ *
+ * @param formatType
+ */
+function isCustomFormatType(
+  formatType: string,
+  customJSDocFormats: Record<string, string>
+): boolean {
+  return formatType in customJSDocFormats;
 }
 
 /**
@@ -97,7 +113,8 @@ function parseJsDocComment(
  */
 export function getJSDocTags(
   nodeType: ts.Node,
-  sourceFile: ts.SourceFile
+  sourceFile: ts.SourceFile,
+  customJSDocFormats: Record<string, string>
 ): JSDocTags {
   const jsDocTags: JSDocTags = {};
   if (!canHaveJsDoc(nodeType)) return jsDocTags;
@@ -136,7 +153,10 @@ export function getJSDocTags(
           }
           break;
         case "format":
-          if (isSupportedFormat(value)) {
+          if (
+            isBuiltInFormatType(value) ||
+            isCustomFormatType(value, customJSDocFormats)
+          ) {
             jsDocTags[tagName] = { value, errorMessage };
           }
           break;
@@ -183,13 +203,15 @@ export type ZodProperty = {
  * @param isPartial
  * @param isRequired
  * @param isNullable
+ * @param customJSDocFormats
  */
 export function jsDocTagToZodProperties(
   jsDocTags: JSDocTags,
   isOptional: boolean,
   isPartial: boolean,
   isRequired: boolean,
-  isNullable: boolean
+  isNullable: boolean,
+  customJSDocFormats: Record<string, string>
 ) {
   const zodProperties: ZodProperty[] = [];
   if (jsDocTags.minimum !== undefined) {
@@ -229,13 +251,12 @@ export function jsDocTagToZodProperties(
     });
   }
   if (jsDocTags.format) {
-    zodProperties.push(formatToZodProperty(jsDocTags.format));
+    zodProperties.push(
+      formatToZodProperty(jsDocTags.format, { customJSDocFormats })
+    );
   }
   if (jsDocTags.pattern) {
-    zodProperties.push({
-      identifier: "regex",
-      expressions: [f.createRegularExpressionLiteral(`/${jsDocTags.pattern}/`)],
-    });
+    zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
   }
   // strict() must be before optional() and nullable()
   if (jsDocTags.strict) {
@@ -278,15 +299,29 @@ export function jsDocTagToZodProperties(
   return zodProperties;
 }
 
+type FormatToZodPropertyOptions = {
+  customJSDocFormats?: Record<string, string>;
+};
+
 /**
  * Converts the given JSDoc format to the corresponding Zod
  * string validation function call represented by a {@link ZodProperty}.
  * @param format The format to be converted.
+ * @param options Options for customizing the conversion.
  * @returns A ZodProperty representing a Zod string validation function call.
  */
 function formatToZodProperty(
-  format: Exclude<JSDocTags["format"], undefined>
+  format: Exclude<JSDocTags["format"], undefined>,
+  options: FormatToZodPropertyOptions = {}
 ): ZodProperty {
+  const { customJSDocFormats } = options;
+  if (customJSDocFormats && format.value in customJSDocFormats) {
+    return createZodRegexProperty(
+      customJSDocFormats[format.value],
+      format.errorMessage
+    );
+  }
+
   const identifier = formatTypeToZodPropertyIdentifier(format.value);
   const expressions = formatTypeToZodPropertyArguments(
     format.value,
@@ -296,13 +331,22 @@ function formatToZodProperty(
 }
 
 /**
+ * Treat this type as any string. It is simply used to prevent TypeScript
+ * from widening types and dropping autocomplete.
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+type CustomJSDocFormatType = string & {};
+
+/**
  * Maps the given JSDoc format type to its corresponding
  * Zod string validation function name.
  * @param formatType The format type to be converted.
  * @returns The name of a Zod string validation function.
  */
 function formatTypeToZodPropertyIdentifier(
-  formatType: Exclude<JSDocTags["format"], undefined>["value"]
+  formatType:
+    | Exclude<JSDocTags["format"], undefined>["value"]
+    | CustomJSDocFormatType
 ): keyof ZodString {
   switch (formatType) {
     case "date-time":
@@ -338,8 +382,8 @@ function formatTypeToZodPropertyArguments(
 }
 
 /**
- * Constructs a A list of expressions which represent the arguments
- * for `ip()` string validation function..
+ * Constructs a list of expressions which represent the arguments
+ * for `ip()` string validation function.
  * @param version The IP version to use.
  * @param errorMessage The error message to display if validation fails.
  * @returns A list of expressions which represent the function arguments.
@@ -359,6 +403,26 @@ function createZodStringIpArgs(
   }
 
   return [f.createObjectLiteralExpression(propertyAssignments)];
+}
+
+/**
+ * Constructs a ZodProperty that represents a call to
+ * `.regex()` with the given regular expression.
+ * @param regex The regular expression to match.
+ * @param errorMessage The error message to display if validation fails.
+ * @returns A ZodProperty representing a `.regex()` call.
+ */
+function createZodRegexProperty(
+  regex: string,
+  errorMessage?: string
+): ZodProperty {
+  return {
+    identifier: "regex",
+    expressions: withErrorMessage(
+      f.createRegularExpressionLiteral(`/${regex}/`),
+      errorMessage
+    ),
+  };
 }
 
 function withErrorMessage(expression: ts.Expression, errorMessage?: string) {
