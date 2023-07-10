@@ -1,7 +1,9 @@
 import { camel } from "case";
 import ts from "typescript";
+import type { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
+import { customJSDocFormatTypeContext } from "./jsDocTags";
 
 describe("generateZodSchema", () => {
   it("should generate a string schema", () => {
@@ -916,36 +918,54 @@ describe("generateZodSchema", () => {
       /**
        * A birthday.
        *
-       * @format date Must be in YYYY-MM-DD format.
+       * @format date
        */
       birthday: string;
 
       /**
-       * Some time.
+       * A phone number.
        *
-       * @format time
+       * @format phone-number
        */
-      time: string;
+      phoneNumber: string;
+
+      /**
+       * A price.
+       *
+       * @format price Must start with "$" and end with cents.
+       */
+      cost: string;
     }`;
     expect(
       generate(source, undefined, undefined, {
-        date: "^\\d{4}-\\d{2}-\\d{2}$",
-        time: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$",
+        date: {
+          regex: "^\\d{4}-\\d{2}-\\d{2}$",
+          errorMessage: "Must be in YYYY-MM-DD format.",
+        },
+
+        "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
+        price: "^\\$\\d+.\\d{2}$",
       })
     ).toMatchInlineSnapshot(`
       "export const infoSchema = z.object({
           /**
            * A birthday.
            *
-           * @format date Must be in YYYY-MM-DD format.
+           * @format date
            */
           birthday: z.string().regex(/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/, \\"Must be in YYYY-MM-DD format.\\"),
           /**
-           * Some time.
+           * A phone number.
            *
-           * @format time
+           * @format phone-number
            */
-          time: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+          phoneNumber: z.string().regex(/^\\\\d{3}-\\\\d{3}-\\\\d{4}$/),
+          /**
+           * A price.
+           *
+           * @format price Must start with \\"$\\" and end with cents.
+           */
+          cost: z.string().regex(/^\\\\$\\\\d+.\\\\d{2}$/, \\"Must start with \\\\\\"$\\\\\\" and end with cents.\\")
       });"
     `);
   });
@@ -1314,7 +1334,7 @@ function generate(
   sourceText: string,
   z?: string,
   skipParseJSDoc?: boolean,
-  customJSDocFormats: Record<string, string> = {}
+  customJSDocFormats: CustomJSDocFormatTypes = {}
 ) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
@@ -1339,14 +1359,17 @@ function generate(
   const interfaceName = declaration.name.text;
   const zodConstName = `${camel(interfaceName)}Schema`;
 
-  const zodSchema = generateZodSchemaVariableStatement({
-    zodImportValue: z,
-    node: declaration,
-    sourceFile,
-    varName: zodConstName,
-    skipParseJSDoc,
+  const zodSchema = customJSDocFormatTypeContext.run(
     customJSDocFormats,
-  });
+    generateZodSchemaVariableStatement,
+    {
+      zodImportValue: z,
+      node: declaration,
+      sourceFile,
+      varName: zodConstName,
+      skipParseJSDoc,
+    }
+  );
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })
     .printNode(ts.EmitHint.Unspecified, zodSchema.statement, sourceFile);

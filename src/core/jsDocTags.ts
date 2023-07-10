@@ -1,22 +1,86 @@
 import { canHaveJsDoc, getJsDoc } from "tsutils";
 import ts from "typescript";
 import type { ZodString } from "zod";
+import { CustomJSDocFormatTypes } from "../config";
+import { SyncContextWithDefault } from "../utils/SyncContextWithDefault";
 const { factory: f } = ts;
+
+/**
+ * Returns the corresponding regex string
+ * for a custom JSDoc format type.
+ * @param key The format type key.
+ * @returns The corresponding regex string.
+ */
+function getCustomJSDocFormatTypeRegex(key: string): string {
+  const formatValue = customJSDocFormatTypeContext.value[key];
+  if (typeof formatValue === "string") return formatValue;
+  return formatValue.regex;
+}
+
+/**
+ * Returns the corresponding default error
+ * message for a custom JSDoc format type.
+ * @param key The format type key.
+ * @returns The corresponding default error message.
+ */
+function getCustomJSDocFormatTypeErrorMessage(key: string): string | undefined {
+  const formatValue = customJSDocFormatTypeContext.value[key];
+  if (typeof formatValue === "string") return undefined;
+  return formatValue.errorMessage;
+}
+
+/**
+ * This context holds the record of custom JSDoc formats.
+ */
+export const customJSDocFormatTypeContext = new SyncContextWithDefault<CustomJSDocFormatTypes>(
+  {}
+);
 
 /**
  * List of formats that can be translated in zod functions.
  */
 const builtInJSDocFormatsTypes = [
-  "email" as const,
-  "uuid" as const,
-  // "uri" as const,
-  "url" as const,
-  // "date" as const,
   "date-time" as const,
+  "email" as const,
+  "ip" as const,
   "ipv4" as const,
   "ipv6" as const,
-  "ip" as const,
+  "url" as const,
+  "uuid" as const,
+  // "uri" as const,
+  // "date" as const,
 ];
+
+type BuiltInJSDocFormatsType = typeof builtInJSDocFormatsTypes[number];
+
+/**
+ * Type guard to filter supported JSDoc format tag values.
+ *
+ * @param formatType
+ */
+function isBuiltInFormatType(
+  formatType = ""
+): formatType is BuiltInJSDocFormatsType {
+  return (builtInJSDocFormatsTypes as string[]).includes(formatType);
+}
+
+/**
+ * Treat this type as any string. It is simply used to prevent TypeScript
+ * from widening types and dropping autocomplete.
+ */
+// eslint-disable-next-line @typescript-eslint/ban-types
+type CustomJSDocFormatType = string & {};
+
+/**
+ * Type guard to check whether a string is a custom format type.
+ *
+ * @param formatType The format type key.
+ */
+function isCustomFormatType(
+  formatType: string
+): formatType is CustomJSDocFormatType {
+  return formatType in customJSDocFormatTypeContext.value;
+}
 
 type TagWithError<T> = {
   value: T;
@@ -32,7 +96,7 @@ export interface JSDocTags {
   default?: number | string | boolean;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
-  format?: TagWithError<string>;
+  format?: TagWithError<BuiltInJSDocFormatsType | CustomJSDocFormatType>;
   /**
    * Due to parsing ambiguities, `@pattern`
    * does not support custom error messages.
@@ -41,45 +105,23 @@ export interface JSDocTags {
   strict?: boolean;
 }
 
+const jsDocTagKeys: Array<keyof JSDocTags> = [
+  "minimum",
+  "maximum",
+  "default",
+  "minLength",
+  "maxLength",
+  "format",
+  "pattern",
+];
+
 /**
- * Typeguard to filter supported JSDoc tag key.
+ * Type guard to filter supported JSDoc tag key.
  *
  * @param tagName
  */
 function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
-  const keys: Array<keyof JSDocTags> = [
-    "minimum",
-    "maximum",
-    "default",
-    "minLength",
-    "maxLength",
-    "format",
-    "pattern",
-  ];
-  return (keys as string[]).includes(tagName);
-}
-
-/**
- * Typeguard to filter supported JSDoc format tag values.
- *
- * @param formatType
- */
-function isBuiltInFormatType(
-  formatType = ""
-): formatType is Required<JSDocTags>["format"]["value"] {
-  return (builtInJSDocFormatsTypes as string[]).includes(formatType);
-}
-
-/**
- * Helper to check whether a string is a custom format type.
- *
- * @param formatType
- */
-function isCustomFormatType(
-  formatType: string,
-  customJSDocFormats: Record<string, string>
-): boolean {
-  return formatType in customJSDocFormats;
+  return (jsDocTagKeys as string[]).includes(tagName);
 }
 
 /**
@@ -107,14 +149,16 @@ function parseJsDocComment(
 /**
  * Return parsed JSTags.
  *
+ * This function depends on `customJSDocFormatTypeContext`. Before
+ * calling it, make sure the context has been supplied the expected value.
+ *
  * @param nodeType
  * @param sourceFile
  * @returns Tags list
  */
 export function getJSDocTags(
   nodeType: ts.Node,
-  sourceFile: ts.SourceFile,
-  customJSDocFormats: Record<string, string>
+  sourceFile: ts.SourceFile
 ): JSDocTags {
   const jsDocTags: JSDocTags = {};
   if (!canHaveJsDoc(nodeType)) return jsDocTags;
@@ -153,10 +197,7 @@ export function getJSDocTags(
           }
           break;
         case "format":
-          if (
-            isBuiltInFormatType(value) ||
-            isCustomFormatType(value, customJSDocFormats)
-          ) {
+          if (isBuiltInFormatType(value) || isCustomFormatType(value)) {
             jsDocTags[tagName] = { value, errorMessage };
           }
           break;
@@ -196,7 +237,10 @@ export type ZodProperty = {
 };
 
 /**
- * Convert a set of jsDocTags to zod properties
+ * Convert a set of JSDoc tags to zod properties.
+ *
+ * This function depends on `customJSDocFormatTypeContext`. Before
+ * calling it, make sure the context has been supplied the expected value.
  *
  * @param jsDocTags
  * @param isOptional
@@ -210,8 +254,7 @@ export function jsDocTagToZodProperties(
   isOptional: boolean,
   isPartial: boolean,
   isRequired: boolean,
-  isNullable: boolean,
-  customJSDocFormats: Record<string, string>
+  isNullable: boolean
 ) {
   const zodProperties: ZodProperty[] = [];
   if (jsDocTags.minimum !== undefined) {
@@ -251,9 +294,7 @@ export function jsDocTagToZodProperties(
     });
   }
   if (jsDocTags.format) {
-    zodProperties.push(
-      formatToZodProperty(jsDocTags.format, { customJSDocFormats })
-    );
+    zodProperties.push(formatToZodProperty(jsDocTags.format));
   }
   if (jsDocTags.pattern) {
     zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
@@ -299,31 +340,24 @@ export function jsDocTagToZodProperties(
   return zodProperties;
 }
 
-type FormatToZodPropertyOptions = {
-  customJSDocFormats?: Record<string, string>;
-};
-
 /**
  * Converts the given JSDoc format to the corresponding Zod
  * string validation function call represented by a {@link ZodProperty}.
  * @param format The format to be converted.
- * @param options Options for customizing the conversion.
  * @returns A ZodProperty representing a Zod string validation function call.
  */
 function formatToZodProperty(
-  format: Exclude<JSDocTags["format"], undefined>,
-  options: FormatToZodPropertyOptions = {}
+  format: Exclude<JSDocTags["format"], undefined>
 ): ZodProperty {
-  const { customJSDocFormats } = options;
-  if (customJSDocFormats && format.value in customJSDocFormats) {
+  if (isCustomFormatType(format.value)) {
     return createZodRegexProperty(
-      customJSDocFormats[format.value],
-      format.errorMessage
+      getCustomJSDocFormatTypeRegex(format.value),
+      format.errorMessage ?? getCustomJSDocFormatTypeErrorMessage(format.value)
     );
   }
 
-  const identifier = formatTypeToZodPropertyIdentifier(format.value);
-  const expressions = formatTypeToZodPropertyArguments(
+  const identifier = builtInFormatTypeToZodPropertyIdentifier(format.value);
+  const expressions = builtInFormatTypeToZodPropertyArguments(
     format.value,
     format.errorMessage
   );
@@ -331,22 +365,13 @@ function formatToZodProperty(
 }
 
 /**
- * Treat this type as any string. It is simply used to prevent TypeScript
- * from widening types and dropping autocomplete.
- */
-// eslint-disable-next-line @typescript-eslint/ban-types
-type CustomJSDocFormatType = string & {};
-
-/**
  * Maps the given JSDoc format type to its corresponding
  * Zod string validation function name.
  * @param formatType The format type to be converted.
  * @returns The name of a Zod string validation function.
  */
-function formatTypeToZodPropertyIdentifier(
-  formatType:
-    | Exclude<JSDocTags["format"], undefined>["value"]
-    | CustomJSDocFormatType
+function builtInFormatTypeToZodPropertyIdentifier(
+  formatType: BuiltInJSDocFormatsType
 ): keyof ZodString {
   switch (formatType) {
     case "date-time":
@@ -367,8 +392,8 @@ function formatTypeToZodPropertyIdentifier(
  * @param errorMessage The error message to display if validation fails.
  * @returns A list of expressions which represent function arguments.
  */
-function formatTypeToZodPropertyArguments(
-  formatType: Exclude<JSDocTags["format"], undefined>["value"],
+function builtInFormatTypeToZodPropertyArguments(
+  formatType: BuiltInJSDocFormatsType,
   errorMessage?: string
 ): ts.Expression[] | undefined {
   switch (formatType) {

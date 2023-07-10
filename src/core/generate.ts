@@ -52,11 +52,6 @@ export interface GenerateProps {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
-
-  /**
-   * A record of custom `@format` types with their corresponding regex patterns.
-   */
-  customJSDocFormats?: Record<string, string>;
 }
 
 /**
@@ -71,7 +66,6 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
   skipParseJSDoc = false,
-  customJSDocFormats = {},
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -91,11 +85,7 @@ export function generate({
   };
   ts.forEachChild(sourceFile, typeNameMapBuilder);
   const visitor = (node: ts.Node) => {
-    if (
-      ts.isInterfaceDeclaration(node) ||
-      ts.isTypeAliasDeclaration(node) ||
-      ts.isEnumDeclaration(node)
-    ) {
+    if (isTypeNode(node)) {
       const jsDoc = getJsDoc(node, sourceFile);
       const tags = getSimplifiedJsDocTags(jsDoc);
       if (!jsDocTagFilter(tags)) return;
@@ -127,7 +117,6 @@ export function generate({
       varName,
       getDependencyName: getSchemaName,
       skipParseJSDoc,
-      customJSDocFormats,
     });
 
     return { typeName, varName, ...zodSchema };

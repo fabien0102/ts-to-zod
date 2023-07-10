@@ -1,25 +1,26 @@
 import { Command, flags } from "@oclif/command";
-import { OutputFlags } from "@oclif/parser";
 import { error as oclifError } from "@oclif/errors";
-import { readFile, outputFile, existsSync } from "fs-extra";
-import { join, relative, parse } from "path";
+import { OutputFlags } from "@oclif/parser";
+import { eachSeries } from "async";
+import chokidar from "chokidar";
+import { existsSync, outputFile, readFile } from "fs-extra";
+import inquirer from "inquirer";
+import ora from "ora";
+import { join, parse, relative } from "path";
+import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
-import { generate, GenerateProps } from "./core/generate";
-import { TsToZodConfig, Config } from "./config";
+import { Config, TsToZodConfig } from "./config";
 import {
-  tsToZodConfigSchema,
   getSchemaNameSchema,
   nameFilterSchema,
+  tsToZodConfigSchema,
 } from "./config.zod";
-import { getImportPath } from "./utils/getImportPath";
-import ora from "ora";
-import prettier from "prettier";
-import * as worker from "./worker";
-import inquirer from "inquirer";
-import { eachSeries } from "async";
+import { GenerateProps, generate } from "./core/generate";
+import { customJSDocFormatTypeContext } from "./core/jsDocTags";
 import { createConfig } from "./createConfig";
-import chokidar from "chokidar";
+import { getImportPath } from "./utils/getImportPath";
+import * as worker from "./worker";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
@@ -246,6 +247,8 @@ See more help with --help`,
       generateOptions.inferredTypes = flags.inferredTypes;
     }
 
+    const customJSDocFormats = fileConfig?.customJSDocFormats ?? {};
+
     const {
       errors,
       transformedSourceText,
@@ -253,7 +256,11 @@ See more help with --help`,
       getIntegrationTestFile,
       getInferredTypes,
       hasCircularDependencies,
-    } = generate(generateOptions);
+    } = customJSDocFormatTypeContext.run(
+      customJSDocFormats,
+      generate,
+      generateOptions
+    );
 
     if (hasCircularDependencies && !output) {
       return {

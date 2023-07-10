@@ -21,6 +21,15 @@ export const jSDocTagFilterSchema = z
   .args(z.array(simplifiedJSDocTagSchema))
   .returns(z.boolean());
 
+export const customJSDocFormatTypeAttributesSchema = z.object({
+  regex: z.string(),
+  errorMessage: z.string().optional(),
+});
+
+export const customJSDocFormatTypesSchema = z.record(
+  z.union([z.string(), customJSDocFormatTypeAttributesSchema])
+);
+
 export const configSchema = z.object({
   input: z.string(),
   output: z.string(),
@@ -31,7 +40,7 @@ export const configSchema = z.object({
   keepComments: z.boolean().optional().default(false),
   skipParseJSDoc: z.boolean().optional().default(false),
   inferredTypes: z.string().optional(),
-  customJSDocFormats: z.record(z.string()).optional(),
+  customJSDocFormats: customJSDocFormatTypesSchema.optional(),
 });
 
 export const configsSchema = z.array(

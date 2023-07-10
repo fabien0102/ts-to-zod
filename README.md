@@ -29,20 +29,35 @@ Notes:
 - Only exported types/interface are tested (so you can have some private types/interface and just exports the composed type)
 - Even if this is not recommended, you can skip this validation step with `--skipValidation`. (At your own risk!)
 
-## JSDoc tags Validators
+## JSDoc Tag Validators
 
-This tool supports some JSDoc tags inspired from openapi to generate zod validator.
+This tool supports some JSDoc tags (inspired by OpenAPI) to generate additional Zod schema validators.
 
 List of supported keywords:
 
-| JSDoc keyword                      | JSDoc Example     | Generated Zod validator      |
-| ---------------------------------- | ----------------- | ---------------------------- |
-| `@minimum {number}`                | `@minimum 42`     | `z.number().min(42)`         |
-| `@maximum {number}`                | `@maximum 42`     | `z.number().max(42)`         |
-| `@minLength {number}`              | `@minLength 42`   | `z.string().min(42)`         |
-| `@maxLength {number}`              | `@maxLength 42`   | `z.string().max(42)`         |
-| `@format {"email"\|"uuid"\|"url"}` | `@format email`   | `z.string().email()`         |
-| `@pattern {regex}`                 | `@pattern ^hello` | `z.string().regex(/^hello/)` |
+| JSDoc keyword                                                                                                              | JSDoc Example              | Generated Zod validator              |
+| -------------------------------------------------------------------------------------------------------------------------- | -------------------------- | ------------------------------------ |
+| `@minimum {number} [err_msg]`                                                                                              | `@minimum 42`              | `z.number().min(42)`                 |
+| `@maximum {number} [err_msg]`                                                                                              | `@maximum 42 Must be < 42` | `z.number().max(42, "Must be < 42")` |
+| `@minLength {number} [err_msg]`                                                                                            | `@minLength 42`            | `z.string().min(42)`                 |
+| `@maxLength {number} [err_msg]`                                                                                            | `@maxLength 42`            | `z.string().max(42)`                 |
+| `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.string().email()`                 |
+| `@pattern {regex}` <br><br> **Note**: Due to parsing ambiguities, `@pattern` does _not_ support generating error messages. | `@pattern ^hello`          | `z.string().regex(/^hello/)`         |
+
+By default, `FormatType` is defined as:
+
+```ts
+type FormatType =
+  | "date-time"
+  | "email"
+  | "ip"
+  | "ipv4"
+  | "ipv6"
+  | "url"
+  | "uuid";
+```
+
+However, see the section on [Custom JSDoc Format Types](#custom-jsdoc-format-types) to learn more about defining other types of formats for string validation.
 
 Those validators can be combined:
 
@@ -139,7 +154,7 @@ Other JSDoc tags are available:
 
 ## Advanced configuration
 
-If you want to customized the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
+If you want to customize the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
 
 Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of typesafety).
 
@@ -188,7 +203,92 @@ export interface Superman {
 }
 ```
 
-/!\ Please note: if your exported interface/type have a reference to a non-exported interface/type, ts-to-zod will not be able to generate anything (missing dependencies will be reported).
+**Please note**: if your exported interface/type have a reference to a non-exported interface/type, ts-to-zod will not be able to generate anything (missing dependencies will be reported).
+
+### Custom JSDoc Format Types
+
+`ts-to-zod` already supports converting several `@format` types such as `email` and `ip` to built-in Zod string validation functions. However, the types supported out of the box are only a subset of those recognized by the OpenAPI specification, which doesn't fit every use case. Thus, you can use the config file to define additional format types using the `customJSDocFormats` property like so:
+
+```ts
+{
+  "customJSDocFormats": {
+    [formatTypeNoSpaces]:
+      | string
+      | {regex: string, errorMessage: string}
+  }
+}
+```
+
+Here is an example configuration:
+
+```json
+{
+  "customJSDocFormats": {
+    "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
+    "date": {
+      "regex": "^\\d{4}-\\d{2}-\\d{2}$",
+      "errorMessage": "Must be in YYYY-MM-DD format."
+    }
+  }
+}
+```
+
+As a result, `ts-to-zod` will perform the following transformation:
+
+<table>
+<thead>
+<tr>
+
+<th>TypeScript</th>
+<th>Zod</th>
+
+</tr>
+</thead>
+
+<tbody>
+<tr>
+
+<td>
+
+```ts
+interface Info {
+  /**
+   * @format date
+   */
+  birthdate: string;
+  /**
+   * @format phone-number Must be a valid phone number.
+   */
+  phoneNumber: string;
+}
+```
+
+</td>
+
+<td>
+
+```ts
+const infoSchema = z.object({
+  /**
+   * @format date
+   */
+  birthdate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be in YYYY-MM-DD format."),
+  /**
+   * @format phone-number
+   */
+  phoneNumber: z
+    .string()
+    .regex(/^\d{3}-\d{3}-\d{4}$/, "Must be a valid phone number."),
+});
+```
+
+</td>
+
+</tr>
+</tbody>
+</table>
 
 ## Limitation
 

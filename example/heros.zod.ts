@@ -78,10 +78,12 @@ export const getSupermanSkillSchema = z
 export const heroContactSchema = z.object({
   email: z.string().email(),
   name: z.string().min(2).max(50),
-  phoneNumber: z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/),
+  phoneNumber: z.string().regex(/^\d{3}-\d{3}-\d{4}$/),
   hasSuperPower: z.boolean().optional().default(true),
   age: z.number().min(0).max(500),
-  birthday: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  birthday: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be in YYYY-MM-DD format."),
 });
 
 export const supermanEnemySchema = supermanSchema.shape.enemies.valueSchema;

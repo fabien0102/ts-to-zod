@@ -114,7 +114,7 @@ export interface HeroContact {
   /**
    * The phone number of the hero.
    *
-   * @pattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
+   * @pattern ^\d{3}-\d{3}-\d{4}$
    */
   phoneNumber: string;
 
@@ -134,7 +134,7 @@ export interface HeroContact {
   age: number;
 
   /**
-   * The hero's birthday in YYYY-MM-DD format.
+   * The hero's birthday.
    *
    * @format date
    */
