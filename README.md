@@ -388,25 +388,30 @@ export const heroSchema = z.object({
 });
 ```
 
-It can also reference classes imported from non-relative modules:
+It can also reference classes imported from any modules:
 
 ```ts
 // source.ts
 import { Person } from "@3rdparty/person";
+import { Villain } from "./villain";
 
 export interface Hero {
   name: string;
   realPerson: Person;
+  nemesis: Villain;
 }
 
 //output.ts
 import { Person } from "@3rdparty/person";
+import { Villain } from "./villain";
 
 const personSchema = z.instanceof(Person);
+const villainSchema = z.instanceof(Villain);
 
 export const heroSchema = z.object({
   name: z.string(),
   realPerson: personSchema,
+  nemesis: villainSchema;
 });
 ```
 

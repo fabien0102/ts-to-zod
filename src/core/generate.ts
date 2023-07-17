@@ -10,10 +10,7 @@ import {
   TypeNode,
 } from "../utils/traverseTypes";
 
-import {
-  getImportIdentifiers,
-  isRelativeModuleImport,
-} from "../utils/importHandling";
+import { getImportIdentifiers } from "../utils/importHandling";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import {
@@ -101,11 +98,7 @@ export function generate({
     if (isTypeNode(node)) {
       typeNameMapping.set(node.name.text, node);
     }
-    if (
-      ts.isImportDeclaration(node) &&
-      !isRelativeModuleImport(node) &&
-      node.importClause
-    ) {
+    if (ts.isImportDeclaration(node) && node.importClause) {
       const imports = getImportIdentifiers(node);
       imports.forEach((i) => importNamesAvailable.add(i));
       importNodes.push(node);
