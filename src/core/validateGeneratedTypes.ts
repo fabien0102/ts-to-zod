@@ -6,7 +6,8 @@ import {
 import ts from "typescript";
 import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
-import { fixOptionalAny } from "../utils/fixOptionalAny";
+import { fixOptionalAny } from "../utils/fixOptional";
+
 interface File {
   sourceText: string;
   relativePath: string;
