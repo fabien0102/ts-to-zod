@@ -6,7 +6,7 @@ import {
 import ts from "typescript";
 import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
-import { fixOptionalAny } from "../utils/fixOptionalAny";
+import { fixOptional } from "../utils/fixOptional";
 interface File {
   sourceText: string;
   relativePath: string;
@@ -37,8 +37,8 @@ export function validateGeneratedTypes({
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
-  const projectRoot = makePosixPath(process.cwd());
-  const src = fixOptionalAny(
+  const projectRoot = process.cwd();
+  const src = fixOptional(
     skipParseJSDoc
       ? sourceTypes.sourceText
       : resolveDefaultProperties(sourceTypes.sourceText)
