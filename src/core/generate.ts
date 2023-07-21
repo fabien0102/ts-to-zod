@@ -10,7 +10,10 @@ import {
   TypeNode,
 } from "../utils/traverseTypes";
 
-import { getImportIdentifiers } from "../utils/importHandling";
+import {
+  getImportIdentifiers,
+  createImportNode,
+} from "../utils/importHandling";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import {
@@ -57,11 +60,16 @@ export interface GenerateProps {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
-
   /**
    * Custom JSDoc format types.
    */
   customJSDocFormatTypes?: CustomJSDocFormatTypes;
+
+  /**
+   * Map of input/output from config that can
+   * be used to automatically handle imports
+   */
+  inputOutputMapping?: Map<string, string>;
 }
 
 /**
@@ -76,7 +84,7 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
   skipParseJSDoc = false,
-  customJSDocFormatTypes = {},
+  inputOutputMapping = new Map<string, string>(),
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -89,8 +97,9 @@ export function generate({
 
   // handling existing import statements
   const importNamesAvailable = new Set<string>();
-  // const importNodes: ts.ImportDeclaration[] = [];
+  const importNodes: ts.ImportDeclaration[] = [];
   const importNamesUsed: string[] = [];
+  const importedZodNamesAvailable = new Map<string, string>();
 
   const typesNeedToBeExtracted = new Set<string>();
 
@@ -99,9 +108,32 @@ export function generate({
       typeNameMapping.set(node.name.text, node);
     }
     if (ts.isImportDeclaration(node) && node.importClause) {
-      const imports = getImportIdentifiers(node);
-      imports.forEach((i) => importNamesAvailable.add(i));
-      // importNodes.push(node);
+      // Check if we're importing from a mapped file
+
+      if (
+        inputOutputMapping.has((node.moduleSpecifier as ts.StringLiteral).text)
+      ) {
+        const identifiers = getImportIdentifiers(node);
+        identifiers.forEach((i) =>
+          importedZodNamesAvailable.set(i, getSchemaName(i))
+        );
+
+        const output = inputOutputMapping.get(
+          (node.moduleSpecifier as ts.StringLiteral).text
+        ) as string;
+
+        const importNode = createImportNode(
+          identifiers.map(getSchemaName),
+          output
+        );
+        importNodes.push(importNode); // We assume all identifiers will be used so pushing the whole node
+      }
+      // Not a Zod import, handling it as 3rd party import later on
+      else {
+        const identifiers = getImportIdentifiers(node);
+        identifiers.forEach((i) => importNamesAvailable.add(i));
+        importNodes.push(node); // We assume all identifiers will be used so pushing the whole node
+      }
     }
   };
 
@@ -125,18 +157,33 @@ export function generate({
   };
   ts.forEachChild(sourceFile, visitor);
 
+  const importedZodSchemas = new Set<string>();
+
   typesNeedToBeExtracted.forEach((typeName) => {
     const node = typeNameMapping.get(typeName);
     if (node) {
       nodes.push(node);
-    } else {
-      if (importNamesAvailable.has(typeName)) {
-        importNamesUsed.push(typeName);
-      }
+      return;
+    }
+    if (importNamesAvailable.has(typeName)) {
+      importNamesUsed.push(typeName);
+      return;
+    }
+    if (importedZodNamesAvailable.has(typeName)) {
+      importedZodSchemas.add(importedZodNamesAvailable.get(typeName) as string);
+      return;
     }
   });
 
   // Generate zod schemas for type nodes
+
+  const getDependencyName = (identifierName: string) => {
+    if (importedZodNamesAvailable.has(identifierName)) {
+      return importedZodNamesAvailable.get(identifierName) as string;
+    }
+    return getSchemaName(identifierName);
+  };
+
   const zodTypeSchemas = nodes.map((node) => {
     const typeName = node.name.text;
     const varName = getSchemaName(typeName);
@@ -145,7 +192,7 @@ export function generate({
       node,
       sourceFile,
       varName,
-      getDependencyName: getSchemaName,
+      getDependencyName: getDependencyName,
       skipParseJSDoc,
       customJSDocFormatTypes,
     });
@@ -153,7 +200,7 @@ export function generate({
     return { typeName, varName, ...zodSchema };
   });
 
-  // Generate zod schemas for imports
+  // Generate zod schemas for 3rd party imports
   const zodImportSchemas = importNamesUsed.map((importName) => {
     const varName = getSchemaName(importName);
     return {
@@ -201,7 +248,8 @@ export function generate({
           const isCircular = dependencies.includes(varName);
           const notGeneratedDependencies = dependencies
             .filter((dep) => dep !== varName)
-            .filter((dep) => !statements.has(dep));
+            .filter((dep) => !statements.has(dep))
+            .filter((dep) => !importedZodSchemas.has(dep));
           if (notGeneratedDependencies.length === 0) {
             done = false;
             if (isCircular) {
