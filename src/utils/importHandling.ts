@@ -1,4 +1,5 @@
 import ts from "typescript";
+const { factory: f } = ts;
 
 /**
  * Extracts the list of import identifiers from an import clause

@@ -104,6 +104,7 @@ describe("validateGeneratedTypes", () => {
         villain: {
           name: string
           id: any
+          ids: any[]
         };
       };
     `,
@@ -117,6 +118,7 @@ describe("validateGeneratedTypes", () => {
       villain: z.object({
         name: z.string(),
         id: z.any()
+        ids: z.array(z.any())
       })
     });
     `,

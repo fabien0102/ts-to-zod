@@ -1,6 +1,14 @@
 import ts from "typescript";
 import { findNode } from "./findNode";
+<<<<<<< HEAD
 import { getImportIdentifiers } from "./importHandling";
+=======
+import {
+  createImportNode,
+  getImportIdentifiers,
+  isRelativeModuleImport,
+} from "./importHandling";
+>>>>>>> a021ddd (feat: add createImport function)
 
 describe("getImportIdentifiers", () => {
   it("should return nothing with a StringLiteral import", () => {
