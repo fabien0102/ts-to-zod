@@ -1,7 +1,12 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import { JSDocTagFilter, NameFilter, CustomJSDocFormatTypes } from "../config";
+import {
+  InputOutputMapping,
+  JSDocTagFilter,
+  NameFilter,
+  CustomJSDocFormatTypes,
+} from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
 import {
@@ -21,6 +26,8 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
+
+const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
 export interface GenerateProps {
   /**
@@ -69,7 +76,7 @@ export interface GenerateProps {
    * Map of input/output from config that can
    * be used to automatically handle imports
    */
-  inputOutputMapping?: Map<string, string>;
+  inputOutputMappings?: InputOutputMapping[];
 }
 
 /**
@@ -81,10 +88,10 @@ export function generate({
   sourceText,
   nameFilter = () => true,
   jsDocTagFilter = () => true,
-  getSchemaName = (id) => camel(id) + "Schema",
+  getSchemaName = DEFAULT_GET_SCHEMA,
   keepComments = false,
   skipParseJSDoc = false,
-  inputOutputMapping = new Map<string, string>(),
+  inputOutputMappings = [],
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -110,21 +117,22 @@ export function generate({
     if (ts.isImportDeclaration(node) && node.importClause) {
       // Check if we're importing from a mapped file
 
-      if (
-        inputOutputMapping.has((node.moduleSpecifier as ts.StringLiteral).text)
-      ) {
+      const eligibleMapping = inputOutputMappings.find(
+        (io: InputOutputMapping) =>
+          io.input === (node.moduleSpecifier as ts.StringLiteral).text
+      );
+      if (eligibleMapping) {
+        const schemaMethod =
+          eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
+
         const identifiers = getImportIdentifiers(node);
         identifiers.forEach((i) =>
-          importedZodNamesAvailable.set(i, getSchemaName(i))
+          importedZodNamesAvailable.set(i, schemaMethod(i))
         );
 
-        const output = inputOutputMapping.get(
-          (node.moduleSpecifier as ts.StringLiteral).text
-        ) as string;
-
         const importNode = createImportNode(
-          identifiers.map(getSchemaName),
-          output
+          identifiers.map(schemaMethod),
+          eligibleMapping.output
         );
         importNodes.push(importNode); // We assume all identifiers will be used so pushing the whole node
       }

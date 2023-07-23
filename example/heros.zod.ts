@@ -2,13 +2,15 @@
 import { z } from "zod";
 import { EnemyPower, Villain, EvilPlan, EvilPlanDetails } from "./heros";
 
+import { personSchema } from "./person.zod";
+
 export const enemyPowerSchema = z.nativeEnum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
   power: z.literal(EnemyPower.Speed),
 });
 
-export const enemySchema = z.object({
+export const enemySchema = personSchema.extend({
   name: z.string(),
   powers: z.array(enemyPowerSchema),
   inPrison: z.boolean(),

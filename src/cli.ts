@@ -7,7 +7,7 @@ import { join, parse, relative } from "path";
 import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
-import { Config, TsToZodConfig } from "./config";
+import { Config, TsToZodConfig, InputOutputMapping } from "./config";
 import {
   getSchemaNameSchema,
   nameFilterSchema,
@@ -133,6 +133,8 @@ class TsToZod extends Command {
 
     const fileConfig = await this.loadFileConfig(config, flags);
 
+    const ioMappings = getInputOutputMappings(config);
+
     if (Array.isArray(fileConfig)) {
       if (args.input || args.output) {
         this.error(`INPUT and OUTPUT arguments are not compatible with --all`);
@@ -141,7 +143,7 @@ class TsToZod extends Command {
         await Promise.all(
           fileConfig.map(async (config) => {
             this.log(`Generating "${config.name}"`);
-            const result = await this.generate(args, config, flags);
+            const result = await this.generate(args, config, flags, ioMappings);
             if (result.success) {
               this.log(` 🎉 Zod schemas generated!`);
             } else {
@@ -156,7 +158,7 @@ class TsToZod extends Command {
         this.error(error);
       }
     } else {
-      const result = await this.generate(args, fileConfig, flags);
+      const result = await this.generate(args, fileConfig, flags, ioMappings);
       if (result.success) {
         this.log(`🎉 Zod schemas generated!`);
       } else {
@@ -177,7 +179,7 @@ class TsToZod extends Command {
           ? fileConfig.find((i) => i.input === slash(path))
           : fileConfig;
 
-        const result = await this.generate(args, config, flags);
+        const result = await this.generate(args, config, flags, ioMappings);
         if (result.success) {
           this.log(`🎉 Zod schemas generated!`);
         } else {
@@ -192,12 +194,14 @@ class TsToZod extends Command {
    * Generate on zod schema file.
    * @param args
    * @param fileConfig
-   * @param Flags
+   * @param flags
+   * @param inputOutputMappings
    */
   async generate(
     args: { input?: string; output?: string },
     fileConfig: Config | undefined,
-    Flags: Interfaces.InferredFlags<typeof TsToZod.flags>
+    flags: OutputFlags<typeof TsToZod.flags>,
+    inputOutputMappings: InputOutputMapping[]
   ): Promise<{ success: true } | { success: false; error: string }> {
     const input = args.input || fileConfig?.input;
     const output = args.output || fileConfig?.output;
@@ -213,6 +217,17 @@ See more help with --help`,
 
     const inputPath = join(process.cwd(), input);
     const outputPath = join(process.cwd(), output || input);
+
+    const relativeIOMappings = inputOutputMappings.map((io) => {
+      const relativeInput = getImportPath(inputPath, io.input);
+      const relativeOutput = getImportPath(outputPath, io.output);
+
+      return {
+        input: relativeInput,
+        output: relativeOutput,
+        getSchemaName: io.getSchemaName,
+      };
+    });
 
     // Check args/flags file extensions
     const extErrors: { path: string; expectedExtensions: string[] }[] = [];
@@ -250,6 +265,7 @@ See more help with --help`,
 
     const generateOptions: GenerateProps = {
       sourceText,
+      inputOutputMappings: relativeIOMappings,
       ...fileConfig,
     };
     if (typeof Flags.keepComments === "boolean") {
@@ -441,6 +457,24 @@ const javascriptExtensions = [".js", ".jsx"];
 function hasExtensions(path: string, extensions: string[]) {
   const { ext } = parse(path);
   return extensions.includes(ext);
+}
+
+function getInputOutputMappings(
+  config: TsToZodConfig | undefined
+): InputOutputMapping[] {
+  if (!config) {
+    return [];
+  }
+
+  if (Array.isArray(config)) {
+    return config.map((c) => {
+      const { input, output, getSchemaName } = c;
+      return { input, output, getSchemaName };
+    });
+  }
+
+  const { input, output, getSchemaName } = config as Config;
+  return [{ input, output, getSchemaName }];
 }
 
 export = TsToZod;
