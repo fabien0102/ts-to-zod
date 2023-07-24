@@ -370,7 +370,9 @@ To resume, you can use all the primitive types and some the following typescript
 - `Array<>`
 - `Promise<>`
 
-This utils is design to work with one file only, and will reference types from the same file:
+## Type references
+
+This utility is designed to work with one file at a time (it will not split one file into several), and will handle references to types from the same file:
 
 ```ts
 // source.ts
@@ -412,6 +414,55 @@ export const heroSchema = z.object({
   name: z.string(),
   realPerson: personSchema,
   nemesis: villainSchema;
+});
+```
+
+### Zod Imports
+
+If an imported type is referenced in the `ts-to-zod.config.js` config (as input), this utility will automatically replace the import with the given output from the file, resolving the relative paths between both.
+
+```ts
+
+//ts-to-zod.config.js
+/**
+ * ts-to-zod configuration.
+ *
+ * @type {import("./src/config").TsToZodConfig}
+ */
+module.exports = [
+  {
+    name: "villain",
+    input: "src/villain.ts",
+    output: "src/generated/villain.zod.ts",
+    getSchemaName: (id) => `z${id}`
+  },
+   {
+    name: "hero",
+    input: "src/example/heros.ts",
+    output: "src/example/heros.zod.ts",
+  },
+];
+
+// heros.ts (input)
+import { Person } from "@3rdparty/person";
+import { Villain } from "../villain";
+
+export interface Hero {
+  name: string;
+  realPerson: Person;
+  nemesis: Villain;
+}
+
+// heros.zod.ts (output)
+import { Person } from "@3rdparty/person";
+import { zVillain } from "../generated/villain.zod";
+
+const personSchema = z.instanceof(Person);
+
+export const heroSchema = z.object({
+  name: z.string(),
+  realPerson: personSchema,
+  nemesis: zVillain;
 });
 ```
 
