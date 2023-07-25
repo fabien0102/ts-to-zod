@@ -6,7 +6,6 @@ describe("generateZodSchemaVariableStatementForClass", () => {
     const options = {
       className: "MyClass",
       varName: "myClassSchema",
-      zodImportValue: "z",
     };
 
     const expected = "const myClassSchema = z.instanceof(MyClass);";
@@ -30,7 +29,7 @@ describe("generateZodSchemaVariableStatementForClass", () => {
 function generate(options: {
   className: string;
   varName: string;
-  zodImportValue: string;
+  zodImportValue?: string;
 }) {
   const sourceFile = ts.createSourceFile(
     "index.ts",

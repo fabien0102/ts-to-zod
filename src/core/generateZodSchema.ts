@@ -188,7 +188,7 @@ export function generateZodSchemaVariableStatementForClass({
 }: {
   className: string;
   varName: string;
-  zodImportValue: string;
+  zodImportValue?: string;
 }) {
   const schema = buildZodSchema(zodImportValue, "instanceof", [
     f.createIdentifier(className),
