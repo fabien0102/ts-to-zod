@@ -119,6 +119,28 @@ describe("traverseTypes", () => {
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero", "Villain"]);
     });
+
+    it("should extract types between parenthesis", () => {
+      const source = `
+        export interface Person {
+            id: number,
+            t: (SuperHero)
+        }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "SuperHero"]);
+    });
+
+    it("should extract union types between parenthesis", () => {
+      const source = `
+        export interface Person {
+            id: number,
+            t: (SuperHero | Villain)
+        }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+    });
   });
 });
 

@@ -40,20 +40,26 @@ export function getExtractedTypeNames(
     }
 
     if (childNode.type) {
-      if (ts.isTypeReferenceNode(childNode.type)) {
-        referenceTypeNames.add(childNode.type.getText(sourceFile));
+      let typeNode = childNode.type;
+
+      if (ts.isParenthesizedTypeNode(childNode.type)) {
+        typeNode = childNode.type.type;
+      }
+
+      if (ts.isTypeReferenceNode(typeNode)) {
+        referenceTypeNames.add(typeNode.getText(sourceFile));
       } else if (
-        ts.isArrayTypeNode(childNode.type) &&
-        ts.isTypeNode(childNode.type.elementType)
+        ts.isArrayTypeNode(typeNode) &&
+        ts.isTypeNode(typeNode.elementType)
       ) {
-        referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
-      } else if (ts.isTypeLiteralNode(childNode.type)) {
-        childNode.type.forEachChild(visitorExtract);
+        referenceTypeNames.add(typeNode.elementType.getText(sourceFile));
+      } else if (ts.isTypeLiteralNode(typeNode)) {
+        typeNode.forEachChild(visitorExtract);
       } else if (
-        ts.isIntersectionTypeNode(childNode.type) ||
-        ts.isUnionTypeNode(childNode.type)
+        ts.isIntersectionTypeNode(typeNode) ||
+        ts.isUnionTypeNode(typeNode)
       ) {
-        childNode.type.types.forEach((typeNode: ts.TypeNode) => {
+        typeNode.types.forEach((typeNode: ts.TypeNode) => {
           if (ts.isTypeReferenceNode(typeNode)) {
             referenceTypeNames.add(typeNode.getText(sourceFile));
           } else typeNode.forEachChild(visitorExtract);
