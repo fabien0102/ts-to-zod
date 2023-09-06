@@ -141,6 +141,54 @@ describe("traverseTypes", () => {
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero", "Villain"]);
     });
+
+    it("should extract type from type alias", () => {
+      const source = `
+        export type Person = SuperHero `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "SuperHero"]);
+    });
+
+    it("should extract type from type alias with union", () => {
+      const source = `
+        export type Person = Villain | SuperHero `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "Villain", "SuperHero"]);
+    });
+
+    it("should extract type from type alias with array", () => {
+      const source = `
+        export type Person = Villain[] `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "Villain"]);
+    });
+
+    it("should extract type from type alias with parenthesis", () => {
+      const source = `
+        export type Person = (Villain) `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "Villain"]);
+    });
+
+    it("should extract type from type alias with object literal", () => {
+      const source = `
+        export type Person = { hero: SuperHero} `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "SuperHero"]);
+    });
+
+    it("should extract type from type alias with union & object literal", () => {
+      const source = `
+        export type Person = Villain | { hero: SuperHero} `;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "Villain", "SuperHero"]);
+    });
   });
 });
 
