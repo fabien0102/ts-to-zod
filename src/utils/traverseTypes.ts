@@ -14,61 +14,69 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
 }
 
 export function getExtractedTypeNames(
-  node: TypeNode,
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
   sourceFile: ts.SourceFile
 ): string[] {
   const referenceTypeNames = new Set<string>();
+
+  // Adding the node name
   referenceTypeNames.add(node.name.text);
 
-  const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
-
-  if (heritageClauses) {
-    heritageClauses.forEach((clause) => {
-      const extensionTypes = clause.types;
-      extensionTypes.forEach((extensionTypeNode) => {
-        const typeName = extensionTypeNode.expression.getText(sourceFile);
-
-        referenceTypeNames.add(typeName);
-      });
-    });
-  }
-
   const visitorExtract = (child: ts.Node) => {
-    const childNode = child as ts.PropertySignature;
-    if (!ts.isPropertySignature(childNode)) {
+    if (!ts.isPropertySignature(child)) {
       return;
     }
 
+    const childNode = child as ts.PropertySignature;
     if (childNode.type) {
-      let typeNode = childNode.type;
-
-      if (ts.isParenthesizedTypeNode(childNode.type)) {
-        typeNode = childNode.type.type;
-      }
-
-      if (ts.isTypeReferenceNode(typeNode)) {
-        referenceTypeNames.add(typeNode.getText(sourceFile));
-      } else if (
-        ts.isArrayTypeNode(typeNode) &&
-        ts.isTypeNode(typeNode.elementType)
-      ) {
-        referenceTypeNames.add(typeNode.elementType.getText(sourceFile));
-      } else if (ts.isTypeLiteralNode(typeNode)) {
-        typeNode.forEachChild(visitorExtract);
-      } else if (
-        ts.isIntersectionTypeNode(typeNode) ||
-        ts.isUnionTypeNode(typeNode)
-      ) {
-        typeNode.types.forEach((typeNode: ts.TypeNode) => {
-          if (ts.isTypeReferenceNode(typeNode)) {
-            referenceTypeNames.add(typeNode.getText(sourceFile));
-          } else typeNode.forEachChild(visitorExtract);
-        });
-      }
+      handleTypeNode(childNode.type);
     }
   };
 
-  node.forEachChild(visitorExtract);
+  const handleTypeNode = (typeNode: ts.Node) => {
+    if (ts.isParenthesizedTypeNode(typeNode)) {
+      typeNode = typeNode.type;
+    }
+
+    if (ts.isTypeReferenceNode(typeNode)) {
+      referenceTypeNames.add(typeNode.getText(sourceFile));
+    } else if (
+      ts.isArrayTypeNode(typeNode) &&
+      ts.isTypeNode(typeNode.elementType)
+    ) {
+      referenceTypeNames.add(typeNode.elementType.getText(sourceFile));
+    } else if (ts.isTypeLiteralNode(typeNode)) {
+      typeNode.forEachChild(visitorExtract);
+    } else if (
+      ts.isIntersectionTypeNode(typeNode) ||
+      ts.isUnionTypeNode(typeNode)
+    ) {
+      typeNode.types.forEach((typeNode: ts.TypeNode) => {
+        if (ts.isTypeReferenceNode(typeNode)) {
+          referenceTypeNames.add(typeNode.getText(sourceFile));
+        } else typeNode.forEachChild(visitorExtract);
+      });
+    }
+  };
+
+  if (ts.isInterfaceDeclaration(node)) {
+    const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
+
+    if (heritageClauses) {
+      heritageClauses.forEach((clause) => {
+        const extensionTypes = clause.types;
+        extensionTypes.forEach((extensionTypeNode) => {
+          const typeName = extensionTypeNode.expression.getText(sourceFile);
+
+          referenceTypeNames.add(typeName);
+        });
+      });
+    }
+
+    node.forEachChild(visitorExtract);
+  } else if (ts.isTypeAliasDeclaration(node)) {
+    handleTypeNode(node.type);
+  }
 
   return Array.from(referenceTypeNames);
 }
