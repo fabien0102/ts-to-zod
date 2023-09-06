@@ -176,7 +176,7 @@ describe("traverseTypes", () => {
 
     it("should extract type from type alias with object literal", () => {
       const source = `
-        export type Person = { hero: SuperHero} `;
+        export type Person = { hero: SuperHero } `;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero"]);
@@ -184,7 +184,7 @@ describe("traverseTypes", () => {
 
     it("should extract type from type alias with union & object literal", () => {
       const source = `
-        export type Person = Villain | { hero: SuperHero} `;
+        export type Person = Villain | { hero: SuperHero } `;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "Villain", "SuperHero"]);
