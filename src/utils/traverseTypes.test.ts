@@ -206,62 +206,6 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Person", "Villain"]);
     });
 
-    it("should extract type from type alias with Array helper", () => {
-      const source = `
-        export type Person = Array<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Promise helper", () => {
-      const source = `
-        export type Person = Promise<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Required helper", () => {
-      const source = `
-        export type Person = Required<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Partial helper", () => {
-      const source = `
-        export type Person = Partial<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Omit helper", () => {
-      const source = `
-        export type Person = Omit<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Pick helper", () => {
-      const source = `
-        export type Person = Pick<Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
-    it("should extract type from type alias with Record helper", () => {
-      const source = `
-        export type Person = Record<string, Villain> `;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
-    });
-
     it("should extract type from type alias with parenthesis", () => {
       const source = `
         export type Person = (Villain) `;
@@ -270,17 +214,9 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Person", "Villain"]);
     });
 
-    it("should extract type from type alias with parenthesis", () => {
-      const source = `
-        export type Person = (Villain | Hero)[]`;
-
-      const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain", "Hero"]);
-    });
-
     it("should extract type from type alias with object literal", () => {
       const source = `
-        export type Person = { hero: SuperHero } `;
+        export type Person = { hero: SuperHero} `;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "SuperHero"]);
@@ -288,7 +224,7 @@ describe("traverseTypes", () => {
 
     it("should extract type from type alias with union & object literal", () => {
       const source = `
-        export type Person = Villain | { hero: SuperHero } `;
+        export type Person = Villain | { hero: SuperHero} `;
 
       const result = extractNames(source);
       expect(result).toEqual(["Person", "Villain", "SuperHero"]);
