@@ -40,11 +40,8 @@ export function getExtractedTypeNames(
 
     if (ts.isTypeReferenceNode(typeNode)) {
       referenceTypeNames.add(typeNode.getText(sourceFile));
-    } else if (
-      ts.isArrayTypeNode(typeNode) &&
-      ts.isTypeNode(typeNode.elementType)
-    ) {
-      referenceTypeNames.add(typeNode.elementType.getText(sourceFile));
+    } else if (ts.isArrayTypeNode(typeNode)) {
+      handleTypeNode(typeNode.elementType);
     } else if (ts.isTypeLiteralNode(typeNode)) {
       typeNode.forEachChild(visitorExtract);
     } else if (
