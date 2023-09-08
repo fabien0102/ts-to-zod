@@ -214,6 +214,14 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Person", "Villain"]);
     });
 
+    it("should extract type from type alias with parenthesis", () => {
+      const source = `
+        export type Person = (Villain | Hero)[]`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "Villain", "Hero"]);
+    });
+
     it("should extract type from type alias with object literal", () => {
       const source = `
         export type Person = { hero: SuperHero } `;
