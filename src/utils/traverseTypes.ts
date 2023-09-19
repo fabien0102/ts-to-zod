@@ -1,5 +1,15 @@
 import ts from "typescript";
 
+const typeScriptHelper = [
+  "Array",
+  "Promise",
+  "Omit",
+  "Pick",
+  "Record",
+  "Partial",
+  "Required",
+];
+
 export type TypeNode =
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
@@ -39,7 +49,7 @@ export function getExtractedTypeNames(
     }
 
     if (ts.isTypeReferenceNode(typeNode)) {
-      referenceTypeNames.add(typeNode.getText(sourceFile));
+      handleTypeReferenceNode(typeNode);
     } else if (ts.isArrayTypeNode(typeNode)) {
       handleTypeNode(typeNode.elementType);
     } else if (ts.isTypeLiteralNode(typeNode)) {
@@ -48,11 +58,20 @@ export function getExtractedTypeNames(
       ts.isIntersectionTypeNode(typeNode) ||
       ts.isUnionTypeNode(typeNode)
     ) {
-      typeNode.types.forEach((typeNode: ts.TypeNode) => {
-        if (ts.isTypeReferenceNode(typeNode)) {
-          referenceTypeNames.add(typeNode.getText(sourceFile));
-        } else typeNode.forEachChild(visitorExtract);
+      typeNode.types.forEach((childNode: ts.TypeNode) => {
+        if (ts.isTypeReferenceNode(childNode)) {
+          handleTypeReferenceNode(childNode);
+        } else childNode.forEachChild(visitorExtract);
       });
+    }
+  };
+
+  const handleTypeReferenceNode = (typeRefNode: ts.TypeReferenceNode) => {
+    const typeName = typeRefNode.typeName.getText(sourceFile);
+    if (typeScriptHelper.indexOf(typeName) > -1 && typeRefNode.typeArguments) {
+      typeRefNode.typeArguments.forEach((t) => handleTypeNode(t));
+    } else {
+      referenceTypeNames.add(typeName);
     }
   };
 
