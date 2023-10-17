@@ -293,13 +293,6 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on non string record", () => {
-    const source = `export type UnsupportedType = Record<number, number>;`;
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Record<number, …> are not supported (https://github.com/colinhacks/zod/tree/v3#records)"`
-    );
-  });
-
   it("should throw on not supported key in omit", () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
@@ -539,6 +532,16 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+    );
+  });
+
+  it("should deal with record with a union as key", () => {
+    const source = `
+    export type AvailablePower = Record<Power, boolean>;
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const availablePowerSchema = z.record(powerSchema, z.boolean());"`
     );
   });
 

@@ -353,20 +353,44 @@ function buildZodPrimitive({
 
     // Deal with `Record<>` syntax
     if (identifierName === "Record" && typeNode.typeArguments) {
-      if (
-        typeNode.typeArguments.length !== 2 ||
-        typeNode.typeArguments[0].kind !== ts.SyntaxKind.StringKeyword
-      ) {
-        throw new Error(
-          `Record<${typeNode.typeArguments[0].getText(
-            sourceFile
-          )}, …> are not supported (https://github.com/colinhacks/zod/tree/v3#records)`
+      if (typeNode.typeArguments[0].kind === ts.SyntaxKind.StringKeyword) {
+        // Short version (`z.record(zodType)`)
+        return buildZodSchema(
+          z,
+          "record",
+          [
+            buildZodPrimitive({
+              z,
+              typeNode: typeNode.typeArguments[1],
+              isOptional: false,
+              jsDocTags,
+              sourceFile,
+              isPartial: false,
+              dependencies,
+              getDependencyName,
+              skipParseJSDoc,
+            }),
+          ],
+          zodProperties
         );
       }
+
+      // Expanded version (`z.record(zodType, zodType)`)
       return buildZodSchema(
         z,
         "record",
         [
+          buildZodPrimitive({
+            z,
+            typeNode: typeNode.typeArguments[0],
+            isOptional: false,
+            jsDocTags,
+            sourceFile,
+            isPartial: false,
+            dependencies,
+            getDependencyName,
+            skipParseJSDoc,
+          }),
           buildZodPrimitive({
             z,
             typeNode: typeNode.typeArguments[1],
