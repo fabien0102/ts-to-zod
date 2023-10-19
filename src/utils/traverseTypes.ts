@@ -24,39 +24,9 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
 export function getExtractedTypeNames(
   node: TypeNode,
   sourceFile: ts.SourceFile,
-  typeNameMapping: Map<string, TypeNode>
-) {
-  const referenceTypeNames: string[] = [];
-
-  const eventuallyAddType = (childNode: ts.Node) => {
-    if (
-      ts.isPropertySignature(childNode) &&
-      childNode.type &&
-      ts.isTypeReferenceNode(childNode.type)
-    ) {
-      let escapedName = "";
-      if (ts.isIdentifier(childNode.type.typeName)) {
-        escapedName = childNode.type.typeName.escapedText.toString();
-      }
-      if (
-        ts.isQualifiedName(childNode.type.typeName) &&
-        ts.isIdentifier(childNode.type.typeName.left)
-      ) {
-        const left = childNode.type.typeName.left.escapedText.toString();
-        escapedName = left;
-      }
-      if (!escapedName) {
-        return;
-      }
-      referenceTypeNames.push(escapedName);
-
-      const typeNode = typeNameMapping.get(escapedName);
-      if (typeNode) {
-        typeNode.visited = true;
-        recursiveExtract(typeNode);
-      }
-    }
-  };
+): string[] {
+  const referenceTypeNames = new Set<string>();
+  referenceTypeNames.add(node.name.text);
 
   const recursiveExtract = (node: TypeNode) => {
     if (node.visited) {
@@ -70,25 +40,40 @@ export function getExtractedTypeNames(
         const extensionTypes = clause.types;
         extensionTypes.forEach((extensionTypeNode) => {
           const typeName = extensionTypeNode.expression.getText(sourceFile);
-          const typeNode = typeNameMapping.get(typeName);
 
-          referenceTypeNames.push(typeName);
-
-          if (typeNode) {
-            typeNode.visited = true;
-            recursiveExtract(typeNode);
-          }
+          referenceTypeNames.add(typeName);
         });
       });
     }
+  };
 
-    node.forEachChild((child) => {
-      if (ts.isTypeLiteralNode(child)) {
-        child.members.forEach(eventuallyAddType);
-      } else {
-        eventuallyAddType(child);
+  const visitorExtract = (child: ts.Node) => {
+    const childNode = child as ts.PropertySignature;
+    if (!ts.isPropertySignature(childNode)) {
+      return;
+    }
+
+    if (childNode.type) {
+      if (ts.isTypeReferenceNode(childNode.type)) {
+        referenceTypeNames.add(childNode.type.getText(sourceFile));
+      } else if (
+        ts.isArrayTypeNode(childNode.type) &&
+        ts.isTypeNode(childNode.type.elementType)
+      ) {
+        referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
+      } else if (ts.isTypeLiteralNode(childNode.type)) {
+        childNode.type.forEachChild(visitorExtract);
+      } else if (
+        ts.isIntersectionTypeNode(childNode.type) ||
+        ts.isUnionTypeNode(childNode.type)
+      ) {
+        childNode.type.types.forEach((typeNode: ts.TypeNode) => {
+          if (ts.isTypeReferenceNode(typeNode)) {
+            referenceTypeNames.add(typeNode.getText(sourceFile));
+          } else typeNode.forEachChild(visitorExtract);
+        });
       }
-    });
+    };
   };
 
   recursiveExtract(node);

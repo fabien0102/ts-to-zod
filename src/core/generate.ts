@@ -1,22 +1,22 @@
 import { camel, pascal } from "case";
+import { readFile } from "fs-extra";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import { readFile } from "fs-extra";
 import { JSDocTagFilter, NameFilter } from "../config";
+import { getImportPath } from "../utils/getImportPath";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
+import { nodeFileResolution } from "../utils/nodeFileResolution";
 import { resolveModules } from "../utils/resolveModules";
 import {
+  TypeNode,
   getExtractedTypeNames,
   getExtractedTypeNamesFromExportDeclaration,
   isTypeNode,
-  TypeNode,
 } from "../utils/traverseTypes";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { nodeFileResolution } from "../utils/nodeFileResolution";
-import { getImportPath } from "../utils/getImportPath";
 
 /**
  * Internal representation for imports
@@ -335,11 +335,7 @@ async function iterateZodSchemas({
         return;
       }
 
-      const typeNames = getExtractedTypeNames(
-        node,
-        cohercedSourceFile,
-        typeNameMapping
-      );
+      const typeNames = getExtractedTypeNames(node, cohercedSourceFile);
       typeNames.forEach((typeName) => {
         typesNeedToBeExtracted.add(typeName);
       });

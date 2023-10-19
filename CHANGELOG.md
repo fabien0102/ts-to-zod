@@ -1,5 +1,41 @@
 # Changelog
 
+### [3.1.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.2...v3.1.3) (2023-06-27)
+
+
+### Bug Fixes
+
+* relax any type validation ([#142](https://www.github.com/fabien0102/ts-to-zod/issues/142)) ([7e75f90](https://www.github.com/fabien0102/ts-to-zod/commit/7e75f90ff0a00e2e60c2b5e329880364e1acd15e))
+
+### [3.1.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.1...v3.1.2) (2023-05-24)
+
+
+### Bug Fixes
+
+* strict() modifier should come before optional/nullable ([#137](https://www.github.com/fabien0102/ts-to-zod/issues/137)) ([f8be6bd](https://www.github.com/fabien0102/ts-to-zod/commit/f8be6bde6f8fa65310ac0a17f679ed61a3be3480))
+
+### [3.1.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.0...v3.1.1) (2023-05-24)
+
+
+### Bug Fixes
+
+* strict() keyword working root interfaces ([#134](https://www.github.com/fabien0102/ts-to-zod/issues/134)) ([a9f6f03](https://www.github.com/fabien0102/ts-to-zod/commit/a9f6f030c85f1fb199c902348e6ff23c99c1a335))
+
+## [3.1.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.1...v3.1.0) (2023-05-17)
+
+
+### Features
+
+* Adding JSDoc tag `useStrict` to output `strict()` modifier ([#131](https://www.github.com/fabien0102/ts-to-zod/issues/131)) ([f73a676](https://www.github.com/fabien0102/ts-to-zod/commit/f73a67656c3ae351a02a6435ee0fe4202a55b6d6))
+
+### [3.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.0.0...v3.0.1) (2023-05-17)
+
+
+### Bug Fixes
+
+* Handling negative literals ([#132](https://www.github.com/fabien0102/ts-to-zod/issues/132)) ([a1ad399](https://www.github.com/fabien0102/ts-to-zod/commit/a1ad3993db02f9a144cdc0f36dff0324f124f84d))
+* support numeric literal keys ([#120](https://www.github.com/fabien0102/ts-to-zod/issues/120)) ([7bbed16](https://www.github.com/fabien0102/ts-to-zod/commit/7bbed16db6243a7c09312d49d95a5fc61b62ba09))
+
 ## [3.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v2.0.1...v3.0.0) (2023-03-13)
 
 

@@ -81,6 +81,20 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a literal schema (zero)", () => {
+    const source = `export type IdentitiesCount = 0;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const identitiesCountSchema = z.literal(0);"`
+    );
+  });
+
+  it("should generate a literal schema (negative number)", () => {
+    const source = `export type IdentitiesCount = -1;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const identitiesCountSchema = z.literal(-1);"`
+    );
+  });
+
   it("should generate a literal schema (true)", () => {
     const source = `export type IsSuperman = true;`;
     expect(generate(source)).toMatchInlineSnapshot(
@@ -274,13 +288,6 @@ describe("generateZodSchema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const killSupermanSchema = z.function().args(z.boolean(), z.any()).returns(z.promise(z.boolean()));"`
-    );
-  });
-
-  it("should throw on non string record", () => {
-    const source = `export type UnsupportedType = Record<number, number>;`;
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Record<number, …> are not supported (https://github.com/colinhacks/zod/tree/v3#records)"`
     );
   });
 
@@ -523,6 +530,16 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+    );
+  });
+
+  it("should deal with record with a union as key", () => {
+    const source = `
+    export type AvailablePower = Record<Power, boolean>;
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const availablePowerSchema = z.record(powerSchema, z.boolean());"`
     );
   });
 
@@ -830,6 +847,83 @@ describe("generateZodSchema", () => {
           * @minLength 1
           */
       export const nonEmptyStringSchema = z.string().min(1);"
+    `);
+  });
+
+  it("should generate add strict() validation when @strict is used", () => {
+    const source = `/**
+    * @strict
+    */
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "/**
+           * @strict
+           */
+       export const supermanSchema = z.object({
+           name: z.literal(\\"superman\\"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           enemies: z.array(z.string())
+       }).strict();"
+     `);
+  });
+
+  it("should add strict() validation when @strict is used on subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a: {
+        b: number
+      }
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict()
+      });"
+    `);
+  });
+
+  it("should add strict() before optional() validation when @strict is used on optional subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a?: {
+        b: number
+      }
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict().optional()
+      });"
+    `);
+  });
+
+  it("should add strict() before nullable() validation when @strict is used on nullable subtype", () => {
+    const source = `export interface A {
+      /** @strict */
+      a: {
+        b: number
+      } | null
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          /** @strict */
+          a: z.object({
+              b: z.number()
+          }).strict().nullable()
+      });"
     `);
   });
 

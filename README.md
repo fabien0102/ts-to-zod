@@ -29,7 +29,7 @@ Notes:
 - Only exported types/interface are tested (so you can have some private types/interface and just exports the composed type)
 - Even if this is not recommended, you can skip this validation step with `--skipValidation`. (At your own risk!)
 
-## Validators
+## JSDoc tags Validators
 
 This tool supports some JSDoc tags inspired from openapi to generate zod validator.
 
@@ -44,7 +44,7 @@ List of supported keywords:
 | `@format {"email"\|"uuid"\|"url"}` | `@format email`   | `z.string().email()`         |
 | `@pattern {regex}`                 | `@pattern ^hello` | `z.string().regex(/^hello/)` |
 
-Those JSDoc tags can also be combined:
+Those validators can be combined:
 
 ```ts
 // source.ts
@@ -127,6 +127,15 @@ export const heroContactSchema = z.object({
   age: z.number().min(0).max(500),
 });
 ```
+
+## Other JSDoc tags
+
+Other JSDoc tags are available:
+
+| JSDoc keyword      | JSDoc Example | Description                               | Generated Zod            |
+| ------------------ | ------------- | ----------------------------------------- | ------------------------ |
+| `@default {value}` | `@default 42` | Sets a default value for the property     | `z.number().default(42)` |
+| `@strict`          | `@strict`     | Adds the `strict()` modifier to an object | `z.object().strict()`    |
 
 ## Advanced configuration
 
