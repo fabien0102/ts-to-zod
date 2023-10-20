@@ -1,7 +1,7 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import { JSDocTagFilter, NameFilter } from "../config";
+import { JSDocTagFilter, NameFilter, CustomJSDocFormatTypes } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
 import {
@@ -52,6 +52,11 @@ export interface GenerateProps {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
+
+  /**
+   * Custom JSDoc format types.
+   */
+  customJSDocFormatTypes?: CustomJSDocFormatTypes;
 }
 
 /**
@@ -66,6 +71,7 @@ export function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
   skipParseJSDoc = false,
+  customJSDocFormatTypes = {},
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -121,6 +127,7 @@ export function generate({
       varName,
       getDependencyName: getSchemaName,
       skipParseJSDoc,
+      customJSDocFormatTypes,
     });
 
     return { typeName, varName, ...zodSchema };

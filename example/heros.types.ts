@@ -34,3 +34,7 @@ export type SupermanName = z.infer<typeof generated.supermanNameSchema>;
 export type SupermanInvinciblePower = z.infer<
   typeof generated.supermanInvinciblePowerSchema
 >;
+
+export type EvilPlan = z.infer<typeof generated.evilPlanSchema>;
+
+export type EvilPlanDetails = z.infer<typeof generated.evilPlanDetailsSchema>;

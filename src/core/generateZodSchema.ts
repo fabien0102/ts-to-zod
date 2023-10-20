@@ -1,13 +1,14 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import * as ts from "typescript";
+import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import {
-  getJSDocTags,
   JSDocTags,
-  jsDocTagToZodProperties,
   ZodProperty,
+  getJSDocTags,
+  jsDocTagToZodProperties,
 } from "./jsDocTags";
 
 const { factory: f } = ts;
@@ -48,6 +49,11 @@ export interface GenerateZodSchemaProps {
    * @default false
    */
   skipParseJSDoc?: boolean;
+
+  /**
+   * Custom JSDoc format types.
+   */
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
 }
 
 /**
@@ -64,6 +70,7 @@ export function generateZodSchemaVariableStatement({
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
   skipParseJSDoc = false,
+  customJSDocFormatTypes,
 }: GenerateZodSchemaProps) {
   let schema:
     | ts.CallExpression
@@ -107,6 +114,7 @@ export function generateZodSchemaVariableStatement({
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
+      customJSDocFormatTypes,
     });
 
     if (!skipParseJSDoc) {
@@ -135,6 +143,7 @@ export function generateZodSchemaVariableStatement({
       typeNode: node.type,
       isOptional: false,
       jsDocTags,
+      customJSDocFormatTypes,
       sourceFile,
       dependencies,
       getDependencyName,
@@ -174,6 +183,7 @@ function buildZodProperties({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  customJSDocFormatTypes,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
   zodImportValue: string;
@@ -181,6 +191,7 @@ function buildZodProperties({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
 }) {
   const properties = new Map<
     ts.Identifier | ts.StringLiteral | ts.NumericLiteral,
@@ -209,6 +220,7 @@ function buildZodProperties({
         typeNode: member.type,
         isOptional,
         jsDocTags,
+        customJSDocFormatTypes,
         sourceFile,
         dependencies,
         getDependencyName,
@@ -227,6 +239,7 @@ function buildZodPrimitive({
   isPartial,
   isRequired,
   jsDocTags,
+  customJSDocFormatTypes,
   sourceFile,
   dependencies,
   getDependencyName,
@@ -239,6 +252,7 @@ function buildZodPrimitive({
   isPartial?: boolean;
   isRequired?: boolean;
   jsDocTags: JSDocTags;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
   sourceFile: ts.SourceFile;
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
@@ -246,6 +260,7 @@ function buildZodPrimitive({
 }): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
+    customJSDocFormatTypes,
     isOptional,
     Boolean(isPartial),
     Boolean(isRequired),
@@ -258,6 +273,7 @@ function buildZodPrimitive({
       typeNode: typeNode.type,
       isOptional,
       jsDocTags,
+      customJSDocFormatTypes,
       sourceFile,
       dependencies,
       getDependencyName,
@@ -280,6 +296,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
       });
     }
 
@@ -291,6 +308,7 @@ function buildZodPrimitive({
         isOptional,
         isNullable,
         jsDocTags,
+        customJSDocFormatTypes,
         sourceFile,
         isPartial: true,
         dependencies,
@@ -307,6 +325,7 @@ function buildZodPrimitive({
         isOptional,
         isNullable,
         jsDocTags,
+        customJSDocFormatTypes,
         sourceFile,
         isRequired: true,
         dependencies,
@@ -323,6 +342,7 @@ function buildZodPrimitive({
         isOptional,
         isNullable,
         jsDocTags,
+        customJSDocFormatTypes,
         sourceFile,
         dependencies,
         getDependencyName,
@@ -345,6 +365,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
           }),
         ],
         zodProperties
@@ -364,6 +385,7 @@ function buildZodPrimitive({
               typeNode: typeNode.typeArguments[1],
               isOptional: false,
               jsDocTags,
+              customJSDocFormatTypes,
               sourceFile,
               isPartial: false,
               dependencies,
@@ -385,6 +407,7 @@ function buildZodPrimitive({
             typeNode: typeNode.typeArguments[0],
             isOptional: false,
             jsDocTags,
+            customJSDocFormatTypes,
             sourceFile,
             isPartial: false,
             dependencies,
@@ -396,6 +419,7 @@ function buildZodPrimitive({
             typeNode: typeNode.typeArguments[1],
             isOptional: false,
             jsDocTags,
+            customJSDocFormatTypes,
             sourceFile,
             isPartial: false,
             dependencies,
@@ -423,6 +447,7 @@ function buildZodPrimitive({
             typeNode: i,
             isOptional: false,
             jsDocTags,
+            customJSDocFormatTypes,
             sourceFile,
             dependencies,
             getDependencyName,
@@ -444,6 +469,7 @@ function buildZodPrimitive({
             typeNode: i,
             isOptional: false,
             jsDocTags,
+            customJSDocFormatTypes,
             sourceFile,
             dependencies,
             getDependencyName,
@@ -504,6 +530,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
           }),
           f.createIdentifier(lower(identifierName))
         ),
@@ -540,6 +567,7 @@ function buildZodPrimitive({
         isOptional,
         isNullable: hasNull,
         jsDocTags,
+        customJSDocFormatTypes,
         sourceFile,
         dependencies,
         getDependencyName,
@@ -558,6 +586,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
       })
     );
 
@@ -587,6 +616,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
       })
     );
     return buildZodSchema(
@@ -674,6 +704,7 @@ function buildZodPrimitive({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          customJSDocFormatTypes,
         }),
       ],
       zodProperties
@@ -689,6 +720,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
       }),
       zodProperties
     );
@@ -705,6 +737,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      customJSDocFormatTypes,
     });
 
     return rest.reduce(
@@ -725,6 +758,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
+              customJSDocFormatTypes,
             }),
           ]
         ),
@@ -755,6 +789,7 @@ function buildZodPrimitive({
               typeNode:
                 p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
               jsDocTags,
+              customJSDocFormatTypes,
               sourceFile,
               dependencies,
               getDependencyName,
@@ -770,6 +805,7 @@ function buildZodPrimitive({
               z,
               typeNode: typeNode.type,
               jsDocTags,
+              customJSDocFormatTypes,
               sourceFile,
               dependencies,
               getDependencyName,
@@ -912,6 +948,7 @@ function buildZodObject({
   getDependencyName,
   schemaExtensionClauses,
   skipParseJSDoc,
+  customJSDocFormatTypes,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
@@ -920,6 +957,7 @@ function buildZodObject({
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   schemaExtensionClauses?: string[];
   skipParseJSDoc: boolean;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
     properties: ts.PropertySignature[];
@@ -954,6 +992,7 @@ function buildZodObject({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          customJSDocFormatTypes,
         })
       : new Map();
 
@@ -999,6 +1038,7 @@ function buildZodObject({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
       }),
     ]);
 
