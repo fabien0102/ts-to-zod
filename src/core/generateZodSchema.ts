@@ -398,6 +398,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
+              getNamespaceSchemaName
             }),
           ],
           zodProperties
@@ -419,6 +420,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            getNamespaceSchemaName,
           }),
           buildZodPrimitive({
             z,
