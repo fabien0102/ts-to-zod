@@ -1162,6 +1162,23 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should handle parenthesis type nodes", () => {
+    const source = `export interface A {
+      a: (number) | string | null;
+      b: (string)
+      c: (number | string)
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.union([z.number(), z.string()]).nullable(),
+          b: z.string(),
+          c: z.union([z.number(), z.string()])
+      });"
+    `);
+  });
+
   it("should allow nullable on optional union properties", () => {
     const source = `export interface A {
       a?: number | string | null;
