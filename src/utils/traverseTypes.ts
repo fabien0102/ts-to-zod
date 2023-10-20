@@ -36,7 +36,6 @@ export function getExtractedTypeNames(
       return;
     }
     if (childNode.type) {
-      console.log(childNode.type)
       if (ts.isTypeReferenceNode(childNode.type)) {
         let escapedName = "";
         if (ts.isIdentifier(childNode.type.typeName)) {
