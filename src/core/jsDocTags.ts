@@ -84,7 +84,7 @@ const jsDocTagKeys: Array<keyof JSDocTags> = [
  * @param tagName
  */
 function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
-  return (jsDocTagKeys as string[]).includes(tagName);
+  return jsDocTagKeys.map(String).includes(tagName);
 }
 
 /**
