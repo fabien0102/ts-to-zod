@@ -17,7 +17,6 @@ import {
   tsToZodConfigSchema,
 } from "./config.zod";
 import { GenerateProps, generate } from "./core/generate";
-import { customJSDocFormatTypeContext } from "./core/jsDocTags";
 import { createConfig } from "./createConfig";
 import { getImportPath } from "./utils/getImportPath";
 import * as worker from "./worker";
@@ -247,8 +246,6 @@ See more help with --help`,
       generateOptions.inferredTypes = flags.inferredTypes;
     }
 
-    const customJSDocFormats = fileConfig?.customJSDocFormats ?? {};
-
     const {
       errors,
       transformedSourceText,
@@ -256,11 +253,7 @@ See more help with --help`,
       getIntegrationTestFile,
       getInferredTypes,
       hasCircularDependencies,
-    } = customJSDocFormatTypeContext.run(
-      customJSDocFormats,
-      generate,
-      generateOptions
-    );
+    } = generate(generateOptions);
 
     if (hasCircularDependencies && !output) {
       return {

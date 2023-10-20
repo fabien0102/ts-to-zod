@@ -29,6 +29,9 @@ export type CustomJSDocFormatTypeAttributes = {
   regex: string;
   errorMessage?: string;
 };
+
+export type CustomJSDocFormatType = string;
+
 /**
  * @example
  *  {
@@ -40,7 +43,7 @@ export type CustomJSDocFormatTypeAttributes = {
  * }
  */
 export type CustomJSDocFormatTypes = Record<
-  string,
+  CustomJSDocFormatType,
   string | CustomJSDocFormatTypeAttributes
 >;
 

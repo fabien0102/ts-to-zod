@@ -3,7 +3,6 @@ import ts from "typescript";
 import type { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
-import { customJSDocFormatTypeContext } from "./jsDocTags";
 
 describe("generateZodSchema", () => {
   it("should generate a string schema", () => {
@@ -1337,7 +1336,7 @@ function generate(
   sourceText: string,
   z?: string,
   skipParseJSDoc?: boolean,
-  customJSDocFormats: CustomJSDocFormatTypes = {}
+  customJSDocFormatTypes: CustomJSDocFormatTypes = {}
 ) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
@@ -1362,17 +1361,15 @@ function generate(
   const interfaceName = declaration.name.text;
   const zodConstName = `${camel(interfaceName)}Schema`;
 
-  const zodSchema = customJSDocFormatTypeContext.run(
-    customJSDocFormats,
-    generateZodSchemaVariableStatement,
-    {
-      zodImportValue: z,
-      node: declaration,
-      sourceFile,
-      varName: zodConstName,
-      skipParseJSDoc,
-    }
-  );
+  const zodSchema = generateZodSchemaVariableStatement({
+    zodImportValue: z,
+    node: declaration,
+    sourceFile,
+    varName: zodConstName,
+    skipParseJSDoc,
+    customJSDocFormatTypes,
+  });
+
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })
     .printNode(ts.EmitHint.Unspecified, zodSchema.statement, sourceFile);
