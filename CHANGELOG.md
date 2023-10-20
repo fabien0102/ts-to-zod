@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.2.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.3...v3.2.0) (2023-10-20)
+
+
+### Features
+
+* Support for custom `[@format](https://www.github.com/format)` types ([#145](https://www.github.com/fabien0102/ts-to-zod/issues/145)) ([acd9444](https://www.github.com/fabien0102/ts-to-zod/commit/acd94441241e2ebe0beea86ea85c8fd7a84a4df0))
+* Support Record<T, U> ([#161](https://www.github.com/fabien0102/ts-to-zod/issues/161)) ([ac24784](https://www.github.com/fabien0102/ts-to-zod/commit/ac24784153811a5a0e14193e2cabaa4085316956))
+
+
+### Bug Fixes
+
+* Various type extractions ([#159](https://www.github.com/fabien0102/ts-to-zod/issues/159)) ([18825d9](https://www.github.com/fabien0102/ts-to-zod/commit/18825d93561512dc96f1213c75faf433ee330ccc))
+
 ### [3.1.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.2...v3.1.3) (2023-06-27)
 
 
