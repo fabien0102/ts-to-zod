@@ -18,6 +18,35 @@ export type GetSchemaName = (identifier: string) => string;
 export type NameFilter = (name: string) => boolean;
 export type JSDocTagFilter = (tags: SimplifiedJSDocTag[]) => boolean;
 
+/**
+ * @example
+ *  {
+ *    regex: "^\\d{4}-\\d{2}-\\d{2}$",
+ *    errorMessage: "Must be in YYYY-MM-DD format."
+ *  }
+ */
+export type CustomJSDocFormatTypeAttributes = {
+  regex: string;
+  errorMessage?: string;
+};
+
+export type CustomJSDocFormatType = string;
+
+/**
+ * @example
+ *  {
+ *    "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
+ *    date: {
+ *      regex: "^\\d{4}-\\d{2}-\\d{2}$",
+ *      errorMessage: "Must be in YYYY-MM-DD format."
+ *    }
+ * }
+ */
+export type CustomJSDocFormatTypes = Record<
+  CustomJSDocFormatType,
+  string | CustomJSDocFormatTypeAttributes
+>;
+
 export type Config = {
   /**
    * Path of the input file (types source)
@@ -66,6 +95,11 @@ export type Config = {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
+
+  /**
+   * A record of custom `@format` types with their corresponding regex patterns.
+   */
+  customJSDocFormats?: CustomJSDocFormatTypes;
 };
 
 export type Configs = Array<

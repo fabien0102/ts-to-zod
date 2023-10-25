@@ -1,5 +1,15 @@
 import ts from "typescript";
 
+const typeScriptHelper = [
+  "Array",
+  "Promise",
+  "Omit",
+  "Pick",
+  "Record",
+  "Partial",
+  "Required",
+];
+
 export type TypeNode = (
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
@@ -20,72 +30,86 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
 }
 
 export function getExtractedTypeNames(
-  node: TypeNode,
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
   sourceFile: ts.SourceFile
 ): string[] {
   const referenceTypeNames = new Set<string>();
+
+  // Adding the node name
   referenceTypeNames.add(node.name.text);
 
-
-  const eventuallyAddType = (childNode: ts.Node) => {
-    if (ts.isTypeLiteralNode(childNode)) {
-      childNode.members.forEach(eventuallyAddType);
-      return;
-    }
+  const visitorExtract = (childNode: ts.Node) => {
+    // if (ts.isTypeLiteralNode(childNode)) {
+    //   childNode.members.forEach(visitorExtract);
+    //   return;
+    // }
     if (!ts.isPropertySignature(childNode)) {
       return;
     }
     if (childNode.type) {
-      if (ts.isTypeReferenceNode(childNode.type)) {
-        let escapedName = "";
-        if (ts.isIdentifier(childNode.type.typeName)) {
-          escapedName = childNode.type.typeName.escapedText.toString();
-        }
-        if (
-          ts.isQualifiedName(childNode.type.typeName) &&
-          ts.isIdentifier(childNode.type.typeName.left)
-        ) {
-          const left = childNode.type.typeName.left.escapedText.toString();
-          escapedName = left;
-        }
-        if (!escapedName) {
-          return;
-        }
-        referenceTypeNames.add(escapedName);
-      } else if (
-        ts.isArrayTypeNode(childNode.type) &&
-        ts.isTypeNode(childNode.type.elementType)
-      ) {
-        referenceTypeNames.add(childNode.type.elementType.getText(sourceFile));
-      } else if (ts.isTypeLiteralNode(childNode.type)) {
-        childNode.type.forEachChild(eventuallyAddType);
-      } else if (
-        ts.isIntersectionTypeNode(childNode.type) ||
-        ts.isUnionTypeNode(childNode.type)
-      ) {
-        childNode.type.types.forEach((typeNode: ts.TypeNode) => {
-          if (ts.isTypeReferenceNode(typeNode)) {
-            referenceTypeNames.add(typeNode.getText(sourceFile));
-          } else typeNode.forEachChild(eventuallyAddType);
-        });
-      }
+      handleTypeNode(childNode.type);
     }
   };
 
-  const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
-
-  if (heritageClauses) {
-    heritageClauses.forEach((clause) => {
-      const extensionTypes = clause.types;
-      extensionTypes.forEach((extensionTypeNode) => {
-        const typeName = extensionTypeNode.expression.getText(sourceFile);
-
-        referenceTypeNames.add(typeName);
+  const handleTypeNode = (typeNode: ts.Node) => {
+    if (ts.isTypeReferenceNode(typeNode)) {
+      handleTypeReferenceNode(typeNode);
+    } else if (ts.isArrayTypeNode(typeNode)) {
+      handleTypeNode(typeNode.elementType);
+    } else if (ts.isTypeLiteralNode(typeNode)) {
+      typeNode.forEachChild(visitorExtract);
+    } else if (
+      ts.isIntersectionTypeNode(typeNode) ||
+      ts.isUnionTypeNode(typeNode)
+    ) {
+      typeNode.types.forEach((childNode: ts.TypeNode) => {
+        if (ts.isTypeReferenceNode(childNode)) {
+          handleTypeReferenceNode(childNode);
+        } else childNode.forEachChild(visitorExtract);
       });
-    });
-  }
+    }
+  };
 
-  node.forEachChild(eventuallyAddType);
+  const handleTypeReferenceNode = (typeNode: ts.TypeReferenceNode) => {
+    // let escapedName = "";
+    // if (ts.isIdentifier(typeNode.typeName)) {
+    //   escapedName = typeNode.typeName.escapedText.toString();
+    // }
+    // if (
+    //   ts.isQualifiedName(typeNode.typeName) &&
+    //   ts.isIdentifier(typeNode.typeName.left)
+    // ) {
+    //   const left = typeNode.typeName.left.escapedText.toString();
+    //   escapedName = left;
+    // }
+    // if (!escapedName) {
+    //   return;
+    // }
+    const typeName = typeNode.typeName.getText(sourceFile);
+    if (typeScriptHelper.indexOf(typeName) > -1 && typeNode.typeArguments) {
+      typeNode.typeArguments.forEach((t) => handleTypeNode(t));
+    } else {
+      referenceTypeNames.add(typeName);
+    }
+  };
+
+  if (ts.isInterfaceDeclaration(node)) {
+    const heritageClauses = node.heritageClauses;
+
+    if (heritageClauses) {
+      heritageClauses.forEach((clause) => {
+        const extensionTypes = clause.types;
+        extensionTypes.forEach((extensionTypeNode) => {
+          const typeName = extensionTypeNode.expression.getText(sourceFile);
+
+          referenceTypeNames.add(typeName);
+        });
+      });
+      node.forEachChild(visitorExtract);
+    }
+  } else if (ts.isTypeAliasDeclaration(node)) {
+    handleTypeNode(node.type);
+  }
 
   return Array.from(referenceTypeNames);
 }

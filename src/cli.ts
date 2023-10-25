@@ -1,16 +1,15 @@
 import { Command, flags } from "@oclif/command";
-import { OutputFlags } from "@oclif/parser";
 import { error as oclifError } from "@oclif/errors";
-import { outputFile, existsSync } from "fs-extra";
+import { OutputFlags } from "@oclif/parser";
+import { existsSync, outputFile } from "fs-extra";
 import { join, relative, parse } from "path";
 import slash from "slash";
 import ts from "typescript";
-import { generate, GenerateProps } from "./core/generate";
-import { TsToZodConfig, Config } from "./config";
+import { Config, TsToZodConfig } from "./config";
 import {
-  tsToZodConfigSchema,
   getSchemaNameSchema,
   nameFilterSchema,
+  tsToZodConfigSchema,
 } from "./config.zod";
 import ora from "ora";
 import prettier from "prettier";
@@ -20,6 +19,7 @@ import { eachSeries } from "async";
 import { createConfig } from "./createConfig";
 import chokidar from "chokidar";
 import { getImportPath } from "./utils/getImportPath";
+import { GenerateProps, generate } from "./core/generate";
 
 // Try to load `ts-to-zod.config.js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help

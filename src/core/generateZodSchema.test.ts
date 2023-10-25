@@ -1,5 +1,6 @@
 import { camel } from "case";
 import ts from "typescript";
+import type { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 
@@ -699,6 +700,34 @@ describe("generateZodSchema", () => {
        * @maximum 500
        */
       age: number;
+
+      /**
+       * The hero's birthday.
+       *
+       * @format date-time
+       */
+      birthday: string;
+
+      /**
+       * The hero's ipv4 address.
+       *
+       * @format ipv4
+       */
+      ipv4: string;
+
+      /**
+       * The hero's ipv6 address.
+       *
+       * @format ipv6
+       */
+      ipv6: string;
+
+      /**
+       * The hero's ip address.
+       *
+       * @format ip
+       */
+      ip: string;
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -733,7 +762,31 @@ describe("generateZodSchema", () => {
            * @minimum 0
            * @maximum 500
            */
-          age: z.number().min(0).max(500)
+          age: z.number().min(0).max(500),
+          /**
+           * The hero's birthday.
+           *
+           * @format date-time
+           */
+          birthday: z.string().datetime(),
+          /**
+           * The hero's ipv4 address.
+           *
+           * @format ipv4
+           */
+          ipv4: z.string().ip({ version: \\"v4\\" }),
+          /**
+           * The hero's ipv6 address.
+           *
+           * @format ipv6
+           */
+          ipv6: z.string().ip({ version: \\"v6\\" }),
+          /**
+           * The hero's ip address.
+           *
+           * @format ip
+           */
+          ip: z.string().ip()
       });"
     `);
   });
@@ -760,6 +813,20 @@ describe("generateZodSchema", () => {
        * @format email "Should be an email"
        */
       supermanEmail: string;
+
+      /**
+       * The hero's ipv6 address.
+       *
+       * @format ipv6 Must be an ipv6 address
+       */
+      ipv6: string;
+
+      /**
+       * The hero's ip address.
+       *
+       * @format ip "Must be a ipv4 or an ipv6 address"
+       */
+      ip: string;
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -780,7 +847,19 @@ describe("generateZodSchema", () => {
            *
            * @format email \\"Should be an email\\"
            */
-          supermanEmail: z.string().email(\\"Should be an email\\")
+          supermanEmail: z.string().email(\\"Should be an email\\"),
+          /**
+           * The hero's ipv6 address.
+           *
+           * @format ipv6 Must be an ipv6 address
+           */
+          ipv6: z.string().ip({ version: \\"v6\\", message: \\"Must be an ipv6 address\\" }),
+          /**
+           * The hero's ip address.
+           *
+           * @format ip \\"Must be a ipv4 or an ipv6 address\\"
+           */
+          ip: z.string().ip(\\"Must be a ipv4 or an ipv6 address\\")
       });"
     `);
   });
@@ -832,6 +911,63 @@ describe("generateZodSchema", () => {
            * @maximum 500, \\"you are too old\\"
            */
           age: z.number().min(0, \\"you are too young\\").max(500, \\"you are too old\\")
+      });"
+    `);
+  });
+
+  it("should generate custom error messages for custom jsdoc format types", () => {
+    const source = `export interface Info {
+      /**
+       * A birthday.
+       *
+       * @format date
+       */
+      birthday: string;
+
+      /**
+       * A phone number.
+       *
+       * @format phone-number
+       */
+      phoneNumber: string;
+
+      /**
+       * A price.
+       *
+       * @format price Must start with "$" and end with cents.
+       */
+      cost: string;
+    }`;
+    expect(
+      generate(source, undefined, undefined, {
+        date: {
+          regex: "^\\d{4}-\\d{2}-\\d{2}$",
+          errorMessage: "Must be in YYYY-MM-DD format.",
+        },
+
+        "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
+        price: "^\\$\\d+.\\d{2}$",
+      })
+    ).toMatchInlineSnapshot(`
+      "export const infoSchema = z.object({
+          /**
+           * A birthday.
+           *
+           * @format date
+           */
+          birthday: z.string().regex(/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/, \\"Must be in YYYY-MM-DD format.\\"),
+          /**
+           * A phone number.
+           *
+           * @format phone-number
+           */
+          phoneNumber: z.string().regex(/^\\\\d{3}-\\\\d{3}-\\\\d{4}$/),
+          /**
+           * A price.
+           *
+           * @format price Must start with \\"$\\" and end with cents.
+           */
+          cost: z.string().regex(/^\\\\$\\\\d+.\\\\d{2}$/, \\"Must start with \\\\\\"$\\\\\\" and end with cents.\\")
       });"
     `);
   });
@@ -1026,6 +1162,23 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should handle parenthesis type nodes", () => {
+    const source = `export interface A {
+      a: (number) | string | null;
+      b: (string)
+      c: (number | string)
+    }
+    `;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const aSchema = z.object({
+          a: z.union([z.number(), z.string()]).nullable(),
+          b: z.string(),
+          c: z.union([z.number(), z.string()])
+      });"
+    `);
+  });
+
   it("should allow nullable on optional union properties", () => {
     const source = `export interface A {
       a?: number | string | null;
@@ -1196,7 +1349,12 @@ describe("generateZodSchema", () => {
  * @param sourceText Typescript interface or type
  * @returns Generated Zod schema
  */
-function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
+function generate(
+  sourceText: string,
+  z?: string,
+  skipParseJSDoc?: boolean,
+  customJSDocFormatTypes: CustomJSDocFormatTypes = {}
+) {
   const sourceFile = ts.createSourceFile(
     "index.ts",
     sourceText,
@@ -1227,7 +1385,9 @@ function generate(sourceText: string, z?: string, skipParseJSDoc?: boolean) {
     varName: zodConstName,
     skipParseJSDoc,
     getNamespaceSchemaName: new Map(),
+    customJSDocFormatTypes,
   });
+
   return ts
     .createPrinter({ newLine: ts.NewLineKind.LineFeed })
     .printNode(ts.EmitHint.Unspecified, zodSchema.statement, sourceFile);

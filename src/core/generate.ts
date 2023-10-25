@@ -2,7 +2,7 @@ import { camel, pascal } from "case";
 import { readFile } from "fs-extra";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import { JSDocTagFilter, NameFilter } from "../config";
+import { JSDocTagFilter, NameFilter, CustomJSDocFormatTypes } from "../config";
 import { getImportPath } from "../utils/getImportPath";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { nodeFileResolution } from "../utils/nodeFileResolution";
@@ -68,6 +68,11 @@ export interface GenerateProps {
    * Path of z.infer<> types file.
    */
   inferredTypes?: string;
+
+  /**
+   * Custom JSDoc format types.
+   */
+  customJSDocFormatTypes?: CustomJSDocFormatTypes;
 }
 
 type IterateZodSchemasProps = {
@@ -124,6 +129,11 @@ type IterateZodSchemasProps = {
    * this is a prefix with all the concatenated namespaces we're currently in
    */
   previousNamespace?: string;
+
+  /**
+   * Custom JSDoc format types.
+   */
+  customJSDocFormatTypes?: CustomJSDocFormatTypes;
 };
 
 type IterateZodSchemaResult = ReturnType<
@@ -166,6 +176,7 @@ async function iterateZodSchemas({
   extractDefaultName,
   aliasingNameMapping = {},
   previousNamespace = "",
+  customJSDocFormatTypes,
 }: IterateZodSchemasProps): Promise<Array<IterateZodSchemaResult>> {
   const checkExportability = !isRootFile;
   const sourceText = await readFile(inputPath, "utf8");
@@ -450,6 +461,7 @@ async function iterateZodSchemas({
             ? camel(`${inheritedNamespace} ${typeName}`)
             : typeName,
           getNamespaceSchemaName: availableNameSpaces,
+          customJSDocFormatTypes,
         });
         ac.push(res);
       }
@@ -469,6 +481,7 @@ async function iterateZodSchemas({
           typeName: extractDefaultName,
           varName: defVarName,
           isDefault: true,
+          customJSDocFormatTypes,
         });
         ac.push(resDefault);
       }
@@ -492,6 +505,7 @@ export async function generate({
   getSchemaName = (id) => camel(id) + "Schema",
   keepComments = false,
   skipParseJSDoc = false,
+  customJSDocFormatTypes = {},
 }: GenerateProps) {
   const sourceText = await readFile(inputPath, "utf8");
   const sourceFile = resolveModules(sourceText);
@@ -812,6 +826,7 @@ function generateZodSchemaVarStatementWrapper(args: {
   inputPath: string;
   isDefault?: boolean;
   getNamespaceSchemaName?: Map<string, (x: string) => string>;
+  customJSDocFormatTypes?: CustomJSDocFormatTypes;
 }) {
   const {
     node,
@@ -825,6 +840,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     inputPath,
     isDefault,
     getNamespaceSchemaName = new Map(),
+    customJSDocFormatTypes,
   } = args;
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue,
@@ -834,6 +850,7 @@ function generateZodSchemaVarStatementWrapper(args: {
     getDependencyName: getSchemaName,
     skipParseJSDoc,
     getNamespaceSchemaName,
+    customJSDocFormatTypes,
   });
   return {
     typeName,

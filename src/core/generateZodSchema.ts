@@ -1,6 +1,7 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import * as ts from "typescript";
+import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import {
@@ -51,6 +52,11 @@ export interface GenerateZodSchemaProps {
   skipParseJSDoc?: boolean;
 
   /**
+   * Custom JSDoc format types.
+   */
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
+
+  /**
    * We use this to check if there is an available nameSpace while parsing,
    * the value is a function that generates the schemeName scoped to the namespace
    */
@@ -71,6 +77,7 @@ export function generateZodSchemaVariableStatement({
   zodImportValue = "z",
   getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
   skipParseJSDoc = false,
+  customJSDocFormatTypes,
   getNamespaceSchemaName,
 }: GenerateZodSchemaProps) {
   let schema:
@@ -115,6 +122,7 @@ export function generateZodSchemaVariableStatement({
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
+      customJSDocFormatTypes,
       getNamespaceSchemaName,
     });
 
@@ -148,6 +156,7 @@ export function generateZodSchemaVariableStatement({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      customJSDocFormatTypes,
       getNamespaceSchemaName,
     });
   }
@@ -192,6 +201,7 @@ function buildZodProperties({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  customJSDocFormatTypes,
   getNamespaceSchemaName,
 }: {
   members: ts.NodeArray<ts.TypeElement> | ts.PropertySignature[];
@@ -200,6 +210,7 @@ function buildZodProperties({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
   getNamespaceSchemaName: Map<string, (x: string) => string>;
 }) {
   const properties = new Map<
@@ -233,6 +244,7 @@ function buildZodProperties({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       })
     );
@@ -252,6 +264,7 @@ function buildZodPrimitive({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
+  customJSDocFormatTypes,
   getNamespaceSchemaName,
 }: {
   z: string;
@@ -265,10 +278,12 @@ function buildZodPrimitive({
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
   getNamespaceSchemaName: Map<string, (x: string) => string>;
 }): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
+    customJSDocFormatTypes,
     isOptional,
     Boolean(isPartial),
     Boolean(isRequired),
@@ -285,6 +300,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      customJSDocFormatTypes,
       getNamespaceSchemaName,
     });
   }
@@ -304,6 +320,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       });
     }
@@ -321,6 +338,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       });
     }
@@ -338,6 +356,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       });
     }
@@ -354,6 +373,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       });
     }
@@ -373,6 +393,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           }),
         ],
@@ -398,7 +419,8 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
-              getNamespaceSchemaName
+              customJSDocFormatTypes,
+              getNamespaceSchemaName,
             }),
           ],
           zodProperties
@@ -420,6 +442,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           }),
           buildZodPrimitive({
@@ -432,6 +455,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           }),
         ],
@@ -459,6 +483,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           })
         ),
@@ -481,6 +506,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           })
         ),
@@ -538,6 +564,7 @@ function buildZodPrimitive({
             dependencies,
             getDependencyName,
             skipParseJSDoc,
+            customJSDocFormatTypes,
             getNamespaceSchemaName,
           }),
           f.createIdentifier(lower(identifierName))
@@ -580,6 +607,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       });
     }
@@ -595,6 +623,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       })
     );
@@ -625,6 +654,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       })
     );
@@ -722,6 +752,7 @@ function buildZodPrimitive({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          customJSDocFormatTypes,
           getNamespaceSchemaName,
         }),
       ],
@@ -738,6 +769,7 @@ function buildZodPrimitive({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       }),
       zodProperties
@@ -755,6 +787,7 @@ function buildZodPrimitive({
       dependencies,
       getDependencyName,
       skipParseJSDoc,
+      customJSDocFormatTypes,
       getNamespaceSchemaName,
     });
 
@@ -776,6 +809,7 @@ function buildZodPrimitive({
               dependencies,
               getDependencyName,
               skipParseJSDoc,
+              customJSDocFormatTypes,
               getNamespaceSchemaName,
             }),
           ]
@@ -812,6 +846,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: Boolean(p.questionToken),
               skipParseJSDoc,
+              customJSDocFormatTypes,
               getNamespaceSchemaName,
             })
           ),
@@ -828,6 +863,7 @@ function buildZodPrimitive({
               getDependencyName,
               isOptional: false,
               skipParseJSDoc,
+              customJSDocFormatTypes,
               getNamespaceSchemaName,
             }),
           ],
@@ -966,6 +1002,7 @@ function buildZodObject({
   getDependencyName,
   schemaExtensionClauses,
   skipParseJSDoc,
+  customJSDocFormatTypes,
   getNamespaceSchemaName,
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
@@ -975,6 +1012,7 @@ function buildZodObject({
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   schemaExtensionClauses?: string[];
   skipParseJSDoc: boolean;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
   getNamespaceSchemaName: Map<string, (x: string) => string>;
 }) {
   const { properties, indexSignature } = typeNode.members.reduce<{
@@ -1010,6 +1048,7 @@ function buildZodObject({
           dependencies,
           getDependencyName,
           skipParseJSDoc,
+          customJSDocFormatTypes,
           getNamespaceSchemaName,
         })
       : new Map();
@@ -1056,6 +1095,7 @@ function buildZodObject({
         dependencies,
         getDependencyName,
         skipParseJSDoc,
+        customJSDocFormatTypes,
         getNamespaceSchemaName,
       }),
     ]);

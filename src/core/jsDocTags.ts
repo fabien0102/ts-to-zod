@@ -1,18 +1,49 @@
-import ts from "typescript";
 import { getJsDoc } from "tsutils";
+import ts from "typescript";
+import type { ZodString } from "zod";
+import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
 const { factory: f } = ts;
 
 /**
  * List of formats that can be translated in zod functions.
  */
-const formats = [
-  "email" as const,
-  "uuid" as const,
-  // "uri" as const,
-  "url" as const,
-  // "date" as const,
-  // "date-time" as const,
-];
+const builtInJSDocFormatsTypes = [
+  "date-time",
+  "email",
+  "ip",
+  "ipv4",
+  "ipv6",
+  "url",
+  "uuid",
+  // "uri",
+  // "date",
+] as const;
+
+type BuiltInJSDocFormatsType = typeof builtInJSDocFormatsTypes[number];
+
+/**
+ * Type guard to filter supported JSDoc format tag values (built-in).
+ *
+ * @param formatType
+ */
+function isBuiltInFormatType(
+  formatType = ""
+): formatType is BuiltInJSDocFormatsType {
+  return builtInJSDocFormatsTypes.map(String).includes(formatType);
+}
+
+/**
+ * Type guard to filter supported JSDoc format tag values (custom).
+ *
+ * @param formatType
+ * @param customFormatTypes
+ */
+function isCustomFormatType(
+  formatType = "",
+  customFormatTypes: Array<keyof CustomJSDocFormatTypes>
+): formatType is CustomJSDocFormatType {
+  return customFormatTypes.includes(formatType);
+}
 
 type TagWithError<T> = {
   value: T;
@@ -28,38 +59,32 @@ export interface JSDocTags {
   default?: number | string | boolean;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
-  format?: TagWithError<typeof formats[-1]>;
+  format?: TagWithError<BuiltInJSDocFormatsType | CustomJSDocFormatType>;
+  /**
+   * Due to parsing ambiguities, `@pattern`
+   * does not support custom error messages.
+   */
   pattern?: string;
   strict?: boolean;
 }
 
+const jsDocTagKeys: Array<keyof JSDocTags> = [
+  "minimum",
+  "maximum",
+  "default",
+  "minLength",
+  "maxLength",
+  "format",
+  "pattern",
+];
+
 /**
- * Typeguard to filter supported JSDoc tag key.
+ * Type guard to filter supported JSDoc tag key.
  *
  * @param tagName
  */
 function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
-  const keys: Array<keyof JSDocTags> = [
-    "minimum",
-    "maximum",
-    "default",
-    "minLength",
-    "maxLength",
-    "format",
-    "pattern",
-  ];
-  return (keys as string[]).includes(tagName);
-}
-
-/**
- * Typeguard to filter supported JSDoc format tag values.
- *
- * @param format
- */
-function isSupportedFormat(
-  format = ""
-): format is Required<JSDocTags>["format"]["value"] {
-  return (formats as string[]).includes(format);
+  return jsDocTagKeys.map(String).includes(tagName);
 }
 
 /**
@@ -86,6 +111,9 @@ function parseJsDocComment(
 
 /**
  * Return parsed JSTags.
+ *
+ * This function depends on `customJSDocFormatTypeContext`. Before
+ * calling it, make sure the context has been supplied the expected value.
  *
  * @param nodeType
  * @param sourceFile
@@ -123,9 +151,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             }
             break;
           case "format":
-            if (isSupportedFormat(value)) {
-              jsDocTags[tagName] = { value, errorMessage };
-            }
+            jsDocTags[tagName] = { value, errorMessage };
             break;
           case "default":
             if (
@@ -164,9 +190,10 @@ export type ZodProperty = {
 };
 
 /**
- * Convert a set of jsDocTags to zod properties
+ * Convert a set of JSDoc tags to zod properties.
  *
  * @param jsDocTags
+ * @param customJSDocFormats
  * @param isOptional
  * @param isPartial
  * @param isRequired
@@ -174,6 +201,7 @@ export type ZodProperty = {
  */
 export function jsDocTagToZodProperties(
   jsDocTags: JSDocTags,
+  customJSDocFormats: CustomJSDocFormatTypes,
   isOptional: boolean,
   isPartial: boolean,
   isRequired: boolean,
@@ -216,19 +244,24 @@ export function jsDocTagToZodProperties(
       ),
     });
   }
-  if (jsDocTags.format) {
-    zodProperties.push({
-      identifier: jsDocTags.format.value,
-      expressions: jsDocTags.format.errorMessage
-        ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
-        : undefined,
-    });
+  if (
+    jsDocTags.format &&
+    (isBuiltInFormatType(jsDocTags.format.value) ||
+      isCustomFormatType(
+        jsDocTags.format.value,
+        Object.keys(customJSDocFormats)
+      ))
+  ) {
+    zodProperties.push(
+      formatToZodProperty(jsDocTags.format, customJSDocFormats)
+    );
   }
   if (jsDocTags.pattern) {
-    zodProperties.push({
-      identifier: "regex",
-      expressions: [f.createRegularExpressionLiteral(`/${jsDocTags.pattern}/`)],
-    });
+    zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
+  }
+  // strict() must be before optional() and nullable()
+  if (jsDocTags.strict) {
+    zodProperties.push({ identifier: "strict" });
   }
   // strict() must be before optional() and nullable()
   if (jsDocTags.strict) {
@@ -269,6 +302,124 @@ export function jsDocTagToZodProperties(
   }
 
   return zodProperties;
+}
+
+/**
+ * Converts the given JSDoc format to the corresponding Zod
+ * string validation function call represented by a {@link ZodProperty}.
+ *
+ * @param format The format to be converted.
+ * @returns A ZodProperty representing a Zod string validation function call.
+ */
+function formatToZodProperty(
+  format: Required<JSDocTags>["format"],
+  customFormatTypes: CustomJSDocFormatTypes
+): ZodProperty {
+  if (isCustomFormatType(format.value, Object.keys(customFormatTypes))) {
+    const rule = customFormatTypes[format.value];
+    const regex = typeof rule === "string" ? rule : rule.regex;
+    const errorMessage =
+      typeof rule === "string" ? undefined : rule.errorMessage;
+
+    return createZodRegexProperty(regex, format.errorMessage ?? errorMessage);
+  }
+
+  const identifier = builtInFormatTypeToZodPropertyIdentifier(format.value);
+  const expressions = builtInFormatTypeToZodPropertyArguments(
+    format.value,
+    format.errorMessage
+  );
+  return { identifier, expressions };
+}
+
+/**
+ * Maps the given JSDoc format type to its corresponding
+ * Zod string validation function name.
+ *
+ * @param formatType The format type to be converted.
+ * @returns The name of a Zod string validation function.
+ */
+function builtInFormatTypeToZodPropertyIdentifier(
+  formatType: BuiltInJSDocFormatsType
+): keyof ZodString {
+  switch (formatType) {
+    case "date-time":
+      return "datetime";
+    case "ipv4":
+    case "ipv6":
+    case "ip":
+      return "ip";
+    default:
+      return formatType as keyof ZodString;
+  }
+}
+
+/**
+ * Maps the given JSDoc format type and error message to the
+ * expected Zod string validation function arguments.
+ *
+ * @param formatType The format type to be converted.
+ * @param errorMessage The error message to display if validation fails.
+ * @returns A list of expressions which represent function arguments.
+ */
+function builtInFormatTypeToZodPropertyArguments(
+  formatType: BuiltInJSDocFormatsType,
+  errorMessage?: string
+): ts.Expression[] | undefined {
+  switch (formatType) {
+    case "ipv4":
+      return createZodStringIpArgs("v4", errorMessage);
+    case "ipv6":
+      return createZodStringIpArgs("v6", errorMessage);
+    default:
+      return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
+  }
+}
+
+/**
+ * Constructs a list of expressions which represent the arguments
+ * for `ip()` string validation function.
+ *
+ * @param version The IP version to use.
+ * @param errorMessage The error message to display if validation fails.
+ * @returns A list of expressions which represent the function arguments.
+ */
+function createZodStringIpArgs(
+  version: "v4" | "v6",
+  errorMessage?: string
+): ts.Expression[] {
+  const propertyAssignments: ts.ObjectLiteralElementLike[] = [
+    f.createPropertyAssignment("version", f.createStringLiteral(version)),
+  ];
+
+  if (errorMessage) {
+    propertyAssignments.push(
+      f.createPropertyAssignment("message", f.createStringLiteral(errorMessage))
+    );
+  }
+
+  return [f.createObjectLiteralExpression(propertyAssignments)];
+}
+
+/**
+ * Constructs a ZodProperty that represents a call to
+ * `.regex()` with the given regular expression.
+ *
+ * @param regex The regular expression to match.
+ * @param errorMessage The error message to display if validation fails.
+ * @returns A ZodProperty representing a `.regex()` call.
+ */
+function createZodRegexProperty(
+  regex: string,
+  errorMessage?: string
+): ZodProperty {
+  return {
+    identifier: "regex",
+    expressions: withErrorMessage(
+      f.createRegularExpressionLiteral(`/${regex}/`),
+      errorMessage
+    ),
+  };
 }
 
 function withErrorMessage(expression: ts.Expression, errorMessage?: string) {

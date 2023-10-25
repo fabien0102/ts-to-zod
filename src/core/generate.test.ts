@@ -224,7 +224,7 @@ describe("generate", () => {
       });
 
       generateResult = await generate({
-        inputPath: filesRef?.input.path as string
+        inputPath: filesRef?.input.path as string,
       });
     });
 
@@ -620,7 +620,7 @@ describe("generate", () => {
   });
 
   describe("with @strict tag", () => {
-    it("should generate strict keyword", async() => {
+    it("should generate strict keyword", async () => {
       const sourceText = `
       /**
        * @strict
