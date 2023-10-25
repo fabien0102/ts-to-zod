@@ -39,10 +39,6 @@ export function getExtractedTypeNames(
   referenceTypeNames.add(node.name.text);
 
   const visitorExtract = (childNode: ts.Node) => {
-    // if (ts.isTypeLiteralNode(childNode)) {
-    //   childNode.members.forEach(visitorExtract);
-    //   return;
-    // }
     if (!ts.isPropertySignature(childNode)) {
       return;
     }
@@ -52,6 +48,10 @@ export function getExtractedTypeNames(
   };
 
   const handleTypeNode = (typeNode: ts.Node) => {
+    if (ts.isParenthesizedTypeNode(typeNode)) {
+      typeNode = typeNode.type;
+    }
+
     if (ts.isTypeReferenceNode(typeNode)) {
       handleTypeReferenceNode(typeNode);
     } else if (ts.isArrayTypeNode(typeNode)) {
@@ -71,21 +71,18 @@ export function getExtractedTypeNames(
   };
 
   const handleTypeReferenceNode = (typeNode: ts.TypeReferenceNode) => {
-    // let escapedName = "";
-    // if (ts.isIdentifier(typeNode.typeName)) {
-    //   escapedName = typeNode.typeName.escapedText.toString();
-    // }
-    // if (
-    //   ts.isQualifiedName(typeNode.typeName) &&
-    //   ts.isIdentifier(typeNode.typeName.left)
-    // ) {
-    //   const left = typeNode.typeName.left.escapedText.toString();
-    //   escapedName = left;
-    // }
-    // if (!escapedName) {
-    //   return;
-    // }
-    const typeName = typeNode.typeName.getText(sourceFile);
+    let typeName = "";
+    if (ts.isIdentifier(typeNode.typeName)) {
+      typeName = typeNode.typeName.escapedText.toString();
+    } else if (
+      ts.isQualifiedName(typeNode.typeName) &&
+      ts.isIdentifier(typeNode.typeName.left)
+    ) {
+      const left = typeNode.typeName.left.escapedText.toString();
+      typeName = left;
+    } else {
+      typeName = typeNode.typeName.getText(sourceFile);
+    }
     if (typeScriptHelper.indexOf(typeName) > -1 && typeNode.typeArguments) {
       typeNode.typeArguments.forEach((t) => handleTypeNode(t));
     } else {
@@ -105,8 +102,8 @@ export function getExtractedTypeNames(
           referenceTypeNames.add(typeName);
         });
       });
-      node.forEachChild(visitorExtract);
     }
+    node.forEachChild(visitorExtract);
   } else if (ts.isTypeAliasDeclaration(node)) {
     handleTypeNode(node.type);
   }

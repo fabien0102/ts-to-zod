@@ -212,7 +212,6 @@ async function iterateZodSchemas({
     ) {
       const { text: pathText } = node.moduleSpecifier;
       const isRelative = getModuleRelativity(pathText);
-
       // case for default imports
       if (node?.importClause?.name && ts.isIdentifier(node.importClause.name)) {
         const name = node.importClause.name.escapedText.toString();
@@ -517,6 +516,7 @@ export async function generate({
     jsDocTagFilter,
     getSchemaName,
     skipParseJSDoc,
+    customJSDocFormatTypes,
     isRootFile: true,
   });
   const zodSchemaNames = zodSchemas.map(({ varName }) => varName);
@@ -839,8 +839,8 @@ function generateZodSchemaVarStatementWrapper(args: {
     sourceText,
     inputPath,
     isDefault,
+    customJSDocFormatTypes = {},
     getNamespaceSchemaName = new Map(),
-    customJSDocFormatTypes,
   } = args;
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue,

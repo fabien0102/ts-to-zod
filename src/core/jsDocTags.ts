@@ -263,10 +263,6 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.strict) {
     zodProperties.push({ identifier: "strict" });
   }
-  // strict() must be before optional() and nullable()
-  if (jsDocTags.strict) {
-    zodProperties.push({ identifier: "strict" });
-  }
   if (isOptional) {
     zodProperties.push({
       identifier: "optional",
