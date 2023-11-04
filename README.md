@@ -177,7 +177,7 @@ module.exports = [
     name: "example",
     input: "example/heros.ts",
     output: "example/heros.zod.ts",
-    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract")) // <= rule here
+    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract") // <= rule here
   },
 ];
 
