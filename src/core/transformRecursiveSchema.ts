@@ -1,6 +1,4 @@
-import ts from "typescript";
-
-const { factory: f } = ts;
+import ts, { factory as f } from "typescript";
 
 /**
  * Type hint zod to deal with recursive types.

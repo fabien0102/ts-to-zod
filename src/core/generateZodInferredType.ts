@@ -1,5 +1,4 @@
-import * as ts from "typescript";
-const { factory: f } = ts;
+import ts, { factory as f } from "typescript";
 
 export interface GenerateZodInferredTypeProps {
   aliasName: string;

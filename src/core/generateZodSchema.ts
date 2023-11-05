@@ -1,6 +1,6 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
-import * as ts from "typescript";
+import ts, { factory as f } from "typescript";
 import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
@@ -10,8 +10,6 @@ import {
   getJSDocTags,
   jsDocTagToZodProperties,
 } from "./jsDocTags";
-
-const { factory: f } = ts;
 
 export interface GenerateZodSchemaProps {
   /**
