@@ -32,7 +32,7 @@ export function fixOptionalAny(sourceText: string) {
       return node;
     };
 
-    return (node) => ts.visitNode(node, visit);
+    return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
   };
 
   const outputFile = ts.transform(sourceFile, [markAnyAsOptional]);

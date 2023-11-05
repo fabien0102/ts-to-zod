@@ -92,7 +92,7 @@ const moduleToPrefix =
   (sourceFile) => {
     const prefixInterfacesAndTypes =
       (moduleName: string) =>
-      (node: ts.Node): ts.Node | undefined => {
+      (node: ts.Node): ts.Node => {
         if (
           ts.isTypeReferenceNode(node) &&
           ts.isIdentifier(node.typeName) &&
@@ -108,7 +108,6 @@ const moduleToPrefix =
         if (ts.isTypeAliasDeclaration(node)) {
           return f.updateTypeAliasDeclaration(
             node,
-            node.decorators,
             node.modifiers,
             f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
             node.typeParameters,
@@ -118,7 +117,7 @@ const moduleToPrefix =
                   ts.visitNodes(
                     node.type.members,
                     prefixInterfacesAndTypes(moduleName)
-                  )
+                  ) as ts.NodeArray<ts.TypeElement>
                 )
               : ts.isTypeReferenceNode(node.type)
               ? f.updateTypeReferenceNode(
@@ -127,7 +126,7 @@ const moduleToPrefix =
                   ts.visitNodes(
                     node.type.typeArguments,
                     prefixInterfacesAndTypes(moduleName)
-                  )
+                  ) as ts.NodeArray<ts.TypeNode>
                 )
               : node.type
           );
@@ -136,22 +135,27 @@ const moduleToPrefix =
         if (ts.isInterfaceDeclaration(node)) {
           return f.updateInterfaceDeclaration(
             node,
-            node.decorators,
             node.modifiers,
             f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
             node.typeParameters,
             ts.visitNodes(
               node.heritageClauses,
               prefixInterfacesAndTypes(moduleName)
-            ),
-            ts.visitNodes(node.members, prefixInterfacesAndTypes(moduleName))
+            ) as ts.NodeArray<ts.HeritageClause>,
+            ts.visitNodes(
+              node.members,
+              prefixInterfacesAndTypes(moduleName)
+            ) as ts.NodeArray<ts.TypeElement>
           );
         }
 
         if (ts.isHeritageClause(node)) {
           return f.updateHeritageClause(
             node,
-            ts.visitNodes(node.types, prefixInterfacesAndTypes(moduleName))
+            ts.visitNodes(
+              node.types,
+              prefixInterfacesAndTypes(moduleName)
+            ) as ts.NodeArray<ts.ExpressionWithTypeArguments>
           );
         }
 
@@ -174,7 +178,6 @@ const moduleToPrefix =
         if (ts.isEnumDeclaration(node)) {
           return f.updateEnumDeclaration(
             node,
-            node.decorators,
             node.modifiers,
             f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
             node.members
@@ -203,5 +206,5 @@ const moduleToPrefix =
       return ts.visitEachChild(node, flattenModuleDeclaration, context);
     };
 
-    return ts.visitNode(sourceFile, flattenModuleDeclaration);
+    return ts.visitNode(sourceFile, flattenModuleDeclaration) as ts.SourceFile;
   };

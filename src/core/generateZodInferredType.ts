@@ -20,7 +20,6 @@ export function generateZodInferredType({
   zodConstName,
 }: GenerateZodInferredTypeProps) {
   return f.createTypeAliasDeclaration(
-    undefined,
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
     f.createIdentifier(aliasName),
     undefined,
