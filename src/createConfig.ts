@@ -162,7 +162,7 @@ module.exports = `;
     const prettierConfig = await prettier.resolveConfig(process.cwd());
     await outputFile(
       configPath,
-      prettier.format(header + JSON.stringify(answers.config), {
+      await prettier.format(header + JSON.stringify(answers.config), {
         parser: "babel",
         ...prettierConfig,
       }),

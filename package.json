@@ -50,7 +50,7 @@
     "lodash": "^4.17.21",
     "lz-string": "^1.4.4",
     "ora": "^5.4.0",
-    "prettier": "2.2.1",
+    "prettier": "3.0.3",
     "rxjs": "^7.4.0",
     "slash": "^3.0.0",
     "threads": "^1.7.0",
