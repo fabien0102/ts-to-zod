@@ -71,7 +71,7 @@ describe("generateZodSchema", () => {
   it("should generate a literal schema (string)", () => {
     const source = `export type Kryptonite = "kryptonite";`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const kryptoniteSchema = z.literal(\\"kryptonite\\");"`
+      `"export const kryptoniteSchema = z.literal("kryptonite");"`
     );
   });
 
@@ -184,7 +184,7 @@ describe("generateZodSchema", () => {
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
-          name: z.literal(\\"superman\\"),
+          name: z.literal("superman"),
           weakness: kryptoniteSchema,
           age: z.number(),
           enemies: z.array(z.string())
@@ -207,7 +207,7 @@ describe("generateZodSchema", () => {
       "export const responsesSchema = z.object({
           200: z.object({
               content: z.object({
-                  \\"application/json\\": z.object({
+                  "application/json": z.object({
                       id: z.string()
                   })
               })
@@ -233,14 +233,14 @@ describe("generateZodSchema", () => {
   it("should generate a union schema", () => {
     const source = `export type Identity = "superman" | "clark kent";`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const identitySchema = z.union([z.literal(\\"superman\\"), z.literal(\\"clark kent\\")]);"`
+      `"export const identitySchema = z.union([z.literal("superman"), z.literal("clark kent")]);"`
     );
   });
 
   it("should generate a literal schema for a single union", () => {
     const source = `export type Identity = | "superman";`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const identitySchema = z.literal(\\"superman\\");"`
+      `"export const identitySchema = z.literal("superman");"`
     );
   });
 
@@ -361,28 +361,28 @@ describe("generateZodSchema", () => {
   it("should generate a schema with omit", () => {
     const source = `export type InvincibleSuperman = Omit<Superman, "weakness">;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const invincibleSupermanSchema = supermanSchema.omit({ \\"weakness\\": true });"`
+      `"export const invincibleSupermanSchema = supermanSchema.omit({ "weakness": true });"`
     );
   });
 
   it("should generate a schema with omit (multiple keys)", () => {
     const source = `export type VeryInvincibleSuperman = Omit<Superman, "weakness" | "wife">;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const veryInvincibleSupermanSchema = supermanSchema.omit({ \\"weakness\\": true, \\"wife\\": true });"`
+      `"export const veryInvincibleSupermanSchema = supermanSchema.omit({ "weakness": true, "wife": true });"`
     );
   });
 
   it("should generate a schema with pick", () => {
     const source = `export type YouJustKnowMyName = Pick<SecretIdentity, "name">;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const youJustKnowMyNameSchema = secretIdentitySchema.pick({ \\"name\\": true });"`
+      `"export const youJustKnowMyNameSchema = secretIdentitySchema.pick({ "name": true });"`
     );
   });
 
   it("should generate a schema with pick (multiple keys)", () => {
     const source = `export type YouKnowTooMuch = Pick<SecretIdentity, "name" | "location">;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const youKnowTooMuchSchema = secretIdentitySchema.pick({ \\"name\\": true, \\"location\\": true });"`
+      `"export const youKnowTooMuchSchema = secretIdentitySchema.pick({ "name": true, "location": true });"`
     );
   });
 
@@ -396,7 +396,7 @@ describe("generateZodSchema", () => {
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
-          name: z.union([z.literal(\\"superman\\"), z.literal(\\"clark kent\\"), z.literal(\\"kal-l\\")]),
+          name: z.union([z.literal("superman"), z.literal("clark kent"), z.literal("kal-l")]),
           enemies: z.record(enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
@@ -465,7 +465,7 @@ describe("generateZodSchema", () => {
    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const villainSchema = z.object({
-          \\"i.will.kill.everybody\\": z.literal(true)
+          "i.will.kill.everybody": z.literal(true)
       });"
     `);
   });
@@ -626,8 +626,8 @@ describe("generateZodSchema", () => {
     };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const moviesSchema = z.record(movieSchema).and(z.object({
-          \\"Man of Steel\\": movieSchema.and(z.object({
-              title: z.literal(\\"Man of Steel\\")
+          "Man of Steel": movieSchema.and(z.object({
+              title: z.literal("Man of Steel")
           }))
       }));"
     `);
@@ -774,13 +774,13 @@ describe("generateZodSchema", () => {
            *
            * @format ipv4
            */
-          ipv4: z.string().ip({ version: \\"v4\\" }),
+          ipv4: z.string().ip({ version: "v4" }),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6
            */
-          ipv6: z.string().ip({ version: \\"v6\\" }),
+          ipv6: z.string().ip({ version: "v6" }),
           /**
            * The hero's ip address.
            *
@@ -835,31 +835,31 @@ describe("generateZodSchema", () => {
            *
            * @format email Should be an email
            */
-          heroEmail: z.string().email(\\"Should be an email\\"),
+          heroEmail: z.string().email("Should be an email"),
           /**
            * The email of the enemy.
            *
-           * @format email, \\"Should be an email\\"
+           * @format email, "Should be an email"
            */
-          enemyEmail: z.string().email(\\"Should be an email\\"),
+          enemyEmail: z.string().email("Should be an email"),
           /**
            * The email of the superman.
            *
-           * @format email \\"Should be an email\\"
+           * @format email "Should be an email"
            */
-          supermanEmail: z.string().email(\\"Should be an email\\"),
+          supermanEmail: z.string().email("Should be an email"),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6 Must be an ipv6 address
            */
-          ipv6: z.string().ip({ version: \\"v6\\", message: \\"Must be an ipv6 address\\" }),
+          ipv6: z.string().ip({ version: "v6", message: "Must be an ipv6 address" }),
           /**
            * The hero's ip address.
            *
-           * @format ip \\"Must be a ipv4 or an ipv6 address\\"
+           * @format ip "Must be a ipv4 or an ipv6 address"
            */
-          ip: z.string().ip(\\"Must be a ipv4 or an ipv6 address\\")
+          ip: z.string().ip("Must be a ipv4 or an ipv6 address")
       });"
     `);
   });
@@ -896,21 +896,21 @@ describe("generateZodSchema", () => {
            *
            * @format email should be an email
            */
-          email: z.string().email(\\"should be an email\\"),
+          email: z.string().email("should be an email"),
           /**
            * The name of the hero.
            *
            * @minLength 2, should be more than 2
            * @maxLength 50 should be less than 50
            */
-          name: z.string().min(2, \\"should be more than 2\\").max(50, \\"should be less than 50\\"),
+          name: z.string().min(2, "should be more than 2").max(50, "should be less than 50"),
           /**
            * The age of the hero
            *
            * @minimum 0 you are too young
-           * @maximum 500, \\"you are too old\\"
+           * @maximum 500, "you are too old"
            */
-          age: z.number().min(0, \\"you are too young\\").max(500, \\"you are too old\\")
+          age: z.number().min(0, "you are too young").max(500, "you are too old")
       });"
     `);
   });
@@ -946,7 +946,7 @@ describe("generateZodSchema", () => {
         },
 
         "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
-        price: "^\\$\\d+.\\d{2}$",
+        price: "^$\\d+.\\d{2}$",
       })
     ).toMatchInlineSnapshot(`
       "export const infoSchema = z.object({
@@ -955,19 +955,19 @@ describe("generateZodSchema", () => {
            *
            * @format date
            */
-          birthday: z.string().regex(/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/, \\"Must be in YYYY-MM-DD format.\\"),
+          birthday: z.string().regex(/^\\d{4}-\\d{2}-\\d{2}$/, "Must be in YYYY-MM-DD format."),
           /**
            * A phone number.
            *
            * @format phone-number
            */
-          phoneNumber: z.string().regex(/^\\\\d{3}-\\\\d{3}-\\\\d{4}$/),
+          phoneNumber: z.string().regex(/^\\d{3}-\\d{3}-\\d{4}$/),
           /**
            * A price.
            *
-           * @format price Must start with \\"$\\" and end with cents.
+           * @format price Must start with "$" and end with cents.
            */
-          cost: z.string().regex(/^\\\\$\\\\d+.\\\\d{2}$/, \\"Must start with \\\\\\"$\\\\\\" and end with cents.\\")
+          cost: z.string().regex(/^$\\d+.\\d{2}$/, "Must start with \\"$\\" and end with cents.")
       });"
     `);
   });
@@ -1001,7 +1001,7 @@ describe("generateZodSchema", () => {
            * @strict
            */
        export const supermanSchema = z.object({
-           name: z.literal(\\"superman\\"),
+           name: z.literal("superman"),
            weakness: kryptoniteSchema,
            age: z.number(),
            enemies: z.array(z.string())
@@ -1132,7 +1132,7 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const exampleSchema = z.object({
-          field: z.array(z.union([z.literal(\\"foo\\"), z.literal(\\"bar\\")])).nullable()
+          field: z.array(z.union([z.literal("foo"), z.literal("bar")])).nullable()
       });"
     `);
   });
@@ -1232,19 +1232,19 @@ describe("generateZodSchema", () => {
           /**
            * @default clark
            */
-          name: z.union([z.literal(\\"clark\\"), z.literal(\\"superman\\"), z.literal(\\"kal-l\\")]).default(\\"clark\\"),
+          name: z.union([z.literal("clark"), z.literal("superman"), z.literal("kal-l")]).default("clark"),
           /**
            * @default The Answer to the Ultimate Question of Life
            */
-          theMeaningOf42: z.string().default(\\"The Answer to the Ultimate Question of Life\\"),
+          theMeaningOf42: z.string().default("The Answer to the Ultimate Question of Life"),
           /**
-           * @default \\"\\"
+           * @default ""
            */
-          emptyString: z.string().default(\\"\\"),
+          emptyString: z.string().default(""),
           /**
-           * @default \\"true\\"
+           * @default "true"
            */
-          booleanAsString: z.string().default(\\"true\\")
+          booleanAsString: z.string().default("true")
       });"
     `);
   });

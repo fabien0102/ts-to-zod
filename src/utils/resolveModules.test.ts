@@ -25,7 +25,7 @@ describe("resolveModules", () => {
     }`;
 
     expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
-      "export type MetropolisName = \\"superman\\" | \\"clark kent\\" | \\"kal-l\\";
+      "export type MetropolisName = "superman" | "clark kent" | "kal-l";
       "
     `);
   });
@@ -40,8 +40,8 @@ describe("resolveModules", () => {
 
     expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
       "export enum MetropolisSuperhero {
-          Superman = \\"superman\\",
-          ClarkKent = \\"clark_kent\\"
+          Superman = "superman",
+          ClarkKent = "clark_kent"
       }
       ;
       "
@@ -81,9 +81,9 @@ describe("resolveModules", () => {
     }`;
 
     expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
-      "export type Weakness = \\"krytonite\\" | \\"lois\\";
+      "export type Weakness = "krytonite" | "lois";
       export type MetropolisName = string;
-      export type MetropolisBadassSuperman = Omit<MetropolisSuperman, \\"underKryptonite\\">;
+      export type MetropolisBadassSuperman = Omit<MetropolisSuperman, "underKryptonite">;
       export interface MetropolisSuperman {
           fullName: MetropolisName;
           name: {

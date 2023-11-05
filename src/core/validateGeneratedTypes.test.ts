@@ -91,7 +91,7 @@ describe("validateGeneratedTypes", () => {
     });
 
     expect(errors).toMatchInlineSnapshot(`
-      Array [
+      [
         "'MyNumber' is not compatible with 'myStringSchema':
       Argument of type 'number' is not assignable to parameter of type 'string'.",
         "'myStringSchema' is not compatible with 'MyNumber':
