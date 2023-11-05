@@ -46,6 +46,6 @@ describe("transformRecursiveSchema", () => {
 
     expect(() =>
       transformRecursiveSchema("z", declaration, "Category")
-    ).toThrowErrorMatchingInlineSnapshot(`"Unvalid zod statement"`);
+    ).toThrowErrorMatchingInlineSnapshot(`"Invalid zod statement"`);
   });
 });

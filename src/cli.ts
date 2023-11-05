@@ -259,7 +259,7 @@ See more help with --help`,
       return {
         success: false,
         error:
-          "--output= must also be provided when input file have some circular dependencies",
+          "--output= must also be provided when input files have some circular dependencies",
       };
     }
 

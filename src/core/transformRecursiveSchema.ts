@@ -13,7 +13,7 @@ export function transformRecursiveSchema(
   const declaration = zodStatement.declarationList.declarations[0];
 
   if (!declaration.initializer) {
-    throw new Error("Unvalid zod statement");
+    throw new Error("Invalid zod statement");
   }
 
   return f.createVariableStatement(

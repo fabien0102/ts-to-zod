@@ -62,7 +62,7 @@ export interface GenerateProps {
 /**
  * Generate zod schemas and integration tests from a typescript file.
  *
- * This function take care of the sorting of the `const` declarations and solved potential circular references
+ * This function takes care of the sorting of the `const` declarations and solves potential circular references
  */
 export function generate({
   sourceText,
