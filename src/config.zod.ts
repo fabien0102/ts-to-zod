@@ -26,7 +26,10 @@ export const customJSDocFormatTypeAttributesSchema = z.object({
   errorMessage: z.string().optional(),
 });
 
+export const customJSDocFormatTypeSchema = z.string();
+
 export const customJSDocFormatTypesSchema = z.record(
+  customJSDocFormatTypeSchema,
   z.union([z.string(), customJSDocFormatTypeAttributesSchema])
 );
 
@@ -40,7 +43,7 @@ export const configSchema = z.object({
   keepComments: z.boolean().optional().default(false),
   skipParseJSDoc: z.boolean().optional().default(false),
   inferredTypes: z.string().optional(),
-  customJSDocFormats: customJSDocFormatTypesSchema.optional(),
+  customJSDocFormatTypes: customJSDocFormatTypesSchema.optional(),
 });
 
 export const configsSchema = z.array(

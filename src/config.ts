@@ -99,7 +99,7 @@ export type Config = {
   /**
    * A record of custom `@format` types with their corresponding regex patterns.
    */
-  customJSDocFormats?: CustomJSDocFormatTypes;
+  customJSDocFormatTypes?: CustomJSDocFormatTypes;
 };
 
 export type Configs = Array<
