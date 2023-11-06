@@ -19,3 +19,4 @@ jobs:
       - run: chmod +x ./bin/run
       - run: yarn test:ci
       - run: yarn codecov
+      - run: yarn lint
