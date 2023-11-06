@@ -1,7 +1,6 @@
 import { Command, flags } from "@oclif/command";
 import { error as oclifError } from "@oclif/errors";
 import { OutputFlags } from "@oclif/parser";
-import { eachSeries } from "async";
 import chokidar from "chokidar";
 import { existsSync, outputFile, readFile } from "fs-extra";
 import inquirer from "inquirer";
@@ -129,16 +128,24 @@ class TsToZod extends Command {
       if (args.input || args.output) {
         this.error(`INPUT and OUTPUT arguments are not compatible with --all`);
       }
-      await eachSeries(fileConfig, async (config) => {
-        this.log(`Generating "${config.name}"`);
-        const result = await this.generate(args, config, flags);
-        if (result.success) {
-          this.log(` 🎉 Zod schemas generated!`);
-        } else {
-          this.error(result.error, { exit: false });
-        }
-        this.log(); // empty line between configs
-      }).catch((e) => this.error(e, { exit: false }));
+      try {
+        await Promise.all(
+          fileConfig.map(async (config) => {
+            this.log(`Generating "${config.name}"`);
+            const result = await this.generate(args, config, flags);
+            if (result.success) {
+              this.log(` 🎉 Zod schemas generated!`);
+            } else {
+              this.error(result.error, { exit: false });
+            }
+            this.log(); // empty line between configs
+          })
+        );
+      } catch (e) {
+        const error =
+          typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
+        this.error(error);
+      }
     } else {
       const result = await this.generate(args, fileConfig, flags);
       if (result.success) {
