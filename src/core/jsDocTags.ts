@@ -19,7 +19,7 @@ const builtInJSDocFormatsTypes = [
   // "date",
 ] as const;
 
-type BuiltInJSDocFormatsType = typeof builtInJSDocFormatsTypes[number];
+type BuiltInJSDocFormatsType = (typeof builtInJSDocFormatsTypes)[number];
 
 /**
  * Type guard to filter supported JSDoc format tag values (built-in).
@@ -96,9 +96,10 @@ function isJSDocTagKey(tagName: string): tagName is keyof JSDocTags {
  *
  * @param comment
  */
-function parseJsDocComment(
-  comment: string
-): { value: string; errorMessage?: string } {
+function parseJsDocComment(comment: string): {
+  value: string;
+  errorMessage?: string;
+} {
   const [value, ...rest] = comment.split(" ");
   const errorMessage =
     rest.join(" ").replace(/(^["']|["']$)/g, "") || undefined;

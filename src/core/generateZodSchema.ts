@@ -541,9 +541,8 @@ function buildZodPrimitive({
 
     const dependencyName = getDependencyName(identifierName);
     dependencies.push(dependencyName);
-    const zodSchema: ts.Identifier | ts.CallExpression = f.createIdentifier(
-      dependencyName
-    );
+    const zodSchema: ts.Identifier | ts.CallExpression =
+      f.createIdentifier(dependencyName);
     return withZodProperties(zodSchema, zodProperties);
   }
 
@@ -1085,16 +1084,17 @@ function buildSchemaReference(
 
   if (indexTypeName === "-1") {
     // Get the original type declaration
-    const declaration = findNode(sourceFile, (n): n is
-      | ts.InterfaceDeclaration
-      | ts.TypeAliasDeclaration => {
-      return (
-        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
-        ts.isIndexedAccessTypeNode(node.objectType) &&
-        n.name.getText(sourceFile) ===
-          node.objectType.objectType.getText(sourceFile).split("[")[0]
-      );
-    });
+    const declaration = findNode(
+      sourceFile,
+      (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
+        return (
+          (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+          ts.isIndexedAccessTypeNode(node.objectType) &&
+          n.name.getText(sourceFile) ===
+            node.objectType.objectType.getText(sourceFile).split("[")[0]
+        );
+      }
+    );
 
     if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
       const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
