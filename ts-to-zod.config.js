@@ -9,7 +9,7 @@ module.exports = [
     input: "example/heros.ts",
     output: "example/heros.zod.ts",
     inferredTypes: "example/heros.types.ts",
-    customJSDocFormats: {
+    customJSDocFormatTypes: {
       date: {
         regex: "^\\d{4}-\\d{2}-\\d{2}$",
         errorMessage: "Must be in YYYY-MM-DD format.",

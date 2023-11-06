@@ -207,11 +207,11 @@ export interface Superman {
 
 ### Custom JSDoc Format Types
 
-`ts-to-zod` already supports converting several `@format` types such as `email` and `ip` to built-in Zod string validation functions. However, the types supported out of the box are only a subset of those recognized by the OpenAPI specification, which doesn't fit every use case. Thus, you can use the config file to define additional format types using the `customJSDocFormats` property like so:
+`ts-to-zod` already supports converting several `@format` types such as `email` and `ip` to built-in Zod string validation functions. However, the types supported out of the box are only a subset of those recognized by the OpenAPI specification, which doesn't fit every use case. Thus, you can use the config file to define additional format types using the `customJSDocFormatTypes` property like so:
 
 ```ts
 {
-  "customJSDocFormats": {
+  "customJSDocFormatTypes": {
     [formatTypeNoSpaces]:
       | string
       | {regex: string, errorMessage: string}
@@ -223,7 +223,7 @@ Here is an example configuration:
 
 ```json
 {
-  "customJSDocFormats": {
+  "customJSDocFormatTypes": {
     "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
     "date": {
       "regex": "^\\d{4}-\\d{2}-\\d{2}$",
