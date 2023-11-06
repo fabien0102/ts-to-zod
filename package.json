@@ -20,7 +20,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.package.json",
     "prepublishOnly": "yarn test:ci && rimraf lib && yarn build",
-    "format": "eslint . --ext=.js,.ts,.json --fix --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --ext=.js,.ts,.json --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "npm run lint -- --fix",
     "test": "jest",
     "test:ci": "jest --ci --coverage && yarn gen:all && tsc --noEmit",
     "gen:all": "./bin/run --all",
