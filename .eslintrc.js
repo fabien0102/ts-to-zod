@@ -17,5 +17,5 @@ module.exports = {
     "@typescript-eslint/no-var-requires": 0,
     "@typescript-eslint/explicit-module-boundary-types": 0,
   },
-  ignorePatterns: ["lib"],
+  ignorePatterns: ["lib", "coverage"],
 };
