@@ -156,7 +156,7 @@ Other JSDoc tags are available:
 
 If you want to customize the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
 
-Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of typesafety).
+Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of type safety).
 
 You have two ways to restrict the scope of ts-to-zod:
 
@@ -177,7 +177,7 @@ module.exports = [
     name: "example",
     input: "example/heros.ts",
     output: "example/heros.zod.ts",
-    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract")) // <= rule here
+    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract") // <= rule here
   },
 ];
 
@@ -342,7 +342,7 @@ Low-level functions:
 - `generateZodInferredType` help you to generate `export type ${aliasName} = ${zodImportValue}.infer<typeof ${zodConstName}>`
 - `generateIntegrationTests` help you to generate a file comparing the original types & zod types
 
-To learn more about thoses functions or their usages, `src/core/generate.ts` is a good starting point.
+To learn more about those functions or their usages, `src/core/generate.ts` is a good starting point.
 
 ## Local development
 
