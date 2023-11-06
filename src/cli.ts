@@ -308,7 +308,7 @@ See more help with --help`,
       );
       await outputFile(
         generateOptions.inferredTypes,
-        prettier.format(
+        await prettier.format(
           hasExtensions(generateOptions.inferredTypes, javascriptExtensions)
             ? ts.transpileModule(zodInferredTypesFile, {
                 compilerOptions: {
@@ -326,7 +326,7 @@ See more help with --help`,
     if (output && hasExtensions(output, javascriptExtensions)) {
       await outputFile(
         outputPath,
-        prettier.format(
+        await prettier.format(
           ts.transpileModule(zodSchemasFile, {
             compilerOptions: {
               target: ts.ScriptTarget.Latest,
@@ -340,7 +340,7 @@ See more help with --help`,
     } else {
       await outputFile(
         outputPath,
-        prettier.format(zodSchemasFile, {
+        await prettier.format(zodSchemasFile, {
           parser: "babel-ts",
           ...prettierConfig,
         })
