@@ -10,13 +10,15 @@ import prettier from "prettier";
  * @param path
  * @returns `true` if the file was created
  */
-export async function createConfig(configPath: string) {
+export async function createConfig(
+  configPath: string,
+  tsToZodConfigFileName: string
+) {
   if (existsSync(configPath)) {
     const { answer } = await inquirer.prompt<{ answer: boolean }>({
       type: "confirm",
       name: "answer",
-      message:
-        "ts-to-zod.config.js already exists, do you want to override it?",
+      message: `${tsToZodConfigFileName} already exists, do you want to override it?`,
     });
     if (!answer) {
       return false;

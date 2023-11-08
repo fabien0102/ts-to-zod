@@ -20,14 +20,24 @@ import { createConfig } from "./createConfig";
 import { getImportPath } from "./utils/getImportPath";
 import * as worker from "./worker";
 
-// Try to load `ts-to-zod.config.js`
-// We are doing this here to be able to infer the `flags` & `usage` in the cli help
-const tsToZodConfigJs = "ts-to-zod.config.js";
-const configPath = join(process.cwd(), tsToZodConfigJs);
 let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
+function isEsm() {
+  try {
+    const packageJsonPath = join(process.cwd(), "package.json");
+    const rawPackageJson = require(slash(relative(__dirname, packageJsonPath)));
+    return rawPackageJson.type === "module";
+  } catch (e) {}
+  return false;
+}
+
+// Try to load `ts-to-zod.config.c?js`
+// We are doing this here to be able to infer the `flags` & `usage` in the cli help
+const fileExtension = isEsm() ? "cjs" : "js";
+const tsToZodConfigFileName = `ts-to-zod.config.${fileExtension}`;
+const configPath = join(process.cwd(), tsToZodConfigFileName);
 try {
   if (existsSync(configPath)) {
     const rawConfig = require(slash(relative(__dirname, configPath)));
@@ -40,11 +50,11 @@ try {
 } catch (e) {
   if (e instanceof Error) {
     oclifError(
-      `"${tsToZodConfigJs}" invalid:
-  ${e.message}
-
-  Please fix the invalid configuration
-  You can generate a new config with --init`,
+      `"${tsToZodConfigFileName}" invalid:
+    ${e.message}
+  
+    Please fix the invalid configuration
+    You can generate a new config with --init`,
       { exit: false }
     );
   }
@@ -72,7 +82,7 @@ class TsToZod extends Command {
     }),
     init: flags.boolean({
       char: "i",
-      description: "Create a ts-to-zod.config.js file",
+      description: `Create a ${tsToZodConfigFileName} file`,
     }),
     skipParseJSDoc: flags.boolean({
       default: false,
@@ -116,8 +126,8 @@ class TsToZod extends Command {
   async run() {
     const { args, flags } = this.parse(TsToZod);
     if (flags.init) {
-      (await createConfig(configPath))
-        ? this.log(`🧐 ts-to-zod.config.js created!`)
+      (await createConfig(configPath, tsToZodConfigFileName))
+        ? this.log(`🧐 ${tsToZodConfigFileName} created!`)
         : this.log(`Nothing changed!`);
       return;
     }
@@ -357,7 +367,7 @@ See more help with --help`,
   }
 
   /**
-   * Load user config from `ts-to-zod.config.js`
+   * Load user config from `ts-to-zod.config.c?js`
    */
   async loadFileConfig(
     config: TsToZodConfig | undefined,
@@ -373,7 +383,7 @@ See more help with --help`,
         }>([
           {
             name: "mode",
-            message: `You have multiple configs available in "${tsToZodConfigJs}"\n What do you want?`,
+            message: `You have multiple configs available in "${tsToZodConfigFileName}"\n What do you want?`,
             type: "list",
             choices: [
               {
