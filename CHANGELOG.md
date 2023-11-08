@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.2.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.2.0...v3.2.1) (2023-11-08)
+
+
+### Bug Fixes
+
+* fix mismatch between config file and `generate` interface ([#166](https://www.github.com/fabien0102/ts-to-zod/issues/166)) ([f9bc125](https://www.github.com/fabien0102/ts-to-zod/commit/f9bc1252aded120c81475c30f429b3b1ac9c7123))
+
 ## [3.2.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.3...v3.2.0) (2023-10-20)
 
 
