@@ -14,8 +14,9 @@ jobs:
       - uses: actions/checkout@v1
       - uses: actions/setup-node@v1
         with:
-          node-version: 16.13.1
+          node-version: 16.14.0
       - run: yarn
       - run: chmod +x ./bin/run
       - run: yarn test:ci
       - run: yarn codecov
+      - run: yarn lint

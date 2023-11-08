@@ -1,7 +1,7 @@
 import ts, { factory as f } from "typescript";
 
 /**
- * Add optional property to `any` to workaround comparaison issue.
+ * Add optional property to `any` to workaround comparison issue.
  *
  * ref: https://github.com/fabien0102/ts-to-zod/issues/140
  */
@@ -32,7 +32,7 @@ export function fixOptionalAny(sourceText: string) {
       return node;
     };
 
-    return (node) => ts.visitNode(node, visit);
+    return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
   };
 
   const outputFile = ts.transform(sourceFile, [markAnyAsOptional]);

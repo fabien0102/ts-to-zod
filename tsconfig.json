@@ -13,6 +13,7 @@
     "downlevelIteration": true,
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "declaration": true
   },
   "include": ["src/**/*", "example/**/*"]

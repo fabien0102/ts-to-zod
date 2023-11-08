@@ -38,7 +38,7 @@ export function resolveDefaultProperties(sourceText: string) {
       return node;
     };
 
-    return (node) => ts.visitNode(node, visit);
+    return (node) => ts.visitNode(node, visit) as ts.SourceFile;
   };
 
   const outputFile = ts.transform(sourceFile, [removeOptionalTransformer]);

@@ -1,5 +1,4 @@
-import ts from "typescript";
-const { factory: f } = ts;
+import { factory as f } from "typescript";
 
 interface TestCase {
   zodType: string;

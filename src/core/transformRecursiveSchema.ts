@@ -1,6 +1,4 @@
-import ts from "typescript";
-
-const { factory: f } = ts;
+import ts, { factory as f } from "typescript";
 
 /**
  * Type hint zod to deal with recursive types.
@@ -15,7 +13,7 @@ export function transformRecursiveSchema(
   const declaration = zodStatement.declarationList.declarations[0];
 
   if (!declaration.initializer) {
-    throw new Error("Unvalid zod statement");
+    throw new Error("Invalid zod statement");
   }
 
   return f.createVariableStatement(

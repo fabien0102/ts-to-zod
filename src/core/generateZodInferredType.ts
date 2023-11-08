@@ -1,5 +1,4 @@
-import * as ts from "typescript";
-const { factory: f } = ts;
+import ts, { factory as f } from "typescript";
 
 export interface GenerateZodInferredTypeProps {
   aliasName: string;
@@ -20,7 +19,6 @@ export function generateZodInferredType({
   zodConstName,
 }: GenerateZodInferredTypeProps) {
   return f.createTypeAliasDeclaration(
-    undefined,
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
     f.createIdentifier(aliasName),
     undefined,
