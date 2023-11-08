@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.3.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.2.0...v3.3.0) (2023-11-08)
+
+
+### Features
+
+* allow to load config from .js or .cjs ([#173](https://www.github.com/fabien0102/ts-to-zod/issues/173)) ([2c64226](https://www.github.com/fabien0102/ts-to-zod/commit/2c64226e21dcb11fd06e81e962b8ec43137baba0))
+
+
+### Bug Fixes
+
+* fix mismatch between config file and `generate` interface ([#166](https://www.github.com/fabien0102/ts-to-zod/issues/166)) ([f9bc125](https://www.github.com/fabien0102/ts-to-zod/commit/f9bc1252aded120c81475c30f429b3b1ac9c7123))
+
 ## [3.2.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.1.3...v3.2.0) (2023-10-20)
 
 
