@@ -179,9 +179,9 @@ describe("validateGeneratedTypes", () => {
 
     import { Hero } from "hero-module"
 
-    const villainSchema = z.instanceOf(Villain);
+    const villainSchema = z.instanceof(Villain);
     
-    const heroSchema = z.instanceOf(Hero);
+    const heroSchema = z.instanceof(Hero);
 
     export const citizenSchema = z.object({
       villain: villainSchema
@@ -250,9 +250,9 @@ describe("validateGeneratedTypes", () => {
 
     import { Hero } from "hero-module"
 
-    const villainSchema = z.instanceOf(Villain);
+    const villainSchema = z.instanceof(Villain);
     
-    const heroSchema = z.instanceOf(Hero);
+    const heroSchema = z.instanceof(Hero);
 
     export const citizenSchema = z.object({
       villain: villainSchema,
@@ -321,9 +321,9 @@ describe("validateGeneratedTypes", () => {
 
     import { Hero } from "hero-module"
 
-    const villainSchema = z.instanceOf(Villain);
+    const villainSchema = z.instanceof(Villain);
     
-    const heroSchema = z.instanceOf(Hero);
+    const heroSchema = z.instanceof(Hero);
 
     export const citizenSchema = z.object({
       villain: villainSchema,
