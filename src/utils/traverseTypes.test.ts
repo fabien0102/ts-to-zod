@@ -63,6 +63,36 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Superhero", "Person", "Person2"]);
     });
 
+    it("should extract type referenced in extend clause with Pick helper", () => {
+      const source = `
+            export interface Superhero extends Pick<Person, "name"> {
+                id: number,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
+
+    it("should extract type referenced in extend clause with Record helper", () => {
+      const source = `
+            export interface Superhero extends Record<Person, Person2> {
+                id: number,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person", "Person2"]);
+    });
+
+    it("should extract type referenced in extend clause with ExpressionWithTypeArguments", () => {
+      const source = `
+            export interface Superhero extends Person<Name, Person2> {
+                id: number,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Name", "Person2", "Person"]);
+    });
+
     it("should extract type referenced in property as array", () => {
       const source = `
             export interface Superhero {
