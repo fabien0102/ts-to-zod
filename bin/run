@@ -11,4 +11,4 @@ if (dev) {
 
 require(`../${dev ? "src/cli" : "lib/cli"}`)
   .run()
-  .catch(require("@oclif/errors/handle"));
+  .catch(require("@oclif/core/handle"));
