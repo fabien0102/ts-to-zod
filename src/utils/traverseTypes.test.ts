@@ -73,7 +73,6 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Superhero", "Person"]);
     });
 
-
     it("should extract type referenced in extend clause with Omit helper", () => {
       const source = `
             export interface Superhero extends Omit<Person, "name"> {
