@@ -728,6 +728,33 @@ describe("generateZodSchema", () => {
        * @format ip
        */
       ip: string;
+
+      /**
+       * The hero's known IPs
+       *
+       * @elementFormat ip
+       * @maxLength 5
+       */
+      knownIps: Array<string>;
+
+      /**
+       * The hero's last ping times
+       *
+       * @elementMinimum 0
+       * @elementMaximum 100
+       * @minLength 1
+       * @maxLength 10
+       */
+      pingTimes: number[];
+
+      /**
+       * The hero's blocked phone numbers.
+       *
+       * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
+       * @minLength 56
+       * @maxLength 123
+       */
+      blockedPhoneNumbers: string[];
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -786,7 +813,31 @@ describe("generateZodSchema", () => {
            *
            * @format ip
            */
-          ip: z.string().ip()
+          ip: z.string().ip(),
+          /**
+           * The hero's known IPs
+           *
+           * @elementFormat ip
+           * @maxLength 5
+           */
+          knownIps: z.array(z.string().ip()).max(5),
+          /**
+           * The hero's last ping times
+           *
+           * @elementMinimum 0
+           * @elementMaximum 100
+           * @minLength 1
+           * @maxLength 10
+           */
+          pingTimes: z.array(z.number().min(0).max(100)).min(1).max(10),
+          /**
+           * The hero's blocked phone numbers.
+           *
+           * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
+           * @minLength 56
+           * @maxLength 123
+           */
+          blockedPhoneNumbers: z.array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/)).min(56).max(123)
       });"
     `);
   });

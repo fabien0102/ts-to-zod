@@ -52,7 +52,7 @@ type TagWithError<T> = {
 /**
  * JSDoc special tags that can be converted in zod flags.
  */
-export interface JSDocTags {
+export interface JSDocTagsBase {
   minimum?: TagWithError<number>;
   maximum?: TagWithError<number>;
   default?: number | string | boolean;
@@ -67,6 +67,15 @@ export interface JSDocTags {
   strict?: boolean;
 }
 
+export type ElementJSDocTags = Pick<
+  JSDocTagsBase,
+  "minimum" | "maximum" | "minLength" | "maxLength" | "pattern" | "format"
+>;
+
+export type JSDocTags = JSDocTagsBase & {
+  [K in keyof ElementJSDocTags as `element${Capitalize<K>}`]: ElementJSDocTags[K];
+};
+
 const jsDocTagKeys: Array<keyof JSDocTags> = [
   "minimum",
   "maximum",
@@ -75,6 +84,12 @@ const jsDocTagKeys: Array<keyof JSDocTags> = [
   "maxLength",
   "format",
   "pattern",
+  "elementMinimum",
+  "elementMaximum",
+  "elementMinLength",
+  "elementMaxLength",
+  "elementPattern",
+  "elementFormat",
 ];
 
 /**
@@ -141,16 +156,22 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
           case "maximum":
           case "minLength":
           case "maxLength":
+          case "elementMinLength":
+          case "elementMaxLength":
+          case "elementMinimum":
+          case "elementMaximum":
             if (value && !Number.isNaN(parseInt(value))) {
               jsDocTags[tagName] = { value: parseInt(value), errorMessage };
             }
             break;
           case "pattern":
+          case "elementPattern":
             if (tag.comment) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
           case "format":
+          case "elementFormat":
             jsDocTags[tagName] = { value, errorMessage };
             break;
           case "default":
