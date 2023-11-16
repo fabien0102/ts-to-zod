@@ -73,6 +73,27 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Superhero", "Person"]);
     });
 
+
+    it("should extract type referenced in extend clause with Omit helper", () => {
+      const source = `
+            export interface Superhero extends Omit<Person, "name"> {
+                id: number,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
+
+    it("should extract type referenced in extend clause with Partial helper", () => {
+      const source = `
+            export interface Superhero extends Partial<Person, "name"> {
+                id: number,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
+
     it("should extract type referenced in extend clause with Record helper", () => {
       const source = `
             export interface Superhero extends Record<string, Person2> {
