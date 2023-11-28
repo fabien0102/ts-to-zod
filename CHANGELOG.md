@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.4.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.3.0...v3.4.0) (2023-11-28)
+
+
+### Features
+
+* add JSDoc tags for `string` and `number` array elements ([#180](https://www.github.com/fabien0102/ts-to-zod/issues/180)) ([df5be8b](https://www.github.com/fabien0102/ts-to-zod/commit/df5be8ba51ed3a5470f18c7665a8330f8b0a1eb2))
+
 ## [3.3.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.2.0...v3.3.0) (2023-11-08)
 
 
