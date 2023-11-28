@@ -1,6 +1,4 @@
-import { Command, flags } from "@oclif/command";
-import { error as oclifError } from "@oclif/errors";
-import { OutputFlags } from "@oclif/parser";
+import { Command, Flags, Errors, Args, Interfaces } from "@oclif/core";
 import chokidar from "chokidar";
 import { existsSync, outputFile, readFile } from "fs-extra";
 import inquirer from "inquirer";
@@ -49,7 +47,7 @@ try {
   }
 } catch (e) {
   if (e instanceof Error) {
-    oclifError(
+    Errors.error(
       `"${tsToZodConfigFileName}" invalid:
     ${e.message}
   
@@ -74,40 +72,40 @@ class TsToZod extends Command {
     : undefined;
 
   static flags = {
-    version: flags.version({ char: "v" }),
-    help: flags.help({ char: "h" }),
-    keepComments: flags.boolean({
+    version: Flags.version({ char: "v" }),
+    help: Flags.help({ char: "h" }),
+    keepComments: Flags.boolean({
       char: "k",
       description: "Keep parameters comments",
     }),
-    init: flags.boolean({
+    init: Flags.boolean({
       char: "i",
       description: `Create a ${tsToZodConfigFileName} file`,
     }),
-    skipParseJSDoc: flags.boolean({
+    skipParseJSDoc: Flags.boolean({
       default: false,
       description: "Skip the creation of zod validators from JSDoc annotations",
     }),
-    skipValidation: flags.boolean({
+    skipValidation: Flags.boolean({
       default: false,
       description: "Skip the validation step (not recommended)",
     }),
-    inferredTypes: flags.string({
+    inferredTypes: Flags.string({
       description: "Path of z.infer<> types file",
     }),
-    watch: flags.boolean({
+    watch: Flags.boolean({
       char: "w",
       default: false,
       description: "Watch input file(s) for changes and re-run related task",
     }),
     // -- Multi config flags --
-    config: flags.enum({
+    config: Flags.string({
       char: "c",
       options: configKeys,
       description: "Execute one config",
       hidden: !haveMultiConfig,
     }),
-    all: flags.boolean({
+    all: Flags.boolean({
       char: "a",
       default: false,
       description: "Execute all configs",
@@ -115,16 +113,17 @@ class TsToZod extends Command {
     }),
   };
 
-  static args = [
-    { name: "input", description: "input file (typescript)" },
-    {
-      name: "output",
+  static args = {
+    input: Args.file({
+      description: "input file (typescript)",
+    }),
+    output: Args.file({
       description: "output file (zod schemas)",
-    },
-  ];
+    }),
+  };
 
   async run() {
-    const { args, flags } = this.parse(TsToZod);
+    const { args, flags } = await this.parse(TsToZod);
     if (flags.init) {
       (await createConfig(configPath, tsToZodConfigFileName))
         ? this.log(`🧐 ${tsToZodConfigFileName} created!`)
@@ -168,7 +167,7 @@ class TsToZod extends Command {
     if (flags.watch) {
       const inputs = Array.isArray(fileConfig)
         ? fileConfig.map((i) => i.input)
-        : fileConfig?.input || args.input;
+        : fileConfig?.input || args.input || [];
 
       this.log("\nWatching for changes…");
       chokidar.watch(inputs).on("change", async (path) => {
@@ -193,12 +192,12 @@ class TsToZod extends Command {
    * Generate on zod schema file.
    * @param args
    * @param fileConfig
-   * @param flags
+   * @param Flags
    */
   async generate(
     args: { input?: string; output?: string },
     fileConfig: Config | undefined,
-    flags: OutputFlags<typeof TsToZod.flags>
+    Flags: Interfaces.InferredFlags<typeof TsToZod.flags>
   ): Promise<{ success: true } | { success: false; error: string }> {
     const input = args.input || fileConfig?.input;
     const output = args.output || fileConfig?.output;
@@ -207,7 +206,7 @@ class TsToZod extends Command {
       return {
         success: false,
         error: `Missing 1 required arg:
-${TsToZod.args[0].description}
+${TsToZod.args.input.description}
 See more help with --help`,
       };
     }
@@ -253,14 +252,14 @@ See more help with --help`,
       sourceText,
       ...fileConfig,
     };
-    if (typeof flags.keepComments === "boolean") {
-      generateOptions.keepComments = flags.keepComments;
+    if (typeof Flags.keepComments === "boolean") {
+      generateOptions.keepComments = Flags.keepComments;
     }
-    if (typeof flags.skipParseJSDoc === "boolean") {
-      generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
+    if (typeof Flags.skipParseJSDoc === "boolean") {
+      generateOptions.skipParseJSDoc = Flags.skipParseJSDoc;
     }
-    if (typeof flags.inferredTypes === "string") {
-      generateOptions.inferredTypes = flags.inferredTypes;
+    if (typeof Flags.inferredTypes === "string") {
+      generateOptions.inferredTypes = Flags.inferredTypes;
     }
 
     const {
@@ -282,9 +281,9 @@ See more help with --help`,
 
     errors.map(this.warn);
 
-    if (!flags.skipValidation) {
+    if (!Flags.skipValidation) {
       const validatorSpinner = ora("Validating generated types").start();
-      if (flags.all) validatorSpinner.indent = 1;
+      if (Flags.all) validatorSpinner.indent = 1;
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText: transformedSourceText,
@@ -371,7 +370,7 @@ See more help with --help`,
    */
   async loadFileConfig(
     config: TsToZodConfig | undefined,
-    flags: OutputFlags<typeof TsToZod.flags>
+    flags: Interfaces.InferredFlags<typeof TsToZod.flags>
   ): Promise<TsToZodConfig | undefined> {
     if (!config) {
       return undefined;
