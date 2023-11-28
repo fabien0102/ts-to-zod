@@ -84,7 +84,13 @@ export function getExtractedTypeNames(
         extensionTypes.forEach((extensionTypeNode) => {
           const typeName = extensionTypeNode.expression.getText(sourceFile);
 
-          referenceTypeNames.add(typeName);
+          if (extensionTypeNode.typeArguments) {
+            extensionTypeNode.typeArguments.forEach((t) => handleTypeNode(t));
+          }
+
+          if (typeScriptHelper.indexOf(typeName) === -1) {
+            referenceTypeNames.add(typeName);
+          }
         });
       });
     }
