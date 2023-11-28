@@ -152,6 +152,64 @@ Other JSDoc tags are available:
 | `@default {value}` | `@default 42` | Sets a default value for the property     | `z.number().default(42)` |
 | `@strict`          | `@strict`     | Adds the `strict()` modifier to an object | `z.object().strict()`    |
 
+## JSDoc tags for elements of `string` and `number` arrays
+
+Elements of `string` and `number` arrays can be validated using the following JSDoc tags (for details see above).
+
+| JSDoc keyword                          |
+| ---------------------------------------|
+| `@elementMinimum {number} [err_msg]`   |
+| `@elementMaximum {number} [err_msg]`   |
+| `@elementMinLength {number} [err_msg]` |
+| `@elementMaxLength {number} [err_msg]` |
+| `@elementFormat {FormatType} [err_msg]`|
+| `@elementPattern {regex}`              |
+
+Example:
+
+```ts
+// source.ts
+export interface EnemyContact {
+
+  /**
+   * The names of the enemy.
+   * 
+   * @elementMinLength 5
+   * @elementMaxLength 10
+   * @minLength 2
+   * @maxLength 50
+   */
+  names: string[];
+
+  /**
+   * The phone numbers of the enemy.
+   *
+   * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
+   */
+  phoneNumbers: string[];
+}
+
+// output.ts
+export const enemyContactSchema = z.object({
+  /**
+   * The names of the enemy.
+   *
+   * @elementMinLength 5
+   * @elementMaxLength 10
+   * @minLength 2
+   * @maxLength 50
+   */
+  name: z.array(z.string().min(5).max(10)).min(2).max(50),
+
+  /**
+   * The phone numbers of the enemy.
+   *
+   * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
+   */
+  phoneNumbers: z.array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/)),
+});
+```
+
 ## Advanced configuration
 
 If you want to customize the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
