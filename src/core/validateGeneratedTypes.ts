@@ -4,7 +4,7 @@ import {
   createVirtualTypeScriptEnvironment,
 } from "@typescript/vfs";
 import ts from "typescript";
-import { join } from "path";
+import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
 interface File {
@@ -37,7 +37,7 @@ export function validateGeneratedTypes({
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
-  const projectRoot = process.cwd();
+  const projectRoot = makePosixPath(process.cwd());
   const src = fixOptionalAny(
     skipParseJSDoc
       ? sourceTypes.sourceText
@@ -116,5 +116,9 @@ function getDetails(file: ts.SourceFile, line: number) {
 }
 
 function getPath(file: File) {
-  return join(process.cwd(), file.relativePath);
+  return makePosixPath(join(process.cwd(), file.relativePath));
+}
+
+function makePosixPath(str: string) {
+  return str.split(sep).join(posix.sep);
 }

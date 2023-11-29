@@ -16,6 +16,12 @@ module.exports = {
   rules: {
     "@typescript-eslint/no-var-requires": 0,
     "@typescript-eslint/explicit-module-boundary-types": 0,
+    "prettier/prettier": [
+      "error",
+      {
+        endOfLine: "auto",
+      },
+    ],
   },
   ignorePatterns: ["lib", "coverage"],
 };
