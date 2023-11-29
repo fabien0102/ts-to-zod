@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.4.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.4.0...v3.4.1) (2023-11-29)
+
+
+### Bug Fixes
+
+* fix validateGeneratedTypes on Windows ([bd7df0e](https://www.github.com/fabien0102/ts-to-zod/commit/bd7df0e86530f0e3adfda3e1e0e56a22dd83b429))
+
 ## [3.4.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.3.0...v3.4.0) (2023-11-28)
 
 
