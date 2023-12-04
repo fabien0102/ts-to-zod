@@ -6,7 +6,7 @@ import {
 import ts from "typescript";
 import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
-import { fixOptional } from "../utils/fixOptional";
+import { fixOptionalAny } from "../utils/fixOptionalAny";
 interface File {
   sourceText: string;
   relativePath: string;
@@ -16,6 +16,7 @@ export interface ValidateGeneratedTypesProps {
   zodSchemas: File;
   integrationTests: File;
   skipParseJSDoc: boolean;
+  extraFiles?: File[];
 }
 
 /**
@@ -39,7 +40,7 @@ export function validateGeneratedTypes({
     target: compilerOptions.target,
   });
   const projectRoot = process.cwd();
-  const src = fixOptional(
+  const src = fixOptionalAny(
     skipParseJSDoc
       ? sourceTypes.sourceText
       : resolveDefaultProperties(sourceTypes.sourceText)
