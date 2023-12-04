@@ -14,37 +14,13 @@ export function fixOptional(sourceText: string) {
   );
   const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-  const importedIdentifiers = getImportedIdentifiers(sourceFile);
-
   const markAsOptional: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const visit: ts.Visitor = (node) => {
       node = ts.visitEachChild(node, visit, context);
 
       if (ts.isPropertySignature(node) && node.type) {
-        if (
-          node.type.kind === ts.SyntaxKind.AnyKeyword ||
-          (ts.isTypeReferenceNode(node.type) &&
-            importedIdentifiers.has(node.type.getText(sourceFile)))
-        ) {
+        if (node.type.kind === ts.SyntaxKind.AnyKeyword) {
           return makePropertyOptional(node);
-        } else if (
-          ts.isArrayTypeNode(node.type) &&
-          ts.isTypeReferenceNode(node.type.elementType) &&
-          importedIdentifiers.has(node.type.elementType.getText(sourceFile))
-        ) {
-          return makePropertyOptional(node);
-        } else if (
-          ts.isIntersectionTypeNode(node.type) ||
-          ts.isUnionTypeNode(node.type)
-        ) {
-          const importedType = node.type.types.find(
-            (child) =>
-              ts.isTypeReferenceNode(child) &&
-              importedIdentifiers.has(child.getText(sourceFile))
-          );
-          if (importedType) {
-            return makePropertyOptional(node);
-          }
         }
       }
 
@@ -57,19 +33,6 @@ export function fixOptional(sourceText: string) {
   const outputFile = ts.transform(sourceFile, [markAsOptional]);
 
   return printer.printFile(outputFile.transformed[0]);
-}
-
-function getImportedIdentifiers(sourceFile: ts.SourceFile) {
-  const importNamesAvailable = new Set<string>();
-  const typeNameMapBuilder = (node: ts.Node) => {
-    if (ts.isImportDeclaration(node) && node.importClause) {
-      const imports = getImportIdentifiers(node);
-      imports.forEach((i) => importNamesAvailable.add(i));
-    }
-  };
-
-  ts.forEachChild(sourceFile, typeNameMapBuilder);
-  return importNamesAvailable;
 }
 
 function makePropertyOptional(node: ts.PropertySignature) {

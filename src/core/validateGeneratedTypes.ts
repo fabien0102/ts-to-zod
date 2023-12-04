@@ -26,6 +26,7 @@ export function validateGeneratedTypes({
   zodSchemas,
   integrationTests,
   skipParseJSDoc,
+  extraFiles,
 }: ValidateGeneratedTypesProps) {
   // Shared configuration
   const compilerOptions: ts.CompilerOptions = {
@@ -47,6 +48,10 @@ export function validateGeneratedTypes({
   fsMap.set(getPath(sourceTypes), src);
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
+
+  if (extraFiles) {
+    extraFiles.forEach((file) => fsMap.set(getPath(file), file.sourceText));
+  }
 
   // Create a virtual typescript environment
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
