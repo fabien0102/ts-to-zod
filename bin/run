@@ -2,8 +2,10 @@
 
 const fs = require("fs");
 const path = require("path");
-const project = path.join(__dirname, "../.ts-to-zod_project_tag");
-const dev = fs.existsSync(project);
+const project = path.join(__dirname, "../tsconfig.json");
+const dev = fs.existsSync(
+  path.join(__dirname, "../.ts-to-zod_project_tag")
+);
 
 if (dev) {
   require("ts-node").register({ project });
