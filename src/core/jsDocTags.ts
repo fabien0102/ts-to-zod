@@ -55,7 +55,7 @@ type TagWithError<T> = {
 export interface JSDocTagsBase {
   minimum?: TagWithError<number>;
   maximum?: TagWithError<number>;
-  default?: number | string | boolean;
+  default?: number | string | boolean | null;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
   format?: TagWithError<BuiltInJSDocFormatsType | CustomJSDocFormatType>;
@@ -175,7 +175,9 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             jsDocTags[tagName] = { value, errorMessage };
             break;
           case "default":
-            if (
+            if (tag.comment === "null") {
+              jsDocTags[tagName] = null;
+            } else if (
               tag.comment &&
               !tag.comment.includes('"') &&
               !Number.isNaN(parseInt(tag.comment))
@@ -289,7 +291,7 @@ export function jsDocTagToZodProperties(
       identifier: "optional",
     });
   }
-  if (isNullable) {
+  if (isNullable || jsDocTags.default === null) {
     zodProperties.push({
       identifier: "nullable",
     });
@@ -314,6 +316,8 @@ export function jsDocTagToZodProperties(
           ? [f.createFalse()]
           : typeof jsDocTags.default === "number"
           ? [f.createNumericLiteral(jsDocTags.default)]
+          : jsDocTags.default === null
+          ? [f.createNull()]
           : [f.createStringLiteral(jsDocTags.default)],
     });
   }

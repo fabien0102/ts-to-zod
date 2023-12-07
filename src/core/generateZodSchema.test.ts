@@ -1300,6 +1300,39 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with @default null value", () => {
+    const source = `export interface WithDefaults {
+      /**
+       * @default null
+       */
+      nonNullableString: string;
+      /**
+       * @default null
+       */
+      nullableString: string | null;
+      /**
+       * @default "null"
+       */
+      nonNullableStringWithStringAsDefault: string;
+   }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const withDefaultsSchema = z.object({
+          /**
+           * @default null
+           */
+          nonNullableString: z.string().nullable().default(null),
+          /**
+           * @default null
+           */
+          nullableString: z.string().nullable().default(null),
+          /**
+           * @default "null"
+           */
+          nonNullableStringWithStringAsDefault: z.string().default("null")
+      });"
+    `);
+  });
+
   it("should ignore unknown/broken jsdoc format", () => {
     const source = `export interface Hero {
      /**
