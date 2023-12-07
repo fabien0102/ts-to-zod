@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.5.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.4.1...v3.5.0) (2023-12-07)
+
+
+### Features
+
+* add null handling for [@default](https://www.github.com/default) tag ([#190](https://www.github.com/fabien0102/ts-to-zod/issues/190)) ([6034727](https://www.github.com/fabien0102/ts-to-zod/commit/603472773b705d04b7b93f2fba9871be81c96449))
+
 ### [3.4.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.4.0...v3.4.1) (2023-11-29)
 
 
