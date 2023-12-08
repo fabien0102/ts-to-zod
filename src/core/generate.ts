@@ -26,6 +26,7 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
+import { relative } from "path";
 
 const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
@@ -116,10 +117,12 @@ export function generate({
     }
     if (ts.isImportDeclaration(node) && node.importClause) {
       // Check if we're importing from a mapped file
-
       const eligibleMapping = inputOutputMappings.find(
         (io: InputOutputMapping) =>
-          io.input === (node.moduleSpecifier as ts.StringLiteral).text
+          relative(
+            io.input,
+            (node.moduleSpecifier as ts.StringLiteral).text
+          ) === ""
       );
       if (eligibleMapping) {
         const schemaMethod =
