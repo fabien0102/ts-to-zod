@@ -92,6 +92,7 @@ const jsDocTagKeys: Array<keyof JSDocTags> = [
   "maxLength",
   "format",
   "pattern",
+  "elementDescription",
   "elementMinimum",
   "elementMaximum",
   "elementMinLength",
@@ -173,6 +174,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             }
             break;
           case "description":
+          case "elementDescription":
           case "pattern":
           case "elementPattern":
             if (tag.comment) {
@@ -208,7 +210,6 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
-          case "elementDescription":
           case "strict":
             break;
           default:

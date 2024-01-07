@@ -1161,6 +1161,30 @@ describe("generateZodSchema", () => {
      `);
   });
 
+  it("should add describe() when @description is used (array elements)", () => {
+    const source = `
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      /**
+        * @elementDescription Name of an enemy
+        */
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "export const supermanSchema = z.object({
+           name: z.literal("superman"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           /**
+             * @elementDescription Name of an enemy
+             */
+           enemies: z.array(z.string().describe("Name of an enemy"))
+       });"
+     `);
+  });
+
   it("should deal with nullable", () => {
     const source = `export interface A {
       /** @minimum 0 */
