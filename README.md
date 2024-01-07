@@ -147,33 +147,34 @@ export const heroContactSchema = z.object({
 
 Other JSDoc tags are available:
 
-| JSDoc keyword      | JSDoc Example | Description                               | Generated Zod            |
-| ------------------ | ------------- | ----------------------------------------- | ------------------------ |
-| `@default {value}` | `@default 42` | Sets a default value for the property     | `z.number().default(42)` |
-| `@strict`          | `@strict`     | Adds the `strict()` modifier to an object | `z.object().strict()`    |
+| JSDoc keyword          | JSDoc Example            | Description                               | Generated Zod                      |
+| ---------------------- | ------------------------ | ----------------------------------------- | ---------------------------------- |
+| `@description {value}` | `@description Full name` | Sets the description of the property      | `z.string().describe("Full name")` |
+| `@default {value}`     | `@default 42`            | Sets a default value for the property     | `z.number().default(42)`           |
+| `@strict`              | `@strict`                | Adds the `strict()` modifier to an object | `z.object().strict()`              |
 
 ## JSDoc tags for elements of `string` and `number` arrays
 
 Elements of `string` and `number` arrays can be validated using the following JSDoc tags (for details see above).
 
-| JSDoc keyword                          |
-| ---------------------------------------|
-| `@elementMinimum {number} [err_msg]`   |
-| `@elementMaximum {number} [err_msg]`   |
-| `@elementMinLength {number} [err_msg]` |
-| `@elementMaxLength {number} [err_msg]` |
-| `@elementFormat {FormatType} [err_msg]`|
-| `@elementPattern {regex}`              |
+| JSDoc keyword                           |
+| --------------------------------------- |
+| `@elementDescription {value}`           |
+| `@elementMinimum {number} [err_msg]`    |
+| `@elementMaximum {number} [err_msg]`    |
+| `@elementMinLength {number} [err_msg]`  |
+| `@elementMaxLength {number} [err_msg]`  |
+| `@elementFormat {FormatType} [err_msg]` |
+| `@elementPattern {regex}`               |
 
 Example:
 
 ```ts
 // source.ts
 export interface EnemyContact {
-
   /**
    * The names of the enemy.
-   * 
+   *
    * @elementMinLength 5
    * @elementMaxLength 10
    * @minLength 2
@@ -184,6 +185,7 @@ export interface EnemyContact {
   /**
    * The phone numbers of the enemy.
    *
+   * @description Include home and work numbers
    * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
    */
   phoneNumbers: string[];
@@ -206,7 +208,9 @@ export const enemyContactSchema = z.object({
    *
    * @elementPattern ^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$
    */
-  phoneNumbers: z.array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/)),
+  phoneNumbers: z
+    .array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/))
+    .describe("Include home and work numbers"),
 });
 ```
 
