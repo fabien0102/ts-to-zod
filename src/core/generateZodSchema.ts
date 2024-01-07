@@ -697,6 +697,7 @@ function buildZodPrimitive({
           typeNode: typeNode.elementType,
           isOptional: false,
           jsDocTags: {
+            description: jsDocTags.elementDescription,
             minimum: jsDocTags.elementMinimum,
             maximum: jsDocTags.elementMaximum,
             minLength: jsDocTags.elementMinLength,

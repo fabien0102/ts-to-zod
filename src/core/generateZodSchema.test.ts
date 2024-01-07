@@ -1114,6 +1114,77 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should add describe() when @description is used (top-level)", () => {
+    const source = `/**
+    * @description Originally Superman could leap, but not fly.
+    */
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "/**
+           * @description Originally Superman could leap, but not fly.
+           */
+       export const supermanSchema = z.object({
+           name: z.literal("superman"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           enemies: z.array(z.string())
+       }).describe("Originally Superman could leap, but not fly.");"
+     `);
+  });
+
+  it("should add describe() when @description is used (property-level)", () => {
+    const source = `
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      /**
+        * @description Lex Luthor, Branaic, etc.
+        */
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "export const supermanSchema = z.object({
+           name: z.literal("superman"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           /**
+             * @description Lex Luthor, Branaic, etc.
+             */
+           enemies: z.array(z.string()).describe("Lex Luthor, Branaic, etc.")
+       });"
+     `);
+  });
+
+  it("should add describe() when @description is used (array elements)", () => {
+    const source = `
+    export type Superman = {
+      name: "superman";
+      weakness: Kryptonite;
+      age: number;
+      /**
+        * @elementDescription Name of an enemy
+        */
+      enemies: Array<string>;
+    };`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+       "export const supermanSchema = z.object({
+           name: z.literal("superman"),
+           weakness: kryptoniteSchema,
+           age: z.number(),
+           /**
+             * @elementDescription Name of an enemy
+             */
+           enemies: z.array(z.string().describe("Name of an enemy"))
+       });"
+     `);
+  });
+
   it("should deal with nullable", () => {
     const source = `export interface A {
       /** @minimum 0 */
