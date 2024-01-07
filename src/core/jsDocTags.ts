@@ -53,6 +53,7 @@ type TagWithError<T> = {
  * JSDoc special tags that can be converted in zod flags.
  */
 export interface JSDocTagsBase {
+  description?: string;
   minimum?: TagWithError<number>;
   maximum?: TagWithError<number>;
   default?: number | string | boolean | null;
@@ -69,7 +70,13 @@ export interface JSDocTagsBase {
 
 export type ElementJSDocTags = Pick<
   JSDocTagsBase,
-  "minimum" | "maximum" | "minLength" | "maxLength" | "pattern" | "format"
+  | "description"
+  | "minimum"
+  | "maximum"
+  | "minLength"
+  | "maxLength"
+  | "pattern"
+  | "format"
 >;
 
 export type JSDocTags = JSDocTagsBase & {
@@ -77,6 +84,7 @@ export type JSDocTags = JSDocTagsBase & {
 };
 
 const jsDocTagKeys: Array<keyof JSDocTags> = [
+  "description",
   "minimum",
   "maximum",
   "default",
@@ -164,6 +172,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = { value: parseInt(value), errorMessage };
             }
             break;
+          case "description":
           case "pattern":
           case "elementPattern":
             if (tag.comment) {
@@ -306,6 +315,13 @@ export function jsDocTagToZodProperties(
       identifier: "required",
     });
   }
+  if (jsDocTags.description !== undefined) {
+    zodProperties.push({
+      identifier: "describe",
+      expressions: [f.createStringLiteral(jsDocTags.description)],
+    });
+  }
+
   if (jsDocTags.default !== undefined) {
     zodProperties.push({
       identifier: "default",
