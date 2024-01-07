@@ -208,6 +208,11 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
+          case "elementDescription":
+          case "strict":
+            break;
+          default:
+            tagName satisfies never;
         }
       });
     });
