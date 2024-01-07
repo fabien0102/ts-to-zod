@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.6.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.5.0...v3.6.0) (2024-01-07)
+
+
+### Features
+
+* Add JSDoc [@description](https://www.github.com/description) support ([#194](https://www.github.com/fabien0102/ts-to-zod/issues/194)) ([b3b3d11](https://www.github.com/fabien0102/ts-to-zod/commit/b3b3d110288edea95b27c0fc185bfda9d1229730))
+
 ## [3.5.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.4.1...v3.5.0) (2023-12-07)
 
 
