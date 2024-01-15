@@ -269,6 +269,7 @@ function buildZodPrimitive({
     return buildZodPrimitive({
       z,
       typeNode: typeNode.type,
+      isNullable,
       isOptional,
       jsDocTags,
       customJSDocFormatTypes,
@@ -744,7 +745,7 @@ function buildZodPrimitive({
       customJSDocFormatTypes,
     });
 
-    return rest.reduce(
+    const zodCall = rest.reduce(
       (intersectionSchema, node) =>
         f.createCallExpression(
           f.createPropertyAccessExpression(
@@ -768,6 +769,8 @@ function buildZodPrimitive({
         ),
       basePrimitive
     );
+
+    return withZodProperties(zodCall, zodProperties);
   }
 
   if (ts.isLiteralTypeNode(typeNode)) {
