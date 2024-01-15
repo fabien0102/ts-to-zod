@@ -626,7 +626,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with joined parenthesized type or null", () => {
+  it("should deal with joined schema parenthesized type or null", () => {
     const source = `export type person = (NormalGuy & BadGuy & randomGuy) | null;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const personSchema = normalGuySchema.and(badGuySchema).and(randomGuySchema).nullable();"`
