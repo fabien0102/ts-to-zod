@@ -605,10 +605,31 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with parenthesized type", () => {
+  it("should deal with parenthesized schema type", () => {
     const source = `export type SecretVillain = (NormalGuy | Villain);`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const secretVillainSchema = z.union([normalGuySchema, villainSchema]);"`
+    );
+  });
+
+  it("should deal with parenthesized type or null", () => {
+    const source = `export type SecretVillain = (NormalGuy | Villain) | null;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const secretVillainSchema = z.union([normalGuySchema, villainSchema]).nullable();"`
+    );
+  });
+
+  it("should deal with literal parenthesized type or null", () => {
+    const source = `export type Example = ("A" | "B") | null;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const exampleSchema = z.union([z.literal("A"), z.literal("B")]).nullable();"`
+    );
+  });
+
+  it("should deal with joined schema parenthesized type or null", () => {
+    const source = `export type person = (NormalGuy & BadGuy & randomGuy) | null;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const personSchema = normalGuySchema.and(badGuySchema).and(randomGuySchema).nullable();"`
     );
   });
 
