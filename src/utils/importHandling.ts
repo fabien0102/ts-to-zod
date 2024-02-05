@@ -32,18 +32,3 @@ export function getImportIdentifiers(node: ts.ImportDeclaration): string[] {
 
   return importIdentifiers;
 }
-
-/**
- * Checks if an import declaration is relative ("internal module")
- * or not ("external dependency") as per
- * https://www.typescriptlang.org/docs/handbook/module-resolution.html
- * ⚠️ This doesn't check the file actually exists in case of relative import
- */
-export function isRelativeModuleImport(node: ts.ImportDeclaration): boolean {
-  return (
-    ts.isStringLiteral(node.moduleSpecifier) &&
-    (node.moduleSpecifier.text.startsWith("../") ||
-      node.moduleSpecifier.text.startsWith("./") ||
-      node.moduleSpecifier.text.startsWith("/"))
-  );
-}

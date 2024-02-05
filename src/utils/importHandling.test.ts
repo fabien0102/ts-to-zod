@@ -1,6 +1,6 @@
 import ts from "typescript";
 import { findNode } from "./findNode";
-import { getImportIdentifiers, isRelativeModuleImport } from "./importHandling";
+import { getImportIdentifiers } from "./importHandling";
 
 describe("getImportIdentifiers", () => {
   it("should return nothing with a StringLiteral import", () => {
@@ -71,56 +71,6 @@ describe("getImportIdentifiers", () => {
       "MyGlobal",
       "MyGlobal2",
     ]);
-  });
-});
-
-describe("isRelativeModuleImport", () => {
-  it("should return false for non-relative modules", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(false);
-  });
-
-  it("should return false for non-relative package", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "@project/module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(false);
-  });
-
-  it("should return true for relative module in same folder", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "./module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(true);
-  });
-
-  it("should return true for relative module in direct parent folder", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "../module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(true);
-  });
-
-  it("should return true for relative module in parent folder", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "../../folder/module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(true);
-  });
-
-  it("should return true for relative module in folder relative to root", () => {
-    const sourceText = `
-    import MyGlobal, { MyGlobal2 } from "/folder/module";
-    `;
-
-    expect(isRelativeModuleImport(getImportNode(sourceText))).toEqual(true);
   });
 });
 
