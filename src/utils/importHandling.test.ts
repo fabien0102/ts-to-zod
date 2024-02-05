@@ -1,14 +1,6 @@
 import ts from "typescript";
 import { findNode } from "./findNode";
-<<<<<<< HEAD
-import { getImportIdentifiers } from "./importHandling";
-=======
-import {
-  createImportNode,
-  getImportIdentifiers,
-  isRelativeModuleImport,
-} from "./importHandling";
->>>>>>> a021ddd (feat: add createImport function)
+import { createImportNode, getImportIdentifiers } from "./importHandling";
 
 describe("getImportIdentifiers", () => {
   it("should return nothing with a StringLiteral import", () => {
@@ -79,6 +71,40 @@ describe("getImportIdentifiers", () => {
       "MyGlobal",
       "MyGlobal2",
     ]);
+  });
+});
+
+describe("createImportNode", () => {
+  function printNode(node: ts.Node) {
+    const printer = ts.createPrinter();
+    return printer.printNode(
+      ts.EmitHint.Unspecified,
+      node,
+      ts.createSourceFile("", "", ts.ScriptTarget.Latest)
+    );
+  }
+
+  it("should create an ImportDeclaration node correctly", () => {
+    const identifiers = ["Test1", "Test2"];
+    const path = "./testPath";
+
+    const expected = 'import { Test1, Test2 } from "./testPath";';
+
+    const result = createImportNode(identifiers, path);
+
+    expect(printNode(result)).toEqual(expected);
+  });
+
+  it("should handle empty identifiers array", () => {
+    const identifiers: string[] = [];
+    const path = "./testPath";
+
+    // Yes, this is valid
+    const expected = 'import {} from "./testPath";';
+
+    const result = createImportNode(identifiers, path);
+
+    expect(printNode(result)).toEqual(expected);
   });
 });
 

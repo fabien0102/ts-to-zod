@@ -19,6 +19,7 @@ import {
   getImportIdentifiers,
   createImportNode,
 } from "../utils/importHandling";
+
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import {
@@ -92,6 +93,7 @@ export function generate({
   getSchemaName = DEFAULT_GET_SCHEMA,
   keepComments = false,
   skipParseJSDoc = false,
+  customJSDocFormatTypes = {},
   inputOutputMappings = [],
 }: GenerateProps) {
   // Create a source file and deal with modules
@@ -340,9 +342,13 @@ ${
     ? `import { ${typeImportsValues.join(", ")} } from "${typesImportPath}";\n`
     : ""
 }
-${Array.from(statements.values())
-  .map((statement) => print(statement.value))
-  .join("\n\n")}
+${
+  importNodes.length
+    ? importNodes.map((node) => print(node)).join("\n") + "\n\n"
+    : ""
+}${Array.from(statements.values())
+    .map((statement) => print(statement.value))
+    .join("\n\n")}
 `;
 
   const testCases = generateIntegrationTests(

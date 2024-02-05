@@ -33,3 +33,21 @@ export function getImportIdentifiers(node: ts.ImportDeclaration): string[] {
 
   return importIdentifiers;
 }
+
+/**
+ * Creates an import statement from the given arguments
+ * @param identifiers array of types to import
+ * @param path module path
+ * @returns an ImportDeclaration node that corresponds to `import { ...identifiers } from "path"`
+ */
+export function createImportNode(identifiers: string[], path: string) {
+  const specifiers = identifiers.map((i) =>
+    f.createImportSpecifier(false, undefined, f.createIdentifier(i))
+  );
+
+  return f.createImportDeclaration(
+    undefined,
+    f.createImportClause(false, undefined, f.createNamedImports(specifiers)),
+    f.createStringLiteral(path)
+  );
+}
