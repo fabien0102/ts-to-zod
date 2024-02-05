@@ -175,24 +175,20 @@ export function generateZodSchemaVariableStatement({
 }
 
 /**
- * Generate zod schema declaration for imported classes
+ * Generate zod schema declaration for classes
  *
  * ```ts
  * const ${varName} = ${zodImportValue}.instanceof(${importName})
  * ```
  */
-export function generateZodSchemaVariableStatementForClass({
-  className,
+export function generateZodSchemaVariableStatementForImport({
   varName,
   zodImportValue = "z",
 }: {
-  className: string;
   varName: string;
   zodImportValue?: string;
 }) {
-  const schema = buildZodSchema(zodImportValue, "instanceof", [
-    f.createIdentifier(className),
-  ]);
+  const schema = buildZodSchema(zodImportValue, "any");
 
   return f.createVariableStatement(
     undefined, // No modifier expected

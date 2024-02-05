@@ -15,7 +15,7 @@ import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import {
   generateZodSchemaVariableStatement,
-  generateZodSchemaVariableStatementForClass,
+  generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
 
@@ -89,7 +89,7 @@ export function generate({
 
   // handling existing import statements
   const importNamesAvailable = new Set<string>();
-  const importNodes: ts.ImportDeclaration[] = [];
+  // const importNodes: ts.ImportDeclaration[] = [];
   const importNamesUsed: string[] = [];
 
   const typesNeedToBeExtracted = new Set<string>();
@@ -101,7 +101,7 @@ export function generate({
     if (ts.isImportDeclaration(node) && node.importClause) {
       const imports = getImportIdentifiers(node);
       imports.forEach((i) => importNamesAvailable.add(i));
-      importNodes.push(node);
+      // importNodes.push(node);
     }
   };
 
@@ -158,9 +158,8 @@ export function generate({
     const varName = getSchemaName(importName);
     return {
       dependencies: [],
-      statement: generateZodSchemaVariableStatementForClass({
+      statement: generateZodSchemaVariableStatementForImport({
         varName,
-        className: importName,
         zodImportValue: "z",
       }),
       requiresImport: false,
@@ -282,13 +281,9 @@ ${
     ? `import { ${typeImportsValues.join(", ")} } from "${typesImportPath}";\n`
     : ""
 }
-${
-  importNodes.length
-    ? importNodes.map((node) => print(node)).join("\n") + "\n\n"
-    : ""
-}${Array.from(statements.values())
-    .map((statement) => print(statement.value))
-    .join("\n\n")}
+${Array.from(statements.values())
+  .map((statement) => print(statement.value))
+  .join("\n\n")}
 `;
 
   const testCases = generateIntegrationTests(
