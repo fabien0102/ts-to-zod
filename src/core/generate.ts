@@ -89,7 +89,6 @@ export function generate({
 
   // handling existing import statements
   const importNamesAvailable = new Set<string>();
-  // const importNodes: ts.ImportDeclaration[] = [];
   const importNamesUsed: string[] = [];
 
   const typesNeedToBeExtracted = new Set<string>();
@@ -101,7 +100,6 @@ export function generate({
     if (ts.isImportDeclaration(node) && node.importClause) {
       const imports = getImportIdentifiers(node);
       imports.forEach((i) => importNamesAvailable.add(i));
-      // importNodes.push(node);
     }
   };
 
