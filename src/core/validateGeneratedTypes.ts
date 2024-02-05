@@ -37,7 +37,7 @@ export function validateGeneratedTypes({
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
-  const projectRoot = process.cwd();
+  const projectRoot = makePosixPath(process.cwd());
   const src = fixOptionalAny(
     skipParseJSDoc
       ? sourceTypes.sourceText
