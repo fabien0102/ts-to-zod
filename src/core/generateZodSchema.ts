@@ -175,10 +175,10 @@ export function generateZodSchemaVariableStatement({
 }
 
 /**
- * Generate zod schema declaration for classes
+ * Generate zod schema declaration for imported types (using any)
  *
  * ```ts
- * const ${varName} = ${zodImportValue}.instanceof(${importName})
+ * const ${varName} = ${zodImportValue}.any()
  * ```
  */
 export function generateZodSchemaVariableStatementForImport({
