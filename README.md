@@ -239,7 +239,7 @@ module.exports = [
     name: "example",
     input: "example/heros.ts",
     output: "example/heros.zod.ts",
-    jsDocTagFilter: (tags) => tags.map(tag => tag.name).includes("toExtract") // <= rule here
+    jsDocTagFilter: (tags) => tags.map((tag) => tag.name).includes("toExtract"), // <= rule here
   },
 ];
 
@@ -385,6 +385,33 @@ export const idSchema = z.string();
 export const heroSchema = z.object({
   id: idSchema,
   name: z.string(),
+});
+```
+
+It can also reference imported types from any modules but will use an `any` validation as placeholder, as we cannot now
+their schema.
+
+```ts
+// source.ts
+import { Person } from "@3rdparty/person";
+import { Villain } from "./villain";
+
+export interface Hero {
+  name: string;
+  realPerson: Person;
+  nemesis: Villain;
+}
+
+// output.ts
+
+const personSchema = z.any();
+
+const villainSchema = z.any();
+
+export const heroSchema = z.object({
+  name: z.string(),
+  realPerson: personSchema,
+  nemesis: villainSchema;
 });
 ```
 

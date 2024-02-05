@@ -17,18 +17,25 @@ export function fixOptionalAny(sourceText: string) {
     const visit: ts.Visitor = (node) => {
       node = ts.visitEachChild(node, visit, context);
 
-      if (
-        ts.isPropertySignature(node) &&
-        node.type?.kind === ts.SyntaxKind.AnyKeyword
-      ) {
-        return ts.factory.createPropertySignature(
-          node.modifiers,
-          node.name,
-          f.createToken(ts.SyntaxKind.QuestionToken), // Add `questionToken`
-          node.type
-        );
-      }
+      if (ts.isPropertySignature(node) && node.type) {
+        const typeNode = node.type;
 
+        if (shouldAddQuestionToken(typeNode)) {
+          return createOptionalPropertyNode(node);
+        }
+
+        // Handling nested Any / TypeReference
+        if (
+          ts.isUnionTypeNode(typeNode) ||
+          ts.isIntersectionTypeNode(typeNode)
+        ) {
+          const withQuestionToken = typeNode.types.filter((childNode) =>
+            shouldAddQuestionToken(childNode)
+          );
+          if (withQuestionToken.length > 0)
+            return createOptionalPropertyNode(node);
+        }
+      }
       return node;
     };
 
@@ -38,4 +45,17 @@ export function fixOptionalAny(sourceText: string) {
   const outputFile = ts.transform(sourceFile, [markAnyAsOptional]);
 
   return printer.printFile(outputFile.transformed[0]);
+}
+
+function shouldAddQuestionToken(node: ts.TypeNode) {
+  return node.kind === ts.SyntaxKind.AnyKeyword || ts.isTypeReferenceNode(node);
+}
+
+function createOptionalPropertyNode(node: ts.PropertySignature) {
+  return ts.factory.createPropertySignature(
+    node.modifiers,
+    node.name,
+    f.createToken(ts.SyntaxKind.QuestionToken), // Add `questionToken`
+    node.type
+  );
 }
