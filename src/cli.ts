@@ -194,13 +194,13 @@ class TsToZod extends Command {
    * Generate on zod schema file.
    * @param args
    * @param fileConfig
-   * @param flags
+   * @param Flags
    * @param inputOutputMappings
    */
   async generate(
     args: { input?: string; output?: string },
     fileConfig: Config | undefined,
-    flags: OutputFlags<typeof TsToZod.flags>,
+    Flags: Interfaces.InferredFlags<typeof TsToZod.flags>,
     inputOutputMappings: InputOutputMapping[]
   ): Promise<{ success: true } | { success: false; error: string }> {
     const input = args.input || fileConfig?.input;

@@ -1,6 +1,7 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
+import { relative } from "path";
 import {
   InputOutputMapping,
   JSDocTagFilter,
@@ -27,7 +28,6 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { relative } from "path";
 
 const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
