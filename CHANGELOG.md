@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.7.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.6.1...v3.7.0) (2024-02-06)
+
+
+### Features
+
+* Handling imports of generated types ([#148](https://www.github.com/fabien0102/ts-to-zod/issues/148)) ([1a879b1](https://www.github.com/fabien0102/ts-to-zod/commit/1a879b1042254e1d228e9433bdfbe35cee300b6b))
+
 ### [3.6.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.6.0...v3.6.1) (2024-01-16)
 
 
