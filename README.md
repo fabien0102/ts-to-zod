@@ -390,7 +390,9 @@ export const heroSchema = z.object({
 });
 ```
 
-It can also reference imported types from any modules but will use an `any` validation as placeholder, as we cannot now
+### Non-Zod imports
+
+`ts-to-zod` can reference imported types from other modules but will use an `any` validation as placeholder, as we cannot now
 their schema.
 
 ```ts
@@ -454,10 +456,9 @@ export interface Hero {
 }
 
 // heros.zod.ts (output)
-import { Person } from "@3rdparty/person";
 import { zVillain } from "../generated/villain.zod";
 
-const personSchema = z.instanceof(Person);
+const personSchema = z.any();
 
 export const heroSchema = z.object({
   name: z.string(),
