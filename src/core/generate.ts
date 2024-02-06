@@ -145,7 +145,6 @@ export function generate({
       else {
         const identifiers = getImportIdentifiers(node);
         identifiers.forEach((i) => importNamesAvailable.add(i));
-        importNodes.push(node); // We assume all identifiers will be used so pushing the whole node
       }
     }
   };
