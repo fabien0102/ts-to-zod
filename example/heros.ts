@@ -1,3 +1,5 @@
+import { Person } from "./person";
+
 export enum EnemyPower {
   Flight = "flight",
   Strength = "strength",
@@ -11,7 +13,7 @@ export namespace Skills {
   };
 }
 
-export interface Enemy {
+export interface Enemy extends Person {
   name: string;
   powers: EnemyPower[];
   inPrison: boolean;

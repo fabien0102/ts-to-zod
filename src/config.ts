@@ -113,4 +113,9 @@ export type Configs = Array<
   }
 >;
 
+export type InputOutputMapping = Pick<
+  Config,
+  "input" | "output" | "getSchemaName"
+>;
+
 export type TsToZodConfig = Config | Configs;

@@ -54,4 +54,10 @@ export const configsSchema = z.array(
   )
 );
 
+export const inputOutputMappingSchema = configSchema.pick({
+  input: true,
+  output: true,
+  getSchemaName: true,
+});
+
 export const tsToZodConfigSchema = z.union([configSchema, configsSchema]);

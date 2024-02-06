@@ -16,5 +16,10 @@ module.exports = [
       },
     },
   },
+  {
+    name: "example/person",
+    input: "example/person.ts",
+    output: "example/person.zod.ts",
+  },
   { name: "config", input: "src/config.ts", output: "src/config.zod.ts" },
 ];
