@@ -11,44 +11,50 @@ export function fixOptionalAny(sourceText: string) {
     sourceText,
     ts.ScriptTarget.Latest
   );
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
-  const markAnyAsOptional: ts.TransformerFactory<ts.SourceFile> = (context) => {
-    const visit: ts.Visitor = (node) => {
-      node = ts.visitEachChild(node, visit, context);
-
-      if (ts.isPropertySignature(node) && node.type) {
-        const typeNode = node.type;
-
-        if (shouldAddQuestionToken(typeNode)) {
-          return createOptionalPropertyNode(node);
-        }
-
-        // Handling nested Any / TypeReference
-        if (
-          ts.isUnionTypeNode(typeNode) ||
-          ts.isIntersectionTypeNode(typeNode)
-        ) {
-          const withQuestionToken = typeNode.types.filter((childNode) =>
-            shouldAddQuestionToken(childNode)
-          );
-          if (withQuestionToken.length > 0)
-            return createOptionalPropertyNode(node);
-        }
-      }
-      return node;
-    };
-
-    return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
-  };
-
+  // Apply transformation
   const outputFile = ts.transform(sourceFile, [markAnyAsOptional]);
 
+  // Printing the transformed file
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
   return printer.printFile(outputFile.transformed[0]);
 }
 
+const markAnyAsOptional: ts.TransformerFactory<ts.SourceFile> = (context) => {
+  const visit: ts.Visitor = (node) => {
+    node = ts.visitEachChild(node, visit, context);
+
+    if (ts.isPropertySignature(node) && node.type) {
+      const typeNode = node.type;
+
+      if (shouldAddQuestionToken(typeNode)) {
+        return createOptionalPropertyNode(node);
+      }
+
+      // Handling nested Any / TypeReference
+      if (ts.isUnionTypeNode(typeNode) || ts.isIntersectionTypeNode(typeNode)) {
+        const withQuestionToken = typeNode.types.filter((childNode) =>
+          shouldAddQuestionToken(childNode)
+        );
+        if (withQuestionToken.length > 0)
+          return createOptionalPropertyNode(node);
+      }
+    }
+    return node;
+  };
+
+  return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
+};
+
 function shouldAddQuestionToken(node: ts.TypeNode) {
-  return node.kind === ts.SyntaxKind.AnyKeyword || ts.isTypeReferenceNode(node);
+  return (
+    node.kind === ts.SyntaxKind.AnyKeyword ||
+    (ts.isTypeReferenceNode(node) && isImportedTypeReferenceNode(node))
+  );
+}
+
+function isImportedTypeReferenceNode(node: ts.TypeReferenceNode) {
+  return true;
 }
 
 function createOptionalPropertyNode(node: ts.PropertySignature) {
