@@ -100,11 +100,11 @@ describe("validateGeneratedTypes", () => {
   it("should return no error if we reference a type present in the file", () => {
     const sourceTypes = {
       sourceText: `
-      export type Villain {
+      export type Villain = {
         name: string;
       }
 
-      export type Citizen {
+      export type Citizen = {
         villain: Villain | null;
       };
     `,
