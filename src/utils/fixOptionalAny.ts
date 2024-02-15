@@ -60,9 +60,7 @@ export function fixOptionalAny(sourceText: string) {
       return node;
     };
 
-    return (sourceFile) => {
-      return ts.visitNode(sourceFile, visit) as ts.SourceFile;
-    };
+    return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
   };
 
   // Apply transformation
