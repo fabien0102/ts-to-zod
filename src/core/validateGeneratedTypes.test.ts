@@ -411,7 +411,9 @@ describe("validateGeneratedTypes", () => {
         relativePath: "hero-module.ts",
       },
       {
-        sourceText: `export const heroSchema = z.object({ name: z.string() })`,
+        sourceText: `
+        import { z } from "zod";
+        export const heroSchema = z.object({ name: z.string() })`,
         relativePath: "zHero.ts",
       },
     ];

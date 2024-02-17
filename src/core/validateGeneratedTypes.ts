@@ -4,9 +4,10 @@ import {
   createVirtualTypeScriptEnvironment,
 } from "@typescript/vfs";
 import ts from "typescript";
-import { join, sep, posix } from "path";
+import { join, sep, posix, relative } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
+import { getImportIdentifiers } from "../utils/importHandling";
 
 interface File {
   sourceText: string;
@@ -36,18 +37,48 @@ export function validateGeneratedTypes({
     esModuleInterop: true,
   };
 
-  // Create virtual files system with our 3 files
+  const sourceFile = ts.createSourceFile(
+    "index.ts",
+    skipParseJSDoc
+      ? sourceTypes.sourceText
+      : resolveDefaultProperties(sourceTypes.sourceText),
+    ts.ScriptTarget.Latest
+  );
+
+  // Extracting imports that should be handled as any
+  const importsToHandleAsAny = new Set<string>();
+  const extractImportIdentifiers = (node: ts.Node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      // If the import declaration is referenced in the extraFiles, it should not be "fixed"
+      !extraFiles.find(
+        (file) =>
+          relative(
+            file.relativePath,
+            (node.moduleSpecifier as ts.StringLiteral).text
+          ) === ""
+      )
+    ) {
+      if (node.importClause) {
+        const identifiers = getImportIdentifiers(node);
+        identifiers.forEach((i) => importsToHandleAsAny.add(i));
+      }
+    }
+  };
+  ts.forEachChild(sourceFile, extractImportIdentifiers);
+
+  const fixedSourceForValidation = fixOptionalAny(
+    sourceFile,
+    importsToHandleAsAny
+  );
+
+  // Create virtual files system with our files
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
-  const projectRoot = makePosixPath(process.cwd());
-  const src = fixOptionalAny(
-    skipParseJSDoc
-      ? sourceTypes.sourceText
-      : resolveDefaultProperties(sourceTypes.sourceText)
-  );
 
-  fsMap.set(getPath(sourceTypes), src);
+  fsMap.set(getPath(sourceTypes), fixedSourceForValidation);
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
@@ -56,6 +87,7 @@ export function validateGeneratedTypes({
   }
 
   // Create a virtual typescript environment
+  const projectRoot = makePosixPath(process.cwd());
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
@@ -63,31 +95,6 @@ export function validateGeneratedTypes({
     ts,
     compilerOptions
   );
-
-  // TO REMOVE
-  // Logging inferred types
-  {
-    const navTree = env.languageService.getNavigationTree(
-      getPath(integrationTests)
-    );
-    const inferredRef = navTree.childItems?.find(
-      (c) => c.text === "CitizenInferredType"
-    );
-
-    const quickInfo = env.languageService.getQuickInfoAtPosition(
-      getPath(integrationTests),
-      inferredRef?.nameSpan?.start || 0
-    );
-
-    console.log(ts.displayPartsToString(quickInfo?.displayParts));
-
-    // if (extraFiles) {
-    //   extraFiles.forEach((file) => {
-    //     const navTree2 = env.languageService.getNavigationTree(getPath(file));
-    //     console.log(navTree2);
-    //   });
-    // }
-  }
 
   // Get the diagnostic
   const errors: ts.Diagnostic[] = [];
