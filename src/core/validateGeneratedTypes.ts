@@ -17,6 +17,7 @@ export interface ValidateGeneratedTypesProps {
   zodSchemas: File;
   integrationTests: File;
   skipParseJSDoc: boolean;
+  extraFiles?: File[];
 }
 
 /**
@@ -27,6 +28,7 @@ export function validateGeneratedTypes({
   zodSchemas,
   integrationTests,
   skipParseJSDoc,
+  extraFiles = [],
 }: ValidateGeneratedTypesProps) {
   // Shared configuration
   const compilerOptions: ts.CompilerOptions = {
@@ -49,14 +51,43 @@ export function validateGeneratedTypes({
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
+  if (extraFiles) {
+    extraFiles.forEach((file) => fsMap.set(getPath(file), file.sourceText));
+  }
+
   // Create a virtual typescript environment
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
-    [sourceTypes, zodSchemas, integrationTests].map(getPath),
+    [sourceTypes, zodSchemas, integrationTests, ...extraFiles].map(getPath),
     ts,
     compilerOptions
   );
+
+  // TO REMOVE
+  // Logging inferred types
+  {
+    const navTree = env.languageService.getNavigationTree(
+      getPath(integrationTests)
+    );
+    const inferredRef = navTree.childItems?.find(
+      (c) => c.text === "CitizenInferredType"
+    );
+
+    const quickInfo = env.languageService.getQuickInfoAtPosition(
+      getPath(integrationTests),
+      inferredRef?.nameSpan?.start || 0
+    );
+
+    console.log(ts.displayPartsToString(quickInfo?.displayParts));
+
+    // if (extraFiles) {
+    //   extraFiles.forEach((file) => {
+    //     const navTree2 = env.languageService.getNavigationTree(getPath(file));
+    //     console.log(navTree2);
+    //   });
+    // }
+  }
 
   // Get the diagnostic
   const errors: ts.Diagnostic[] = [];

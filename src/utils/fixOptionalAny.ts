@@ -28,10 +28,11 @@ export function fixOptionalAny(sourceText: string) {
 
   function shouldAddQuestionToken(node: ts.TypeNode) {
     return (
-      node.kind === ts.SyntaxKind.AnyKeyword ||
-      // Handling type referencing imported types
-      (ts.isTypeReferenceNode(node) &&
-        importNamesAvailable.has(node.typeName.getText(sourceFile)))
+      node.kind === ts.SyntaxKind.AnyKeyword
+      // ||
+      // // Handling type referencing imported types
+      // (ts.isTypeReferenceNode(node) &&
+      //   importNamesAvailable.has(node.typeName.getText(sourceFile)))
     );
   }
 
