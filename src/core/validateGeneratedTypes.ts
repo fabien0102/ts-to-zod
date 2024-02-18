@@ -78,12 +78,17 @@ export function validateGeneratedTypes({
     target: compilerOptions.target,
   });
 
-  fsMap.set(getPath(sourceTypes), fixedSourceForValidation);
-  fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
-  fsMap.set(getPath(integrationTests), integrationTests.sourceText);
+  // Adding extra "folder" to the paths to make sure the root of the virtual environment is at the "right" level
+  const extraPath = getExtraPath(extraFiles);
+
+  fsMap.set(getPath(sourceTypes, extraPath), fixedSourceForValidation);
+  fsMap.set(getPath(zodSchemas, extraPath), zodSchemas.sourceText);
+  fsMap.set(getPath(integrationTests, extraPath), integrationTests.sourceText);
 
   if (extraFiles) {
-    extraFiles.forEach((file) => fsMap.set(getPath(file), file.sourceText));
+    extraFiles.forEach((file) =>
+      fsMap.set(getPath(file, extraPath), file.sourceText)
+    );
   }
 
   // Create a virtual typescript environment
@@ -91,7 +96,9 @@ export function validateGeneratedTypes({
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
-    [sourceTypes, zodSchemas, integrationTests, ...extraFiles].map(getPath),
+    [sourceTypes, zodSchemas, integrationTests].map((file) =>
+      getPath(file, extraPath)
+    ),
     ts,
     compilerOptions
   );
@@ -99,10 +106,14 @@ export function validateGeneratedTypes({
   // Get the diagnostic
   const errors: ts.Diagnostic[] = [];
   errors.push(
-    ...env.languageService.getSemanticDiagnostics(getPath(integrationTests))
+    ...env.languageService.getSemanticDiagnostics(
+      getPath(integrationTests, extraPath)
+    )
   );
   errors.push(
-    ...env.languageService.getSyntacticDiagnostics(getPath(integrationTests))
+    ...env.languageService.getSyntacticDiagnostics(
+      getPath(integrationTests, extraPath)
+    )
   );
 
   return errors.map((diagnostic) => {
@@ -154,10 +165,41 @@ function getDetails(file: ts.SourceFile, line: number) {
   return expression;
 }
 
-function getPath(file: File) {
-  return makePosixPath(join(process.cwd(), file.relativePath));
+function getPath(file: File, extraPath: string = "") {
+  return makePosixPath(join(process.cwd(), extraPath, file.relativePath));
 }
 
 function makePosixPath(str: string) {
   return str.split(sep).join(posix.sep);
+}
+
+function countNetUpFoldersInRelativePath(relativePath: string): number {
+  let counter = 0;
+
+  if (!relativePath) return 0;
+
+  relativePath
+    .split(sep)
+    .slice(0, -1)
+    .forEach((segment) => {
+      if (segment === "..") {
+        counter++;
+      } else if (segment !== "." && segment !== "") {
+        // Decrement for "down" movement, but not below zero
+        if (counter > 0) counter--;
+      }
+      // No action needed for current directory (.) or empty segments
+    });
+  return counter;
+}
+
+// When extra files are provided, we need to add a folder to the path to make sure
+// the root of the virtual environment is at the "right" level
+function getExtraPath(extraFiles: File[]) {
+  let maxDepth = 0;
+  extraFiles.forEach(({ relativePath }) => {
+    const depth = countNetUpFoldersInRelativePath(relativePath);
+    if (depth > maxDepth) maxDepth = depth;
+  });
+  return "folder/".repeat(maxDepth);
 }
