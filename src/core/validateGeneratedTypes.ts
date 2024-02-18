@@ -8,6 +8,7 @@ import { join, sep, posix, relative } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
 import { getImportIdentifiers } from "../utils/importHandling";
+import { countNetParentDirectoriesInRelativePath } from "../utils/countNetParentDirectoriesInRelativePath";
 
 interface File {
   sourceText: string;
@@ -173,32 +174,12 @@ function makePosixPath(str: string) {
   return str.split(sep).join(posix.sep);
 }
 
-function countNetUpFoldersInRelativePath(relativePath: string): number {
-  let counter = 0;
-
-  if (!relativePath) return 0;
-
-  relativePath
-    .split(sep)
-    .slice(0, -1)
-    .forEach((segment) => {
-      if (segment === "..") {
-        counter++;
-      } else if (segment !== "." && segment !== "") {
-        // Decrement for "down" movement, but not below zero
-        if (counter > 0) counter--;
-      }
-      // No action needed for current directory (.) or empty segments
-    });
-  return counter;
-}
-
 // When extra files are provided, we need to add a folder to the path to make sure
 // the root of the virtual environment is at the "right" level
 function getExtraPath(extraFiles: File[]) {
   let maxDepth = 0;
   extraFiles.forEach(({ relativePath }) => {
-    const depth = countNetUpFoldersInRelativePath(relativePath);
+    const depth = countNetParentDirectoriesInRelativePath(relativePath);
     if (depth > maxDepth) maxDepth = depth;
   });
   return "folder/".repeat(maxDepth);
