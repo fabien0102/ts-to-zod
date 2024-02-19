@@ -304,19 +304,27 @@ See more help with --help`,
       const extraFiles = [];
       for (const io of inputOutputMappings) {
         if (getImportPath(inputPath, io.input) !== "/") {
-          const fileInputPath = join(process.cwd(), io.input);
-          const inputFile = await readFile(fileInputPath, "utf-8");
-          extraFiles.push({
-            sourceText: inputFile,
-            relativePath: getImportPath(inputPath, io.input) + ".ts",
-          });
+          try {
+            const fileInputPath = join(process.cwd(), io.input);
+            const inputFile = await readFile(fileInputPath, "utf-8");
+            extraFiles.push({
+              sourceText: inputFile,
+              relativePath: getImportPath(inputPath, io.input) + ".ts",
+            });
+          } catch {
+            validatorSpinner.warn(`File "${io.input}" not found`);
+          }
 
-          const fileOutputPath = join(process.cwd(), io.output);
-          const outputFile = await readFile(fileOutputPath, "utf-8");
-          extraFiles.push({
-            sourceText: outputFile,
-            relativePath: getImportPath(outputPath, io.output) + ".ts",
-          });
+          try {
+            const fileOutputPath = join(process.cwd(), io.output);
+            const outputFile = await readFile(fileOutputPath, "utf-8");
+            extraFiles.push({
+              sourceText: outputFile,
+              relativePath: getImportPath(outputPath, io.output) + ".ts",
+            });
+          } catch {
+            validatorSpinner.warn(`File "${io.output}" not found`);
+          }
         }
       }
 
