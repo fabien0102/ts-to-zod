@@ -1,9 +1,13 @@
 import ts, { factory as f } from "typescript";
+import { getImportIdentifiers } from "./importHandling";
 
 /**
- * Add optional property to `any` to workaround comparison issue.
+ * Add optional property to `any` or imported types to workaround comparison issue.
  *
- * ref: https://github.com/fabien0102/ts-to-zod/issues/140
+ * ref:
+ * -> https://github.com/fabien0102/ts-to-zod/issues/140
+ * -> https://github.com/fabien0102/ts-to-zod/issues/203
+ *
  */
 export function fixOptionalAny(sourceText: string) {
   const sourceFile = ts.createSourceFile(
@@ -11,7 +15,25 @@ export function fixOptionalAny(sourceText: string) {
     sourceText,
     ts.ScriptTarget.Latest
   );
-  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+
+  // Extracting imports
+  const importNamesAvailable = new Set<string>();
+  const extractImportIdentifiers = (node: ts.Node) => {
+    if (ts.isImportDeclaration(node) && node.importClause) {
+      const identifiers = getImportIdentifiers(node);
+      identifiers.forEach((i) => importNamesAvailable.add(i));
+    }
+  };
+  ts.forEachChild(sourceFile, extractImportIdentifiers);
+
+  function shouldAddQuestionToken(node: ts.TypeNode) {
+    return (
+      node.kind === ts.SyntaxKind.AnyKeyword ||
+      // Handling type referencing imported types
+      (ts.isTypeReferenceNode(node) &&
+        importNamesAvailable.has(node.typeName.getText(sourceFile)))
+    );
+  }
 
   const markAnyAsOptional: ts.TransformerFactory<ts.SourceFile> = (context) => {
     const visit: ts.Visitor = (node) => {
@@ -42,13 +64,12 @@ export function fixOptionalAny(sourceText: string) {
     return (sourceFile) => ts.visitNode(sourceFile, visit) as ts.SourceFile;
   };
 
+  // Apply transformation
   const outputFile = ts.transform(sourceFile, [markAnyAsOptional]);
 
+  // Printing the transformed file
+  const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
   return printer.printFile(outputFile.transformed[0]);
-}
-
-function shouldAddQuestionToken(node: ts.TypeNode) {
-  return node.kind === ts.SyntaxKind.AnyKeyword || ts.isTypeReferenceNode(node);
 }
 
 function createOptionalPropertyNode(node: ts.PropertySignature) {
