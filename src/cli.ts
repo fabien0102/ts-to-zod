@@ -323,7 +323,9 @@ See more help with --help`,
               relativePath: getImportPath(outputPath, io.output) + ".ts",
             });
           } catch {
-            validatorSpinner.warn(`File "${io.output}" not found`);
+            validatorSpinner.warn(
+              `File "${io.output}" not found: maybe it hasn't been validated yet?`
+            );
           }
         }
       }
