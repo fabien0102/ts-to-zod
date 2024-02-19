@@ -80,15 +80,18 @@ export function validateGeneratedTypes({
   });
 
   // Adding extra "folder" to the paths to make sure the root of the virtual environment is at the "right" level
-  const extraPath = getExtraPath(extraFiles);
+  const adjustedPath = getExtraPath(extraFiles);
 
-  fsMap.set(getPath(sourceTypes, extraPath), fixedSourceForValidation);
-  fsMap.set(getPath(zodSchemas, extraPath), zodSchemas.sourceText);
-  fsMap.set(getPath(integrationTests, extraPath), integrationTests.sourceText);
+  fsMap.set(getPath(sourceTypes, adjustedPath), fixedSourceForValidation);
+  fsMap.set(getPath(zodSchemas, adjustedPath), zodSchemas.sourceText);
+  fsMap.set(
+    getPath(integrationTests, adjustedPath),
+    integrationTests.sourceText
+  );
 
   if (extraFiles) {
     extraFiles.forEach((file) =>
-      fsMap.set(getPath(file, extraPath), file.sourceText)
+      fsMap.set(getPath(file, adjustedPath), file.sourceText)
     );
   }
 
@@ -98,7 +101,7 @@ export function validateGeneratedTypes({
   const env = createVirtualTypeScriptEnvironment(
     system,
     [sourceTypes, zodSchemas, integrationTests].map((file) =>
-      getPath(file, extraPath)
+      getPath(file, adjustedPath)
     ),
     ts,
     compilerOptions
@@ -108,12 +111,12 @@ export function validateGeneratedTypes({
   const errors: ts.Diagnostic[] = [];
   errors.push(
     ...env.languageService.getSemanticDiagnostics(
-      getPath(integrationTests, extraPath)
+      getPath(integrationTests, adjustedPath)
     )
   );
   errors.push(
     ...env.languageService.getSyntacticDiagnostics(
-      getPath(integrationTests, extraPath)
+      getPath(integrationTests, adjustedPath)
     )
   );
 
