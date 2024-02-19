@@ -4,11 +4,14 @@ import {
   createVirtualTypeScriptEnvironment,
 } from "@typescript/vfs";
 import ts from "typescript";
-import { join, sep, posix, relative } from "path";
+import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
 import { getImportIdentifiers } from "../utils/importHandling";
-import { countNetParentDirectoriesInRelativePath } from "../utils/countNetParentDirectoriesInRelativePath";
+import {
+  areRelativePathsEqualIgnoringExtension,
+  countNetParentDirectoriesInRelativePath,
+} from "../utils/pathUtils";
 
 interface File {
   sourceText: string;
@@ -53,12 +56,11 @@ export function validateGeneratedTypes({
       ts.isImportDeclaration(node) &&
       ts.isStringLiteral(node.moduleSpecifier) &&
       // If the import declaration is referenced in the extraFiles, it should not be "fixed"
-      !extraFiles.find(
-        (file) =>
-          relative(
-            file.relativePath,
-            (node.moduleSpecifier as ts.StringLiteral).text
-          ) === ""
+      !extraFiles.find((file) =>
+        areRelativePathsEqualIgnoringExtension(
+          file.relativePath,
+          (node.moduleSpecifier as ts.StringLiteral).text
+        )
       )
     ) {
       if (node.importClause) {

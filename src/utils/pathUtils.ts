@@ -1,3 +1,5 @@
+import { normalize, parse, relative } from "path";
+
 export function countNetParentDirectoriesInRelativePath(
   relativePath: string
 ): number {
@@ -24,3 +26,17 @@ export function countNetParentDirectoriesInRelativePath(
 
   return maxStreak;
 }
+
+export function areRelativePathsEqualIgnoringExtension(
+  path1: string,
+  path2: string
+): boolean {
+  return relative(normalizePath(path1), normalizePath(path2)) === "";
+}
+
+const normalizePath = (path: string) => {
+  const { dir, name } = parse(normalize(path));
+  // Ensure directory path ends with a separator for consistency
+  const dirWithSeparator = dir ? `${dir}/` : "";
+  return `${dirWithSeparator}${name}`;
+};
