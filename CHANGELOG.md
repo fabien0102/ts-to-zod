@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.7.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.0...v3.7.1) (2024-02-19)
+
+
+### Bug Fixes
+
+* fix for [#203](https://www.github.com/fabien0102/ts-to-zod/issues/203) ([06f52a3](https://www.github.com/fabien0102/ts-to-zod/commit/06f52a3777de6ac4b77025cc7f037c545608b97a))
+
 ## [3.7.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.6.1...v3.7.0) (2024-02-06)
 
 
