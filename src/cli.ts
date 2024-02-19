@@ -140,6 +140,7 @@ class TsToZod extends Command {
         this.error(`INPUT and OUTPUT arguments are not compatible with --all`);
       }
       try {
+        let hasError = false;
         await Promise.all(
           fileConfig.map(async (config) => {
             this.log(`Generating "${config.name}"`);
@@ -147,22 +148,24 @@ class TsToZod extends Command {
             if (result.success) {
               this.log(` 🎉 Zod schemas generated!`);
             } else {
+              hasError = true;
               this.error(result.error, { exit: false });
             }
             this.log(); // empty line between configs
           })
         );
+        if (hasError) this.exit(1);
       } catch (e) {
         const error =
           typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
-        this.error(error);
+        this.error(error, { exit: 1 });
       }
     } else {
       const result = await this.generate(args, fileConfig, flags, ioMappings);
       if (result.success) {
         this.log(`🎉 Zod schemas generated!`);
       } else {
-        this.error(result.error);
+        this.error(result.error, { exit: 1 });
       }
     }
 
