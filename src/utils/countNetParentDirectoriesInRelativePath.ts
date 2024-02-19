@@ -1,11 +1,9 @@
-import { sep } from "path";
-
 export function countNetParentDirectoriesInRelativePath(
   relativePath: string
 ): number {
   if (!relativePath) return 0;
 
-  const segments = relativePath.split(sep).slice(0, -1);
+  const segments = relativePath.split("/").slice(0, -1);
 
   let currentStreak = 0;
   let maxStreak = 0;
