@@ -300,6 +300,26 @@ See more help with --help`,
     if (!Flags.skipValidation) {
       const validatorSpinner = ora("Validating generated types").start();
       if (Flags.all) validatorSpinner.indent = 1;
+
+      const extraFiles = [];
+      for (const io of inputOutputMappings) {
+        if (getImportPath(inputPath, io.input) !== "/") {
+          const fileInputPath = join(process.cwd(), io.input);
+          const inputFile = await readFile(fileInputPath, "utf-8");
+          extraFiles.push({
+            sourceText: inputFile,
+            relativePath: getImportPath(inputPath, io.input) + ".ts",
+          });
+
+          const fileOutputPath = join(process.cwd(), io.output);
+          const outputFile = await readFile(fileOutputPath, "utf-8");
+          extraFiles.push({
+            sourceText: outputFile,
+            relativePath: getImportPath(outputPath, io.output) + ".ts",
+          });
+        }
+      }
+
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText: transformedSourceText,
@@ -314,6 +334,7 @@ See more help with --help`,
           relativePath: "./source.zod.ts",
         },
         skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
+        extraFiles,
       });
 
       generationErrors.length
