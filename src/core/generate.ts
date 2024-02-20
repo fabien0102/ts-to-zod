@@ -1,7 +1,6 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import { relative } from "path";
 import {
   InputOutputMapping,
   JSDocTagFilter,
@@ -28,6 +27,7 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
+import { areRelativePathsEqualIgnoringExtension } from "../utils/pathUtils";
 
 const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
@@ -121,11 +121,12 @@ export function generate({
       // Check if we're importing from a mapped file
       const eligibleMapping = inputOutputMappings.find(
         (io: InputOutputMapping) =>
-          relative(
+          areRelativePathsEqualIgnoringExtension(
             io.input,
             (node.moduleSpecifier as ts.StringLiteral).text
-          ) === ""
+          )
       );
+
       if (eligibleMapping) {
         const schemaMethod =
           eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
