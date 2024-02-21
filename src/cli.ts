@@ -295,7 +295,7 @@ See more help with --help`,
       };
     }
 
-    errors.map(this.warn);
+    errors.map(this.warn.bind(this));
 
     if (!Flags.skipValidation) {
       const validatorSpinner = ora("Validating generated types").start();
