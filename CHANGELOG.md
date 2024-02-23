@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.7.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.1...v3.7.2) (2024-02-23)
+
+
+### Bug Fixes
+
+* context binding while processing errors ([#209](https://www.github.com/fabien0102/ts-to-zod/issues/209)) ([2db450b](https://www.github.com/fabien0102/ts-to-zod/commit/2db450b6503cad2e9923b893ca681a344f73ba3a))
+
 ### [3.7.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.0...v3.7.1) (2024-02-19)
 
 
