@@ -324,7 +324,7 @@ See more help with --help`,
             });
           } catch {
             validatorSpinner.warn(
-              `File "${io.output}" not found: maybe it hasn't been validated yet?`
+              `File "${io.output}" not found: maybe it hasn't been generated yet?`
             );
           }
         }
