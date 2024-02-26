@@ -89,6 +89,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -148,6 +149,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -207,6 +209,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -265,6 +268,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -319,6 +323,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -373,6 +378,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -440,6 +446,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -508,6 +515,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -526,7 +534,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: "folder/source.ts",
     };
 
     const zodSchemas = {
@@ -538,19 +546,19 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: "folder/source.zod.ts",
     };
 
     const extraFiles = [
       {
         sourceText: `export type Hero = { name: string; }`,
-        relativePath: `../hero-module.ts`,
+        relativePath: `hero-module.ts`,
       },
       {
         sourceText: `
         import { z } from "zod";
         export const heroSchema = z.object({ name: z.string() })`,
-        relativePath: `../zHero.ts`,
+        relativePath: `zHero.ts`,
       },
     ];
 
@@ -606,7 +614,7 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: "folder1/folder2/source.zod.ts",
     };
 
     const extraFiles = [
@@ -618,7 +626,7 @@ describe("validateGeneratedTypes", () => {
         sourceText: `
         import { z } from "zod";
         export const heroSchema = z.object({ name: z.string() })`,
-        relativePath: `../../zod/zHero.ts`,
+        relativePath: `zod/zHero.ts`,
       },
     ];
 
@@ -712,6 +720,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -780,6 +789,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -847,6 +857,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -914,6 +925,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -960,6 +972,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -1020,6 +1033,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -1073,6 +1087,7 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
+
       zodSchemas,
       integrationTests,
       skipParseJSDoc: true,

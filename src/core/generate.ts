@@ -27,7 +27,7 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { areRelativePathsEqualIgnoringExtension } from "../utils/pathUtils";
+import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath";
 
 const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
@@ -121,7 +121,7 @@ export function generate({
       // Check if we're importing from a mapped file
       const eligibleMapping = inputOutputMappings.find(
         (io: InputOutputMapping) =>
-          areRelativePathsEqualIgnoringExtension(
+          areImportPathsEqualIgnoringExtension(
             io.input,
             (node.moduleSpecifier as ts.StringLiteral).text
           )

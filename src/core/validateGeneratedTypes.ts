@@ -9,9 +9,9 @@ import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
 import { getImportIdentifiers } from "../utils/importHandling";
 import {
-  areRelativePathsEqualIgnoringExtension,
-  countNetParentDirectoriesInRelativePath,
-} from "../utils/pathUtils";
+  getImportPath,
+  areImportPathsEqualIgnoringExtension,
+} from "../utils/getImportPath";
 
 interface File {
   sourceText: string;
@@ -57,8 +57,8 @@ export function validateGeneratedTypes({
       ts.isStringLiteral(node.moduleSpecifier) &&
       // If the import declaration is referenced in the extraFiles, it should not be "fixed"
       !extraFiles.find((file) =>
-        areRelativePathsEqualIgnoringExtension(
-          file.relativePath,
+        areImportPathsEqualIgnoringExtension(
+          getImportPath(sourceTypes.relativePath, file.relativePath),
           (node.moduleSpecifier as ts.StringLiteral).text
         )
       )
@@ -81,20 +81,12 @@ export function validateGeneratedTypes({
     target: compilerOptions.target,
   });
 
-  // Adding extra "folder" to the paths to make sure the root of the virtual environment is at the "right" level
-  const adjustedPath = getExtraPath(extraFiles);
-
-  fsMap.set(getPath(sourceTypes, adjustedPath), fixedSourceForValidation);
-  fsMap.set(getPath(zodSchemas, adjustedPath), zodSchemas.sourceText);
-  fsMap.set(
-    getPath(integrationTests, adjustedPath),
-    integrationTests.sourceText
-  );
+  fsMap.set(getPath(sourceTypes), fixedSourceForValidation);
+  fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
+  fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
   if (extraFiles) {
-    extraFiles.forEach((file) =>
-      fsMap.set(getPath(file, adjustedPath), file.sourceText)
-    );
+    extraFiles.forEach((file) => fsMap.set(getPath(file), file.sourceText));
   }
 
   // Create a virtual typescript environment
@@ -102,9 +94,7 @@ export function validateGeneratedTypes({
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
-    [sourceTypes, zodSchemas, integrationTests].map((file) =>
-      getPath(file, adjustedPath)
-    ),
+    [sourceTypes, zodSchemas, integrationTests].map((file) => getPath(file)),
     ts,
     compilerOptions
   );
@@ -112,14 +102,10 @@ export function validateGeneratedTypes({
   // Get the diagnostic
   const errors: ts.Diagnostic[] = [];
   errors.push(
-    ...env.languageService.getSemanticDiagnostics(
-      getPath(integrationTests, adjustedPath)
-    )
+    ...env.languageService.getSemanticDiagnostics(getPath(integrationTests))
   );
   errors.push(
-    ...env.languageService.getSyntacticDiagnostics(
-      getPath(integrationTests, adjustedPath)
-    )
+    ...env.languageService.getSyntacticDiagnostics(getPath(integrationTests))
   );
 
   return errors.map((diagnostic) => {
@@ -171,21 +157,10 @@ function getDetails(file: ts.SourceFile, line: number) {
   return expression;
 }
 
-function getPath(file: File, extraPath: string = "") {
-  return makePosixPath(join(process.cwd(), extraPath, file.relativePath));
+function getPath(file: File) {
+  return makePosixPath(join(process.cwd(), file.relativePath));
 }
 
 function makePosixPath(str: string) {
   return str.split(sep).join(posix.sep);
-}
-
-// When extra files are provided, we need to add a folder to the path to make sure
-// the root of the virtual environment is at the "right" level
-function getExtraPath(extraFiles: File[]) {
-  let maxDepth = 0;
-  extraFiles.forEach(({ relativePath }) => {
-    const depth = countNetParentDirectoriesInRelativePath(relativePath);
-    if (depth > maxDepth) maxDepth = depth;
-  });
-  return "folder/".repeat(maxDepth);
 }
