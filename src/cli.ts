@@ -309,7 +309,7 @@ See more help with --help`,
             const inputFile = await readFile(fileInputPath, "utf-8");
             extraFiles.push({
               sourceText: inputFile,
-              relativePath: getImportPath(inputPath, io.input) + ".ts",
+              relativePath: io.input,
             });
           } catch {
             validatorSpinner.warn(`File "${io.input}" not found`);
@@ -320,7 +320,7 @@ See more help with --help`,
             const outputFile = await readFile(fileOutputPath, "utf-8");
             extraFiles.push({
               sourceText: outputFile,
-              relativePath: getImportPath(outputPath, io.output) + ".ts",
+              relativePath: io.output,
             });
           } catch {
             validatorSpinner.warn(
@@ -333,15 +333,18 @@ See more help with --help`,
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText: transformedSourceText,
-          relativePath: "./source.ts",
+          relativePath: input,
         },
         integrationTests: {
-          sourceText: getIntegrationTestFile("./source", "./source.zod"),
+          sourceText: getIntegrationTestFile(
+            getImportPath("./source.integration.ts", input),
+            getImportPath("./source.integration.ts", output || input)
+          ),
           relativePath: "./source.integration.ts",
         },
         zodSchemas: {
-          sourceText: getZodSchemasFile("./source"),
-          relativePath: "./source.zod.ts",
+          sourceText: getZodSchemasFile(getImportPath(output || input, input)),
+          relativePath: output || input,
         },
         skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
         extraFiles,
