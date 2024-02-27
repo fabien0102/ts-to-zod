@@ -89,7 +89,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -149,7 +148,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -209,7 +207,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -268,7 +265,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -323,7 +319,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -378,7 +373,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -446,7 +440,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -515,7 +508,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -720,7 +712,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -789,7 +780,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -857,7 +847,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -925,7 +914,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -972,7 +960,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -1033,7 +1020,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: false,
@@ -1087,7 +1073,6 @@ describe("validateGeneratedTypes", () => {
 
     const errors = validateGeneratedTypes({
       sourceTypes,
-
       zodSchemas,
       integrationTests,
       skipParseJSDoc: true,
