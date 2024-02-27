@@ -94,7 +94,7 @@ export function validateGeneratedTypes({
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,
-    [sourceTypes, zodSchemas, integrationTests].map((file) => getPath(file)),
+    [sourceTypes, zodSchemas, integrationTests].map(getPath),
     ts,
     compilerOptions
   );
