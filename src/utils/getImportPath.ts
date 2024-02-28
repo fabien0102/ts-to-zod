@@ -1,5 +1,5 @@
 import slash from "slash";
-import { normalize, parse, relative } from "path";
+import { join, normalize, parse, relative } from "path";
 
 /**
  * Resolve the path of an import.
@@ -24,7 +24,5 @@ export function areImportPathsEqualIgnoringExtension(
 
 const normalizePath = (path: string) => {
   const { dir, name } = parse(normalize(path));
-  // Ensure directory path ends with a separator for consistency
-  const dirWithSeparator = dir ? `${dir}/` : "";
-  return `${dirWithSeparator}${name}`;
+  return join(dir, name);
 };
