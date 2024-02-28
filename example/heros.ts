@@ -24,6 +24,7 @@ export type SupermanName = Superman["name"];
 export type SupermanInvinciblePower = Superman["powers"][2];
 
 export interface Superman {
+  person: Person;
   name: "superman" | "clark kent" | "kal-l";
   enemies: Record<string, Enemy>;
   age: number;

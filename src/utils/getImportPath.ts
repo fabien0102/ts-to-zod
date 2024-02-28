@@ -1,5 +1,5 @@
 import slash from "slash";
-import { parse, relative } from "path";
+import { join, normalize, parse, relative } from "path";
 
 /**
  * Resolve the path of an import.
@@ -14,3 +14,15 @@ export function getImportPath(from: string, to: string) {
 
   return `${dir}/${name}`;
 }
+
+export function areImportPathsEqualIgnoringExtension(
+  path1: string,
+  path2: string
+): boolean {
+  return relative(normalizePath(path1), normalizePath(path2)) === "";
+}
+
+const normalizePath = (path: string) => {
+  const { dir, name } = parse(normalize(path));
+  return join(dir, name);
+};

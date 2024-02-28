@@ -1,5 +1,4 @@
 import ts, { factory as f } from "typescript";
-import { getImportIdentifiers } from "./importHandling";
 
 /**
  * Add optional property to `any` or imported types to workaround comparison issue.
@@ -9,29 +8,16 @@ import { getImportIdentifiers } from "./importHandling";
  * -> https://github.com/fabien0102/ts-to-zod/issues/203
  *
  */
-export function fixOptionalAny(sourceText: string) {
-  const sourceFile = ts.createSourceFile(
-    "index.ts",
-    sourceText,
-    ts.ScriptTarget.Latest
-  );
-
-  // Extracting imports
-  const importNamesAvailable = new Set<string>();
-  const extractImportIdentifiers = (node: ts.Node) => {
-    if (ts.isImportDeclaration(node) && node.importClause) {
-      const identifiers = getImportIdentifiers(node);
-      identifiers.forEach((i) => importNamesAvailable.add(i));
-    }
-  };
-  ts.forEachChild(sourceFile, extractImportIdentifiers);
-
+export function fixOptionalAny(
+  sourceFile: ts.SourceFile,
+  importsToHandleAsAny: Set<string>
+) {
   function shouldAddQuestionToken(node: ts.TypeNode) {
     return (
       node.kind === ts.SyntaxKind.AnyKeyword ||
       // Handling type referencing imported types
       (ts.isTypeReferenceNode(node) &&
-        importNamesAvailable.has(node.typeName.getText(sourceFile)))
+        importsToHandleAsAny.has(node.typeName.getText(sourceFile)))
     );
   }
 

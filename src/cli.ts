@@ -300,20 +300,54 @@ See more help with --help`,
     if (!Flags.skipValidation) {
       const validatorSpinner = ora("Validating generated types").start();
       if (Flags.all) validatorSpinner.indent = 1;
+
+      const extraFiles = [];
+      for (const io of inputOutputMappings) {
+        if (getImportPath(inputPath, io.input) !== "/") {
+          try {
+            const fileInputPath = join(process.cwd(), io.input);
+            const inputFile = await readFile(fileInputPath, "utf-8");
+            extraFiles.push({
+              sourceText: inputFile,
+              relativePath: io.input,
+            });
+          } catch {
+            validatorSpinner.warn(`File "${io.input}" not found`);
+          }
+
+          try {
+            const fileOutputPath = join(process.cwd(), io.output);
+            const outputFile = await readFile(fileOutputPath, "utf-8");
+            extraFiles.push({
+              sourceText: outputFile,
+              relativePath: io.output,
+            });
+          } catch {
+            validatorSpinner.warn(
+              `File "${io.output}" not found: maybe it hasn't been generated yet?`
+            );
+          }
+        }
+      }
+
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText: transformedSourceText,
-          relativePath: "./source.ts",
+          relativePath: input,
         },
         integrationTests: {
-          sourceText: getIntegrationTestFile("./source", "./source.zod"),
+          sourceText: getIntegrationTestFile(
+            getImportPath("./source.integration.ts", input),
+            getImportPath("./source.integration.ts", output || input)
+          ),
           relativePath: "./source.integration.ts",
         },
         zodSchemas: {
-          sourceText: getZodSchemasFile("./source"),
-          relativePath: "./source.zod.ts",
+          sourceText: getZodSchemasFile(getImportPath(output || input, input)),
+          relativePath: output || input,
         },
         skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
+        extraFiles,
       });
 
       generationErrors.length

@@ -7,6 +7,11 @@ import ts from "typescript";
 import { join, sep, posix } from "path";
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
 import { fixOptionalAny } from "../utils/fixOptionalAny";
+import { getImportIdentifiers } from "../utils/importHandling";
+import {
+  getImportPath,
+  areImportPathsEqualIgnoringExtension,
+} from "../utils/getImportPath";
 
 interface File {
   sourceText: string;
@@ -17,6 +22,7 @@ export interface ValidateGeneratedTypesProps {
   zodSchemas: File;
   integrationTests: File;
   skipParseJSDoc: boolean;
+  extraFiles?: File[];
 }
 
 /**
@@ -27,6 +33,7 @@ export function validateGeneratedTypes({
   zodSchemas,
   integrationTests,
   skipParseJSDoc,
+  extraFiles = [],
 }: ValidateGeneratedTypesProps) {
   // Shared configuration
   const compilerOptions: ts.CompilerOptions = {
@@ -34,22 +41,56 @@ export function validateGeneratedTypes({
     esModuleInterop: true,
   };
 
-  // Create virtual files system with our 3 files
+  const sourceFile = ts.createSourceFile(
+    "index.ts",
+    skipParseJSDoc
+      ? sourceTypes.sourceText
+      : resolveDefaultProperties(sourceTypes.sourceText),
+    ts.ScriptTarget.Latest
+  );
+
+  // Extracting imports that should be handled as any
+  const importsToHandleAsAny = new Set<string>();
+  const extractImportIdentifiers = (node: ts.Node) => {
+    if (
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      // If the import declaration is referenced in the extraFiles, it should not be "fixed"
+      !extraFiles.find((file) =>
+        areImportPathsEqualIgnoringExtension(
+          getImportPath(sourceTypes.relativePath, file.relativePath),
+          (node.moduleSpecifier as ts.StringLiteral).text
+        )
+      )
+    ) {
+      if (node.importClause) {
+        const identifiers = getImportIdentifiers(node);
+        identifiers.forEach((i) => importsToHandleAsAny.add(i));
+      }
+    }
+  };
+  ts.forEachChild(sourceFile, extractImportIdentifiers);
+
+  const fixedSourceForValidation = fixOptionalAny(
+    sourceFile,
+    importsToHandleAsAny
+  );
+
+  // Create virtual files system with our files
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
-  const projectRoot = makePosixPath(process.cwd());
-  const src = fixOptionalAny(
-    skipParseJSDoc
-      ? sourceTypes.sourceText
-      : resolveDefaultProperties(sourceTypes.sourceText)
-  );
 
-  fsMap.set(getPath(sourceTypes), src);
+  fsMap.set(getPath(sourceTypes), fixedSourceForValidation);
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
+  if (extraFiles) {
+    extraFiles.forEach((file) => fsMap.set(getPath(file), file.sourceText));
+  }
+
   // Create a virtual typescript environment
+  const projectRoot = makePosixPath(process.cwd());
   const system = createFSBackedSystem(fsMap, projectRoot, ts);
   const env = createVirtualTypeScriptEnvironment(
     system,

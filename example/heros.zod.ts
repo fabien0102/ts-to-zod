@@ -17,6 +17,7 @@ export const enemySchema = personSchema.extend({
 });
 
 export const supermanSchema = z.object({
+  person: personSchema,
   name: z.union([
     z.literal("superman"),
     z.literal("clark kent"),
