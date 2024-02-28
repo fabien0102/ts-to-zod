@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.7.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.2...v3.7.3) (2024-02-28)
+
+
+### Bug Fixes
+
+* Mark only imported types as optional in validation ([#204](https://www.github.com/fabien0102/ts-to-zod/issues/204)) ([9e52cca](https://www.github.com/fabien0102/ts-to-zod/commit/9e52cca9a60e496c4fee4ef4bf1fb7bc015ef3eb))
+
 ### [3.7.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.1...v3.7.2) (2024-02-23)
 
 
