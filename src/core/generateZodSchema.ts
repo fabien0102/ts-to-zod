@@ -4,6 +4,7 @@ import ts, { factory as f } from "typescript";
 import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
+import { generateCombinations } from "../utils/generateCombinations";
 import {
   JSDocTags,
   ZodProperty,
@@ -887,6 +888,93 @@ function buildZodPrimitive({
       return buildZodSchema(z, "never", [], zodProperties);
     case ts.SyntaxKind.UnknownKeyword:
       return buildZodSchema(z, "unknown", [], zodProperties);
+  }
+
+  if (ts.isTemplateLiteralTypeNode(typeNode)) {
+    const spanValues: string[][] = [];
+
+    let hasNull = false;
+
+    spanValues.push([typeNode.head.text]);
+
+    typeNode.templateSpans.forEach((span) => {
+      if (ts.isTypeReferenceNode(span.type)) {
+        const targetNode = findNode(
+          sourceFile,
+          (n): n is ts.TypeAliasDeclaration => {
+            return (
+              ts.isTypeAliasDeclaration(n) &&
+              ts.isUnionTypeNode(n.type) &&
+              n.name.getText(sourceFile) ===
+                (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
+            );
+          }
+        );
+
+        if (targetNode && ts.isUnionTypeNode(targetNode.type)) {
+          hasNull =
+            hasNull ||
+            Boolean(
+              targetNode.type.types.find(
+                (i) =>
+                  ts.isLiteralTypeNode(i) &&
+                  i.literal.kind === ts.SyntaxKind.NullKeyword
+              )
+            );
+
+          spanValues.push(
+            targetNode.type.types
+              .map((i) => {
+                if (ts.isLiteralTypeNode(i)) {
+                  if (ts.isStringLiteral(i.literal)) {
+                    return i.literal.text;
+                  }
+                  if (ts.isNumericLiteral(i.literal)) {
+                    return i.literal.text;
+                  }
+                  if (ts.isPrefixUnaryExpression(i.literal)) {
+                    if (
+                      i.literal.operator === ts.SyntaxKind.MinusToken &&
+                      ts.isNumericLiteral(i.literal.operand)
+                    ) {
+                      return "-" + i.literal.operand.text;
+                    }
+                  }
+                  if (i.literal.kind === ts.SyntaxKind.TrueKeyword) {
+                    return "true";
+                  }
+                  if (i.literal.kind === ts.SyntaxKind.FalseKeyword) {
+                    return "false";
+                  }
+                }
+                return "";
+              })
+              .filter((i) => i !== "")
+          );
+        }
+        spanValues.push([span.literal.text]);
+      }
+    });
+
+    // Handling null value outside of the union type
+    if (hasNull) {
+      zodProperties.push({
+        identifier: "nullable",
+      });
+    }
+
+    return buildZodSchema(
+      z,
+      "union",
+      [
+        f.createArrayLiteralExpression(
+          generateCombinations(spanValues).map((v) =>
+            buildZodSchema(z, "literal", [f.createStringLiteral(v)])
+          )
+        ),
+      ],
+      zodProperties
+    );
   }
 
   console.warn(
