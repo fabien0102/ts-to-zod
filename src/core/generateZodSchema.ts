@@ -5,13 +5,13 @@ import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import { generateCombinations } from "../utils/generateCombinations";
+import { extractLiteralValue } from "../utils/extractLiteralValue";
 import {
   JSDocTags,
   ZodProperty,
   getJSDocTags,
   jsDocTagToZodProperties,
 } from "./jsDocTags";
-import { extractLiteralValue } from "../utils/extractLiteralValue";
 
 export interface GenerateZodSchemaProps {
   /**
