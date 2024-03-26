@@ -1,4 +1,4 @@
-import { factory } from "typescript";
+import ts, { factory } from "typescript";
 import { extractLiteralValue } from "./extractLiteralValue";
 
 describe("extractLiteralValue", () => {
@@ -13,7 +13,10 @@ describe("extractLiteralValue", () => {
   });
 
   it("should extract negative numeric literal value", () => {
-    const source = factory.createNumericLiteral("-42");
+    const source = factory.createPrefixUnaryExpression(
+      ts.SyntaxKind.MinusToken,
+      factory.createNumericLiteral("42")
+    );
     expect(extractLiteralValue(source)).toBe("-42");
   });
 
