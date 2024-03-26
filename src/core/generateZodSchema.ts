@@ -966,6 +966,13 @@ function buildZodPrimitive({
           ignoreNode = true;
         }
         spanValues.push([span.literal.text]);
+      } else {
+        console.warn(
+          ` »   Warning: node '${span.type.getText(
+            sourceFile
+          )}' not supported in Template Literal.`
+        );
+        ignoreNode = true;
       }
     });
 
@@ -975,6 +982,7 @@ function buildZodPrimitive({
         identifier: "nullable",
       });
     }
+
     if (!ignoreNode) {
       return buildZodSchema(
         z,
