@@ -17,6 +17,7 @@ export interface Enemy extends Person {
   name: string;
   powers: EnemyPower[];
   inPrison: boolean;
+  mainPower: `${EnemyPower}`;
 }
 
 export type SupermanEnemy = Superman["enemies"][-1];
