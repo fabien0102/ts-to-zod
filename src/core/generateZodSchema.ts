@@ -891,68 +891,65 @@ function buildZodPrimitive({
   }
 
   if (ts.isTemplateLiteralTypeNode(typeNode)) {
-    const spanValues: string[][] = [];
-
+    // Handling null outside of the template literal browsing
     let hasNull = false;
 
+    // Extracting the values from the template literal
+    const spanValues: string[][] = [];
     spanValues.push([typeNode.head.text]);
 
     typeNode.templateSpans.forEach((span) => {
       if (ts.isTypeReferenceNode(span.type)) {
         const targetNode = findNode(
           sourceFile,
-          (n): n is ts.TypeAliasDeclaration => {
+          (n): n is ts.TypeAliasDeclaration | ts.EnumDeclaration => {
             return (
-              ts.isTypeAliasDeclaration(n) &&
-              ts.isUnionTypeNode(n.type) &&
+              ((ts.isTypeAliasDeclaration(n) && ts.isUnionTypeNode(n.type)) ||
+                ts.isEnumDeclaration(n)) &&
               n.name.getText(sourceFile) ===
                 (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
             );
           }
         );
 
-        if (targetNode && ts.isUnionTypeNode(targetNode.type)) {
-          hasNull =
-            hasNull ||
-            Boolean(
-              targetNode.type.types.find(
-                (i) =>
-                  ts.isLiteralTypeNode(i) &&
-                  i.literal.kind === ts.SyntaxKind.NullKeyword
-              )
-            );
+        if (targetNode) {
+          if (
+            ts.isTypeAliasDeclaration(targetNode) &&
+            ts.isUnionTypeNode(targetNode.type)
+          ) {
+            hasNull =
+              hasNull ||
+              Boolean(
+                targetNode.type.types.find(
+                  (i) =>
+                    ts.isLiteralTypeNode(i) &&
+                    i.literal.kind === ts.SyntaxKind.NullKeyword
+                )
+              );
 
-          spanValues.push(
-            targetNode.type.types
-              .map((i) => {
-                if (ts.isLiteralTypeNode(i)) {
-                  if (ts.isStringLiteral(i.literal)) {
-                    return i.literal.text;
-                  }
-                  if (ts.isNumericLiteral(i.literal)) {
-                    return i.literal.text;
-                  }
-                  if (ts.isPrefixUnaryExpression(i.literal)) {
-                    if (
-                      i.literal.operator === ts.SyntaxKind.MinusToken &&
-                      ts.isNumericLiteral(i.literal.operand)
-                    ) {
-                      return "-" + i.literal.operand.text;
-                    }
-                  }
-                  if (i.literal.kind === ts.SyntaxKind.TrueKeyword) {
-                    return "true";
-                  }
-                  if (i.literal.kind === ts.SyntaxKind.FalseKeyword) {
-                    return "false";
-                  }
-                }
-                return "";
-              })
-              .filter((i) => i !== "")
-          );
+            spanValues.push(
+              targetNode.type.types
+                .map((i) => {
+                  if (ts.isLiteralTypeNode(i))
+                    return extractLiteralValue(i.literal);
+                  return "";
+                })
+                .filter((i) => i !== "")
+            );
+          } else if (ts.isEnumDeclaration(targetNode)) {
+            spanValues.push(
+              targetNode.members
+                // .filter((i) => )
+                .map((i) => {
+                  if (ts.isEnumMember(i) && i.initializer)
+                    return extractLiteralValue(i.initializer);
+                  return "";
+                })
+                .filter((i) => i !== "")
+            );
+          }
+          spanValues.push([span.literal.text]);
         }
-        spanValues.push([span.literal.text]);
       }
     });
 
@@ -1318,4 +1315,32 @@ function buildSchemaReference(
   }
 
   throw new Error("Unknown IndexedAccessTypeNode.objectType type");
+}
+
+/**
+ *
+ */
+
+function extractLiteralValue(node: ts.Expression): string {
+  if (ts.isStringLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isNumericLiteral(node)) {
+    return node.text;
+  }
+  if (ts.isPrefixUnaryExpression(node)) {
+    if (
+      node.operator === ts.SyntaxKind.MinusToken &&
+      ts.isNumericLiteral(node.operand)
+    ) {
+      return "-" + node.operand.text;
+    }
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword) {
+    return "true";
+  }
+  if (node.kind === ts.SyntaxKind.FalseKeyword) {
+    return "false";
+  }
+  return "";
 }
