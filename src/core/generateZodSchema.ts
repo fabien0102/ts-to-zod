@@ -891,6 +891,8 @@ function buildZodPrimitive({
   }
 
   if (ts.isTemplateLiteralTypeNode(typeNode)) {
+    let ignoreNode = false;
+
     // Handling null outside of the template literal browsing
     let hasNull = false;
 
@@ -939,17 +941,30 @@ function buildZodPrimitive({
           } else if (ts.isEnumDeclaration(targetNode)) {
             spanValues.push(
               targetNode.members
-                // .filter((i) => )
                 .map((i) => {
-                  if (ts.isEnumMember(i) && i.initializer)
-                    return extractLiteralValue(i.initializer);
+                  if (i.initializer) return extractLiteralValue(i.initializer);
+                  else {
+                    console.warn(
+                      ` »   Warning: enum member without initializer '${targetNode.name.getText(
+                        sourceFile
+                      )}.${i.name.getText(sourceFile)}' is not supported.`
+                    );
+                    ignoreNode = true;
+                  }
                   return "";
                 })
                 .filter((i) => i !== "")
             );
           }
-          spanValues.push([span.literal.text]);
+        } else {
+          console.warn(
+            ` »   Warning: reference not found '${span.type.getText(
+              sourceFile
+            )}' in Template Literal.`
+          );
+          ignoreNode = true;
         }
+        spanValues.push([span.literal.text]);
       }
     });
 
@@ -959,19 +974,23 @@ function buildZodPrimitive({
         identifier: "nullable",
       });
     }
-
-    return buildZodSchema(
-      z,
-      "union",
-      [
-        f.createArrayLiteralExpression(
-          generateCombinations(spanValues).map((v) =>
-            buildZodSchema(z, "literal", [f.createStringLiteral(v)])
-          )
-        ),
-      ],
-      zodProperties
-    );
+    if (!ignoreNode) {
+      return buildZodSchema(
+        z,
+        "union",
+        [
+          f.createArrayLiteralExpression(
+            generateCombinations(spanValues).map((v) =>
+              buildZodSchema(z, "literal", [f.createStringLiteral(v)])
+            )
+          ),
+        ],
+        zodProperties
+      );
+    } else {
+      console.warn(` »   ...falling back into 'z.any()'`);
+      return buildZodSchema(z, "any", [], zodProperties);
+    }
   }
 
   console.warn(
