@@ -14,6 +14,11 @@ export const enemySchema = personSchema.extend({
   name: z.string(),
   powers: z.array(enemyPowerSchema),
   inPrison: z.boolean(),
+  mainPower: z.union([
+    z.literal("flight"),
+    z.literal("strength"),
+    z.literal("speed"),
+  ]),
 });
 
 export const supermanSchema = z.object({
