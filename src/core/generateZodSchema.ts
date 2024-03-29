@@ -4,6 +4,8 @@ import ts, { factory as f } from "typescript";
 import { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
+import { generateCombinations } from "../utils/generateCombinations";
+import { extractLiteralValue } from "../utils/extractLiteralValue";
 import {
   JSDocTags,
   ZodProperty,
@@ -887,6 +889,117 @@ function buildZodPrimitive({
       return buildZodSchema(z, "never", [], zodProperties);
     case ts.SyntaxKind.UnknownKeyword:
       return buildZodSchema(z, "unknown", [], zodProperties);
+  }
+
+  if (ts.isTemplateLiteralTypeNode(typeNode)) {
+    let ignoreNode = false;
+
+    // Handling null outside of the template literal browsing
+    let hasNull = false;
+
+    // Extracting the values from the template literal
+    const spanValues: string[][] = [];
+    spanValues.push([typeNode.head.text]);
+
+    typeNode.templateSpans.forEach((span) => {
+      if (ts.isTypeReferenceNode(span.type)) {
+        const targetNode = findNode(
+          sourceFile,
+          (n): n is ts.TypeAliasDeclaration | ts.EnumDeclaration => {
+            return (
+              ((ts.isTypeAliasDeclaration(n) && ts.isUnionTypeNode(n.type)) ||
+                ts.isEnumDeclaration(n)) &&
+              n.name.getText(sourceFile) ===
+                (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
+            );
+          }
+        );
+
+        if (targetNode) {
+          if (
+            ts.isTypeAliasDeclaration(targetNode) &&
+            ts.isUnionTypeNode(targetNode.type)
+          ) {
+            hasNull =
+              hasNull ||
+              Boolean(
+                targetNode.type.types.find(
+                  (i) =>
+                    ts.isLiteralTypeNode(i) &&
+                    i.literal.kind === ts.SyntaxKind.NullKeyword
+                )
+              );
+
+            spanValues.push(
+              targetNode.type.types
+                .map((i) => {
+                  if (ts.isLiteralTypeNode(i))
+                    return extractLiteralValue(i.literal);
+                  return "";
+                })
+                .filter((i) => i !== "")
+            );
+          } else if (ts.isEnumDeclaration(targetNode)) {
+            spanValues.push(
+              targetNode.members
+                .map((i) => {
+                  if (i.initializer) return extractLiteralValue(i.initializer);
+                  else {
+                    console.warn(
+                      ` »   Warning: enum member without initializer '${targetNode.name.getText(
+                        sourceFile
+                      )}.${i.name.getText(sourceFile)}' is not supported.`
+                    );
+                    ignoreNode = true;
+                  }
+                  return "";
+                })
+                .filter((i) => i !== "")
+            );
+          }
+        } else {
+          console.warn(
+            ` »   Warning: reference not found '${span.type.getText(
+              sourceFile
+            )}' in Template Literal.`
+          );
+          ignoreNode = true;
+        }
+        spanValues.push([span.literal.text]);
+      } else {
+        console.warn(
+          ` »   Warning: node '${span.type.getText(
+            sourceFile
+          )}' not supported in Template Literal.`
+        );
+        ignoreNode = true;
+      }
+    });
+
+    // Handling null value outside of the union type
+    if (hasNull) {
+      zodProperties.push({
+        identifier: "nullable",
+      });
+    }
+
+    if (!ignoreNode) {
+      return buildZodSchema(
+        z,
+        "union",
+        [
+          f.createArrayLiteralExpression(
+            generateCombinations(spanValues).map((v) =>
+              buildZodSchema(z, "literal", [f.createStringLiteral(v)])
+            )
+          ),
+        ],
+        zodProperties
+      );
+    } else {
+      console.warn(` »   ...falling back into 'z.any()'`);
+      return buildZodSchema(z, "any", [], zodProperties);
+    }
   }
 
   console.warn(
