@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.8.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.3...v3.8.0) (2024-03-29)
+
+
+### Features
+
+* Template Literal handling ([#217](https://www.github.com/fabien0102/ts-to-zod/issues/217)) ([e21ea92](https://www.github.com/fabien0102/ts-to-zod/commit/e21ea928cb5ed6bb30f5bb6f5b90c2bd6db8ae82))
+
 ### [3.7.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.2...v3.7.3) (2024-02-28)
 
 
