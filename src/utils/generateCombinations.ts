@@ -22,7 +22,7 @@ function recursiveGenerateCombinations(
 }
 
 export function generateCombinations(arrays: string[][]): string[] {
-  return recursiveGenerateCombinations(arrays).map((combination) =>
-    combination.join("")
-  );
+  return recursiveGenerateCombinations(arrays)
+    .map((combination) => combination.join(""))
+    .filter((combination) => combination !== "");
 }

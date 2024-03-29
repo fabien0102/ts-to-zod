@@ -4,7 +4,7 @@ describe("generateCombinations", () => {
   it("should generate all combinations of 1 empty array", () => {
     const arrays = [[]];
     const result = generateCombinations(arrays);
-    expect(result).toEqual([""]);
+    expect(result).toEqual([]);
   });
 
   it("should generate all combinations of 1 array", () => {
