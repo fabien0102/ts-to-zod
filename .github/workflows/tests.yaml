@@ -28,6 +28,7 @@ jobs:
           architecture: ${{ matrix.architecture }}
       - run: yarn
       - run: chmod +x ./bin/run
+      - run: yarn build
       - run: yarn test:ci
       - run: yarn codecov
       - run: yarn lint
