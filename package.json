@@ -38,7 +38,7 @@
   ],
   "license": "MIT",
   "dependencies": {
-    "@oclif/core": ">=3.10.8",
+    "@oclif/core": ">=3.26.0",
     "@typescript/vfs": "^1.5.0",
     "case": "^1.6.3",
     "chokidar": "^3.5.1",
@@ -90,6 +90,10 @@
     "trailingComma": "es5"
   },
   "oclif": {
-    "bin": "ts-to-zod"
+    "bin": "ts-to-zod",
+    "commands": {
+      "strategy": "single",
+      "target": "./lib/cli"
+    }
   }
 }

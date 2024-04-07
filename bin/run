@@ -1,14 +1,6 @@
 #!/usr/bin/env node
 
-const fs = require("fs");
-const path = require("path");
-const project = path.join(__dirname, "../tsconfig.json");
-const dev = fs.existsSync(project);
-
-if (dev) {
-  require("ts-node").register({ project });
-}
-
-require(`../${dev ? "src/cli" : "lib/cli"}`)
-  .run()
-  .catch(require("@oclif/core/handle"));
+(async () => {
+  const oclif = await import("@oclif/core");
+  await oclif.execute({ development: false, dir: __dirname });
+})();
