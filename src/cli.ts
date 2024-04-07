@@ -62,6 +62,10 @@ try {
 class TsToZod extends Command {
   static description = "Generate Zod schemas from a Typescript file";
 
+  static examples: Command.Example[] = [
+    `$ ts-to-zod src/types.ts src/types.zod.ts`,
+  ];
+
   static usage = haveMultiConfig
     ? [
         "--all",
