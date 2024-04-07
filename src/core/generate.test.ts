@@ -221,7 +221,6 @@ describe("generate", () => {
       `);
       });
 
-      console.log(errors);
       it("should not have any errors", () => {
         expect(errors.length).toBe(0);
       });
