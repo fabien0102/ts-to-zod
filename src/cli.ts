@@ -3,7 +3,7 @@ import chokidar from "chokidar";
 import { existsSync, outputFile, readFile } from "fs-extra";
 import inquirer from "inquirer";
 import ora from "ora";
-import { join, parse, relative } from "path";
+import { join, normalize, parse, relative } from "path";
 import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
@@ -15,7 +15,10 @@ import {
 } from "./config.zod";
 import { GenerateProps, generate } from "./core/generate";
 import { createConfig } from "./createConfig";
-import { getImportPath } from "./utils/getImportPath";
+import {
+  areImportPathsEqualIgnoringExtension,
+  getImportPath,
+} from "./utils/getImportPath";
 import * as worker from "./worker";
 
 let config: TsToZodConfig | undefined;
@@ -334,6 +337,16 @@ See more help with --help`,
         }
       }
 
+      let outputForValidation = output || "";
+
+      // If we're generating over the same file, we need to set a fake output path for validation
+      if (!output || areImportPathsEqualIgnoringExtension(input, output)) {
+        const outputFileName = "source.zod.ts";
+        const { dir } = parse(normalize(input));
+
+        outputForValidation = join(dir, outputFileName);
+      }
+
       const generationErrors = await worker.validateGeneratedTypesInWorker({
         sourceTypes: {
           sourceText: transformedSourceText,
@@ -342,13 +355,15 @@ See more help with --help`,
         integrationTests: {
           sourceText: getIntegrationTestFile(
             getImportPath("./source.integration.ts", input),
-            getImportPath("./source.integration.ts", output || input)
+            getImportPath("./source.integration.ts", outputForValidation)
           ),
           relativePath: "./source.integration.ts",
         },
         zodSchemas: {
-          sourceText: getZodSchemasFile(getImportPath(output || input, input)),
-          relativePath: output || input,
+          sourceText: getZodSchemasFile(
+            getImportPath(outputForValidation, input)
+          ),
+          relativePath: outputForValidation,
         },
         skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
         extraFiles,
