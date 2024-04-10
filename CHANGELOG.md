@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.1...v3.8.2) (2024-04-10)
+
+
+### Bug Fixes
+
+* release process needs build before publish ([#225](https://www.github.com/fabien0102/ts-to-zod/issues/225)) ([eedcb4a](https://www.github.com/fabien0102/ts-to-zod/commit/eedcb4a3418a8a479537c8db6be4e6abf7848ce3))
+
 ### [3.8.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.0...v3.8.1) (2024-04-10)
 
 
