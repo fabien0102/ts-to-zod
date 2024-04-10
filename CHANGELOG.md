@@ -5,7 +5,10 @@
 
 ### Bug Fixes
 
-* validation works when generating on same (input) file [#219](https://www.github.com/fabien0102/ts-to-zod/issues/219) ([#221](https://www.github.com/fabien0102/ts-to-zod/issues/221)) ([c146e83](https://www.github.com/fabien0102/ts-to-zod/commit/c146e83ac7ba637fb413c68fbed64d7807340f59))
+* validation works when generating on same (input) file. ([#221](https://www.github.com/fabien0102/ts-to-zod/issues/221)) ([c146e83](https://www.github.com/fabien0102/ts-to-zod/commit/c146e83ac7ba637fb413c68fbed64d7807340f59))
+Fixes [#219](https://www.github.com/fabien0102/ts-to-zod/issues/219) 
+* making `--help` flag work. ([#222](https://github.com/fabien0102/ts-to-zod/pull/222))
+Fixes [#196](https://github.com/fabien0102/ts-to-zod/issues/196) 
 
 ## [3.8.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.7.3...v3.8.0) (2024-03-29)
 
