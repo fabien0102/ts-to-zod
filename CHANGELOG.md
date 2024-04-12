@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.2...v3.8.3) (2024-04-12)
+
+
+### Bug Fixes
+
+* handling imported types as array in union and referenced in tuples ([#229](https://www.github.com/fabien0102/ts-to-zod/issues/229)) ([b797dd0](https://www.github.com/fabien0102/ts-to-zod/commit/b797dd04b62328c2af447b23af18f46e18e671bb))
+
 ### [3.8.2](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.1...v3.8.2) (2024-04-10)
 
 
