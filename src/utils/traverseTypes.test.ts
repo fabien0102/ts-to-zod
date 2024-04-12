@@ -314,6 +314,30 @@ describe("traverseTypes", () => {
       const result = extractNames(source);
       expect(result).toEqual(["Person", "Villain", "SuperHero"]);
     });
+
+    it("should extract types from a very weird type definition (testing edge cases)", () => {
+      const source = `
+        export type Person = {
+          type: (SuperHero | Person2) & (SuperHero2 & Villain2) | SuperHero3[] | Villain3
+          tupleProp: [A | B, C & D]
+        } | Villain`;
+
+      const result = extractNames(source);
+      expect(result).toEqual([
+        "Person",
+        "SuperHero",
+        "Person2",
+        "SuperHero2",
+        "Villain2",
+        "SuperHero3",
+        "Villain3",
+        "A",
+        "B",
+        "C",
+        "D",
+        "Villain",
+      ]);
+    });
   });
 });
 
