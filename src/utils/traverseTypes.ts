@@ -54,15 +54,13 @@ export function getExtractedTypeNames(
       handleTypeNode(typeNode.elementType);
     } else if (ts.isTypeLiteralNode(typeNode)) {
       typeNode.forEachChild(visitorExtract);
+    } else if (ts.isTupleTypeNode(typeNode)) {
+      typeNode.elements.forEach(handleTypeNode);
     } else if (
       ts.isIntersectionTypeNode(typeNode) ||
       ts.isUnionTypeNode(typeNode)
     ) {
-      typeNode.types.forEach((childNode: ts.TypeNode) => {
-        if (ts.isTypeReferenceNode(childNode)) {
-          handleTypeReferenceNode(childNode);
-        } else childNode.forEachChild(visitorExtract);
-      });
+      typeNode.types.forEach(handleTypeNode);
     }
   };
 
