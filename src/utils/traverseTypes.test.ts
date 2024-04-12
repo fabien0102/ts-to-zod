@@ -114,6 +114,16 @@ describe("traverseTypes", () => {
       expect(result).toEqual(["Superhero", "Person"]);
     });
 
+    it("should extract type referenced as array in union property", () => {
+      const source = `
+            export interface Superhero {
+                sidekicks: Person[] | null,
+            }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Superhero", "Person"]);
+    });
+
     it("should extract nested type reference", () => {
       const source = `
           export interface Superhero {
@@ -176,6 +186,17 @@ describe("traverseTypes", () => {
         export interface Person {
             id: number,
             t: (SuperHero | Villain)
+        }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+    });
+
+    it("should extract types from Tuple", () => {
+      const source = `
+        export interface Person {
+            id: number,
+            t: [SuperHero, Villain]
         }`;
 
       const result = extractNames(source);
