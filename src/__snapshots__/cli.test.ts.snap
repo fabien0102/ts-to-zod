@@ -1,0 +1,20 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Config Prompt Tests Skip config prompt should have selected the right option and generated the file not in the config 1`] = `
+"? You have multiple configs available in "ts-to-zod.config.js"
+ What do you want? (Use arrow keys)
+❯ Execute all configs (--all) 
+  Execute "example" config (--config=example) 
+  Execute "example/person" config (--config=example/person) 
+  Execute "config" config (--config=config) 
+  Don't use the config ? You have multiple configs available in "ts-to-zod.config.js"
+ What do you want? 
+  Execute all configs (--all) 
+  Execute "example" config (--config=example) 
+  Execute "example/person" config (--config=example/person) 
+  Execute "config" config (--config=config) 
+❯ Don't use the config ? You have multiple configs available in "ts-to-zod.config.js"
+ What do you want? Don't use the config
+🎉 Zod schemas generated!
+"
+`;
