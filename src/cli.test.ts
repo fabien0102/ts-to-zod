@@ -1,4 +1,6 @@
 import { test } from "@oclif/test";
+import fs from "fs";
+import { sep, posix } from "path";
 
 /**
  * For the CLI tests to run, we need to run them in a Node environment with
@@ -6,7 +8,7 @@ import { test } from "@oclif/test";
  * with experimental support for ECMAScript Modules (ESM).
  * See: https://jestjs.io/docs/ecmascript-modules
  */
-describe("CLI Tests", () => {
+describe("Oclif-provided Flags Tests", () => {
   describe("--help flag", () => {
     test
       .stdout()
@@ -55,3 +57,59 @@ describe("CLI Tests", () => {
       });
   });
 });
+
+// describe("Ts-to-zod flags Tests", () => {});
+// describe("EXIT codes Tests", () => {});
+
+describe("Config Prompt Tests", () => {
+  describe("Skip config prompt", () => {
+    const basicInputPath = makePosixPath("src/cli/fixtures/basic/input.ts");
+    const basicSnapshotPath = makePosixPath(
+      "src/cli/fixtures/basic/output.zod.snapshot.ts"
+    );
+    const basicOutputPath = makePosixPath(
+      "src/cli/fixtures/basic/output.zod.ts"
+    );
+
+    test
+      // Up Arrow key code \u001B[A + ENTER key code \n with a delay of 2000ms
+      .stdin("\u001B[A\n", 2000)
+      .stdout()
+      .stderr()
+      .command([".", basicInputPath, basicOutputPath])
+      .it(
+        "should have selected the right option and generated the file not in the config",
+        (ctx) => {
+          expect(normalizeLineEndings(ctx.stdout)).toMatchSnapshot();
+
+          // Ora spinner outputs to stderr by default, we
+          expect(ctx.stderr).toContain("- Validating generated types");
+          expect(ctx.stderr).toContain("✔ Validating generated types");
+
+          expect(
+            normalizeLineEndings(
+              fs.readFileSync(basicOutputPath, "utf-8").toString()
+            )
+          ).toEqual(
+            normalizeLineEndings(
+              fs.readFileSync(basicSnapshotPath, "utf-8").toString()
+            )
+          );
+
+          removeFile(basicOutputPath);
+        }
+      );
+  });
+});
+
+function removeFile(filePath: string) {
+  fs.unlinkSync(filePath);
+}
+
+function makePosixPath(str: string) {
+  return str.split(sep).join(posix.sep);
+}
+
+function normalizeLineEndings(content: string) {
+  return content.replace(/\r\n/g, "\n"); // Replace Windows (\r\n) with Unix (\n)
+}
