@@ -392,7 +392,7 @@ export const heroSchema = z.object({
 
 ### Non-Zod imports
 
-`ts-to-zod` can reference imported types from other modules but will use an `any` validation as placeholder, as we cannot now
+`ts-to-zod` can reference imported types from other modules but will use an `any` validation as placeholder, as we cannot know
 their schema.
 
 ```ts
