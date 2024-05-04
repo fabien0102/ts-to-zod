@@ -3,11 +3,13 @@ import { existsSync, outputFile } from "fs-extra";
 import { join } from "path";
 import { Subject } from "rxjs";
 import prettier from "prettier";
+import { TsToZodConfig } from "./config";
 
 /**
- * Create `ts-to-zod.config.js` file.
+ * Interactively create a `ts-to-zod.config.js` file.
  *
- * @param path
+ * @param configPath the path where the configuration file should be created, including the file name
+ * @param tsToZodConfigFileName the name of the configuration file
  * @returns `true` if the file was created
  */
 export async function createConfig(
@@ -151,6 +153,17 @@ export async function createConfig(
 
   await prompts.toPromise();
 
+  if (answers) {
+    const content = await generateConfig(answers.config, dev);
+    await outputFile(configPath, content, "utf-8");
+
+    return true;
+  }
+
+  return false;
+}
+
+async function generateConfig(config: TsToZodConfig, dev: boolean) {
   const header = `/**
  * ts-to-zod configuration.
  *
@@ -160,20 +173,12 @@ export async function createConfig(
  */
 module.exports = `;
 
-  if (answers) {
-    const prettierConfig = await prettier.resolveConfig(process.cwd());
-    await outputFile(
-      configPath,
-      await prettier.format(header + JSON.stringify(answers.config), {
-        parser: "babel",
-        ...prettierConfig,
-      }),
-      "utf-8"
-    );
-    return true;
-  }
+  const prettierConfig = await prettier.resolveConfig(process.cwd());
 
-  return false;
+  return await prettier.format(header + JSON.stringify(config), {
+    parser: "babel",
+    ...prettierConfig,
+  });
 }
 
 type Answers =
