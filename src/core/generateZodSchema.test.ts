@@ -1,6 +1,6 @@
 import { camel } from "case";
 import ts from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
+import type { CustomJSDocFormatTypes } from "../config/config";
 import { findNode } from "../utils/findNode";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema";
 

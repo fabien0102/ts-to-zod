@@ -1,7 +1,7 @@
 /**
  * ts-to-zod configuration.
  *
- * @type {import("./src/config").TsToZodConfig}
+ * @type {import("./src/config/config").TsToZodConfig}
  */
 module.exports = [
   {
@@ -21,5 +21,9 @@ module.exports = [
     input: "example/person.ts",
     output: "example/person.zod.ts",
   },
-  { name: "config", input: "src/config.ts", output: "src/config.zod.ts" },
+  {
+    name: "config",
+    input: "src/config/config.ts",
+    output: "src/config/config.zod.ts",
+  },
 ];

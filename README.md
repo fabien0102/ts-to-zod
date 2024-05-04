@@ -232,7 +232,7 @@ Example:
 /**
  * ts-to-zod configuration.
  *
- * @type {import("./src/config").TsToZodConfig}
+ * @type {import("./src/config/config").TsToZodConfig}
  */
 module.exports = [
   {
@@ -429,7 +429,7 @@ If an imported type is referenced in the `ts-to-zod.config.js` config (as input)
 /**
  * ts-to-zod configuration.
  *
- * @type {import("./src/config").TsToZodConfig}
+ * @type {import("./src/config/config").TsToZodConfig}
  */
 module.exports = [
   {
@@ -509,6 +509,6 @@ And a playground inside `example`, buildable with the following command:
 $ yarn gen:example
 ```
 
-Last note, if you are updating `src/config.ts`, you need to run `yarn gen:config` to have generate the schemas of the config (`src/config.zod.ts`) (Yes, we are using the tool to build itself #inception)
+Last note, if you are updating `src/config/config.ts`, you need to run `yarn gen:config` to have generate the schemas of the config (`src/config/config.zod.ts`) (Yes, we are using the tool to build itself #inception)
 
 Have fun!

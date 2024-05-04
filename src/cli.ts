@@ -7,14 +7,14 @@ import { join, normalize, parse, relative } from "path";
 import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
-import { Config, TsToZodConfig, InputOutputMapping } from "./config";
+import { Config, TsToZodConfig, InputOutputMapping } from "./config/config";
 import {
   getSchemaNameSchema,
   nameFilterSchema,
   tsToZodConfigSchema,
-} from "./config.zod";
+} from "./config/config.zod";
 import { GenerateProps, generate } from "./core/generate";
-import { createConfig } from "./createConfig";
+import { createConfig } from "./config/createConfig";
 import {
   areImportPathsEqualIgnoringExtension,
   getImportPath,

@@ -1,7 +1,7 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import ts, { factory as f } from "typescript";
-import { CustomJSDocFormatTypes } from "../config";
+import { CustomJSDocFormatTypes } from "../config/config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import { generateCombinations } from "../utils/generateCombinations";

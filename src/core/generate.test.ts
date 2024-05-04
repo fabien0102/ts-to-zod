@@ -1,4 +1,4 @@
-import { InputOutputMapping } from "../config";
+import { InputOutputMapping } from "../config/config";
 import { generate } from "./generate";
 
 describe("generate", () => {

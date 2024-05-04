@@ -155,7 +155,7 @@ export async function createConfig(
  * ts-to-zod configuration.
  *
  * @type {${
-   dev ? 'import("./src/config")' : 'import("ts-to-zod")'
+   dev ? 'import("./src/config/config")' : 'import("ts-to-zod")'
  }.TsToZodConfig}
  */
 module.exports = `;

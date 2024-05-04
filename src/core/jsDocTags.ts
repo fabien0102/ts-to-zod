@@ -1,7 +1,10 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
 import type { ZodString } from "zod";
-import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import {
+  CustomJSDocFormatType,
+  CustomJSDocFormatTypes,
+} from "../config/config";
 
 /**
  * List of formats that can be translated in zod functions.

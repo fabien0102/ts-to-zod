@@ -6,7 +6,7 @@ import {
   JSDocTagFilter,
   NameFilter,
   CustomJSDocFormatTypes,
-} from "../config";
+} from "../config/config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
 import {

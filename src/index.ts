@@ -12,4 +12,4 @@ export {
 
 export { generateIntegrationTests } from "./core/generateIntegrationTests";
 
-export { TsToZodConfig } from "./config";
+export { TsToZodConfig } from "./config/config";
