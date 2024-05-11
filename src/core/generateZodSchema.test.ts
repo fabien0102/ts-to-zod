@@ -1263,7 +1263,21 @@ describe("generateZodSchema", () => {
       "export const exampleSchema = z.object({
           field: z.object({
               foo: z.string()
-          }).nullable().partial()
+          }).partial().nullable()
+      });"
+    `);
+  });
+
+  it("should deal with optional partial", () => {
+    const source = `export type Example = {
+        field?: Partial<{foo: string}>
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const exampleSchema = z.object({
+          field: z.object({
+              foo: z.string()
+          }).partial().optional()
       });"
     `);
   });

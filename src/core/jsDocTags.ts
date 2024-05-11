@@ -301,6 +301,12 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.strict) {
     zodProperties.push({ identifier: "strict" });
   }
+  // partial() must be before optional() and nullable()
+  if (isPartial) {
+    zodProperties.push({
+      identifier: "partial",
+    });
+  }
   if (isOptional) {
     zodProperties.push({
       identifier: "optional",
@@ -309,11 +315,6 @@ export function jsDocTagToZodProperties(
   if (isNullable || jsDocTags.default === null) {
     zodProperties.push({
       identifier: "nullable",
-    });
-  }
-  if (isPartial) {
-    zodProperties.push({
-      identifier: "partial",
     });
   }
   if (isRequired) {
