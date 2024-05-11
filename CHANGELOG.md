@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.4](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.3...v3.8.4) (2024-05-11)
+
+
+### Bug Fixes
+
+* .partial() must be applied before .nullable() or .optional() ([#237](https://www.github.com/fabien0102/ts-to-zod/issues/237)) ([ea4ceec](https://www.github.com/fabien0102/ts-to-zod/commit/ea4ceece039faf74c6908317f360ec0287dd4339))
+
 ### [3.8.3](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.2...v3.8.3) (2024-04-12)
 
 
