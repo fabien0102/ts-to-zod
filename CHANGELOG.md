@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.5](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.4...v3.8.5) (2024-05-13)
+
+
+### Bug Fixes
+
+* handle undefined as optional during validation phase ([#240](https://www.github.com/fabien0102/ts-to-zod/issues/240)) ([899c5ab](https://www.github.com/fabien0102/ts-to-zod/commit/899c5ab0940e8f880c75a391b8bd1f22a5db6a73))
+
 ### [3.8.4](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.3...v3.8.4) (2024-05-11)
 
 
