@@ -1,11 +1,12 @@
 import ts, { factory as f } from "typescript";
 
 /**
- * Add optional property to `any` or imported types to workaround comparison issue.
+ * Add optional property to `any`, `undefined` or imported types to workaround comparison issue.
  *
  * ref:
  * -> https://github.com/fabien0102/ts-to-zod/issues/140
  * -> https://github.com/fabien0102/ts-to-zod/issues/203
+ * -> https://github.com/fabien0102/ts-to-zod/issues/239
  *
  */
 export function fixOptionalAny(
@@ -14,8 +15,12 @@ export function fixOptionalAny(
 ) {
   function shouldAddQuestionToken(node: ts.TypeNode) {
     return (
+      // https://github.com/fabien0102/ts-to-zod/issues/140
       node.kind === ts.SyntaxKind.AnyKeyword ||
+      // https://github.com/fabien0102/ts-to-zod/issues/239
+      node.kind === ts.SyntaxKind.UndefinedKeyword ||
       // Handling type referencing imported types
+      // https://github.com/fabien0102/ts-to-zod/issues/203
       (ts.isTypeReferenceNode(node) &&
         importsToHandleAsAny.has(node.typeName.getText(sourceFile)))
     );
