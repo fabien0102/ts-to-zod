@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { getExtractedTypeNames } from "./traverseTypes";
+import { getReferencedTypeNames } from "./traverseTypes";
 import { findNode } from "./findNode";
 
 describe("traverseTypes", () => {
@@ -7,19 +7,19 @@ describe("traverseTypes", () => {
     it("should find only itself", () => {
       const testCases = [
         `
-        export type Superhero = {
+        export type SuperHero = {
             id: number, 
             name: string
           };
         `,
         `
-        export interface Superhero = {
+        export interface SuperHero = {
             id: number, 
             name: string
           };
         `,
         `
-        export enum Superhero = {
+        export enum SuperHero = {
             Superman = "superman",
             ClarkKent = "clark_kent",
           };
@@ -28,105 +28,135 @@ describe("traverseTypes", () => {
 
       testCases.forEach((source: string) => {
         const result = extractNames(source);
-        expect(result).toEqual(["Superhero"]);
+        expect(result).toEqual([
+          { name: "SuperHero", partOfQualifiedName: false },
+        ]);
       });
     });
 
     it("should extract type referenced in property", () => {
       const source = `
-        export interface Superhero {
+        export interface SuperHero {
             id: number,
             person: Person,
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in extend clause", () => {
       const source = `
-          export interface Superhero extends Person {
+          export interface SuperHero extends Person {
               id: number,
           }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in multiple extend clauses", () => {
       const source = `
-            export interface Superhero extends Person, Person2 {
+            export interface SuperHero extends Person, Person2 {
                 id: number,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person", "Person2"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Person2", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in extend clause with Pick helper", () => {
       const source = `
-            export interface Superhero extends Pick<Person, "name"> {
+            export interface SuperHero extends Pick<Person, "name"> {
                 id: number,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in extend clause with Omit helper", () => {
       const source = `
-            export interface Superhero extends Omit<Person, "name"> {
+            export interface SuperHero extends Omit<Person, "name"> {
                 id: number,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in extend clause with Partial helper", () => {
       const source = `
-            export interface Superhero extends Partial<Person, "name"> {
+            export interface SuperHero extends Partial<Person, "name"> {
                 id: number,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in extend clause with Record helper", () => {
       const source = `
-            export interface Superhero extends Record<string, Person2> {
+            export interface SuperHero extends Record<string, Person2> {
                 id: number,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person2"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person2", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced in property as array", () => {
       const source = `
-            export interface Superhero {
+            export interface SuperHero {
                 id: number,
                 sidekicks: Person[],
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type referenced as array in union property", () => {
       const source = `
-            export interface Superhero {
+            export interface SuperHero {
                 sidekicks: Person[] | null,
             }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract nested type reference", () => {
       const source = `
-          export interface Superhero {
+          export interface SuperHero {
               id: number,
               person: {
                 type: Person,
@@ -134,7 +164,10 @@ describe("traverseTypes", () => {
           }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Superhero", "Person"]);
+      expect(result).toEqual([
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract union type reference", () => {
@@ -145,7 +178,11 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract intersection type reference", () => {
@@ -156,7 +193,11 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract intersection type reference with type literal", () => {
@@ -167,7 +208,11 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract types between parenthesis", () => {
@@ -178,7 +223,10 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract union types between parenthesis", () => {
@@ -189,7 +237,11 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract types from Tuple", () => {
@@ -200,7 +252,11 @@ describe("traverseTypes", () => {
         }`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias", () => {
@@ -208,7 +264,10 @@ describe("traverseTypes", () => {
         export type Person = SuperHero `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with union", () => {
@@ -216,7 +275,11 @@ describe("traverseTypes", () => {
         export type Person = Villain | SuperHero `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain", "SuperHero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with array", () => {
@@ -224,7 +287,10 @@ describe("traverseTypes", () => {
         export type Person = Villain[] `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Array helper", () => {
@@ -232,7 +298,10 @@ describe("traverseTypes", () => {
         export type Person = Array<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Promise helper", () => {
@@ -240,7 +309,10 @@ describe("traverseTypes", () => {
         export type Person = Promise<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Required helper", () => {
@@ -248,7 +320,10 @@ describe("traverseTypes", () => {
         export type Person = Required<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Partial helper", () => {
@@ -256,7 +331,10 @@ describe("traverseTypes", () => {
         export type Person = Partial<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Omit helper", () => {
@@ -264,7 +342,10 @@ describe("traverseTypes", () => {
         export type Person = Omit<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Pick helper", () => {
@@ -272,7 +353,10 @@ describe("traverseTypes", () => {
         export type Person = Pick<Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with Record helper", () => {
@@ -280,7 +364,10 @@ describe("traverseTypes", () => {
         export type Person = Record<string, Villain> `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with parenthesis", () => {
@@ -288,7 +375,10 @@ describe("traverseTypes", () => {
         export type Person = (Villain) `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with parenthesis", () => {
@@ -296,7 +386,11 @@ describe("traverseTypes", () => {
         export type Person = (Villain | Hero)[]`;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain", "Hero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+        { name: "Hero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with object literal", () => {
@@ -304,7 +398,10 @@ describe("traverseTypes", () => {
         export type Person = { hero: SuperHero } `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "SuperHero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract type from type alias with union & object literal", () => {
@@ -312,7 +409,11 @@ describe("traverseTypes", () => {
         export type Person = Villain | { hero: SuperHero } `;
 
       const result = extractNames(source);
-      expect(result).toEqual(["Person", "Villain", "SuperHero"]);
+      expect(result).toEqual([
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+      ]);
     });
 
     it("should extract types from a very weird type definition (testing edge cases)", () => {
@@ -324,18 +425,31 @@ describe("traverseTypes", () => {
 
       const result = extractNames(source);
       expect(result).toEqual([
-        "Person",
-        "SuperHero",
-        "Person2",
-        "SuperHero2",
-        "Villain2",
-        "SuperHero3",
-        "Villain3",
-        "A",
-        "B",
-        "C",
-        "D",
-        "Villain",
+        { name: "Person", partOfQualifiedName: false },
+        { name: "SuperHero", partOfQualifiedName: false },
+        { name: "Person2", partOfQualifiedName: false },
+        { name: "SuperHero2", partOfQualifiedName: false },
+        { name: "Villain2", partOfQualifiedName: false },
+        { name: "SuperHero3", partOfQualifiedName: false },
+        { name: "Villain3", partOfQualifiedName: false },
+        { name: "A", partOfQualifiedName: false },
+        { name: "B", partOfQualifiedName: false },
+        { name: "C", partOfQualifiedName: false },
+        { name: "D", partOfQualifiedName: false },
+        { name: "Villain", partOfQualifiedName: false },
+      ]);
+    });
+
+    it("should extract type when part of QualifiedName", () => {
+      const source = `
+        export type Hero = {
+          qualified: Person.SuperHero
+        }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual([
+        { name: "Hero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: true },
       ]);
     });
   });
@@ -363,5 +477,5 @@ function extractNames(sourceText: string) {
     throw new Error("No `type` or `interface` found!");
   }
 
-  return getExtractedTypeNames(declaration, sourceFile);
+  return getReferencedTypeNames(declaration, sourceFile);
 }

@@ -15,6 +15,11 @@ export type TypeNode =
   | ts.TypeAliasDeclaration
   | ts.EnumDeclaration;
 
+export type TypeNameReference = {
+  name: string;
+  partOfQualifiedName: boolean;
+};
+
 export function isTypeNode(node: ts.Node): node is TypeNode {
   return (
     ts.isInterfaceDeclaration(node) ||
@@ -23,14 +28,14 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
   );
 }
 
-export function getExtractedTypeNames(
+export function getReferencedTypeNames(
   node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
   sourceFile: ts.SourceFile
-): string[] {
-  const referenceTypeNames = new Set<string>();
+): TypeNameReference[] {
+  const referenceTypeNames = new Set<TypeNameReference>();
 
   // Adding the node name
-  referenceTypeNames.add(node.name.text);
+  referenceTypeNames.add({ name: node.name.text, partOfQualifiedName: false });
 
   const visitorExtract = (child: ts.Node) => {
     if (!ts.isPropertySignature(child)) {
@@ -65,12 +70,19 @@ export function getExtractedTypeNames(
   };
 
   const handleTypeReferenceNode = (typeRefNode: ts.TypeReferenceNode) => {
+    if (ts.isQualifiedName(typeRefNode.typeName)) {
+      const typeName = typeRefNode.typeName.left.getText(sourceFile);
+      referenceTypeNames.add({ name: typeName, partOfQualifiedName: true });
+      return;
+    }
+
     const typeName = typeRefNode.typeName.getText(sourceFile);
     if (typeScriptHelper.indexOf(typeName) > -1 && typeRefNode.typeArguments) {
       typeRefNode.typeArguments.forEach((t) => handleTypeNode(t));
-    } else {
-      referenceTypeNames.add(typeName);
+      return;
     }
+
+    referenceTypeNames.add({ name: typeName, partOfQualifiedName: false });
   };
 
   if (ts.isInterfaceDeclaration(node)) {
@@ -87,7 +99,10 @@ export function getExtractedTypeNames(
           }
 
           if (typeScriptHelper.indexOf(typeName) === -1) {
-            referenceTypeNames.add(typeName);
+            referenceTypeNames.add({
+              name: typeName,
+              partOfQualifiedName: false,
+            });
           }
         });
       });
