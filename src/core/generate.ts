@@ -153,7 +153,7 @@ export function generate({
           identifiers.map(schemaMethod),
           eligibleMapping.output
         );
-        zodImportNodes.push(zodImportNode); // We assume all identifiers will be used so pushing the whole node
+        zodImportNodes.push(zodImportNode);
       }
       // Not a Zod import, handling it as 3rd party import later on
       else {
@@ -378,6 +378,18 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
 
   const transformedSourceText = printerWithComments.printFile(sourceFile);
 
+  const zodImportToOutput = zodImportNodes.filter((node) => {
+    const nodeIdentifiers = getImportIdentifiers(node);
+    return nodeIdentifiers.some((i) => importedZodSchemas.has(i));
+  });
+
+  const originalImportsToOutput = Array.from(importsToKeep.keys()).map((node) =>
+    createImportNode(
+      importsToKeep.get(node)!,
+      (node.moduleSpecifier as ts.StringLiteral).text
+    )
+  );
+
   const sourceTypeImportsValues = Array.from(sourceTypeImports.values());
   const getZodSchemasFile = (
     typesImportPath: string
@@ -391,21 +403,12 @@ ${
     : ""
 }
 ${
-  zodImportNodes.length
-    ? zodImportNodes.map((node) => print(node)).join("\n") + "\n\n"
+  zodImportToOutput.length
+    ? zodImportToOutput.map((node) => print(node)).join("\n") + "\n\n"
     : ""
 }${
-    importsToKeep.size
-      ? Array.from(importsToKeep.keys())
-          .map((node) =>
-            print(
-              createImportNode(
-                importsToKeep.get(node)!,
-                (node.moduleSpecifier as ts.StringLiteral).text
-              )
-            )
-          )
-          .join("\n") + "\n\n"
+    originalImportsToOutput.length
+      ? originalImportsToOutput.map((node) => print(node)).join("\n") + "\n\n"
       : ""
   }${Array.from(statements.values())
     .map((statement) => print(statement.value))
