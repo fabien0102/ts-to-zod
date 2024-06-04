@@ -930,7 +930,7 @@ describe("generate", () => {
       });
     });
 
-    describe("reference to an enum value via external import Quantified Name X.Y", () => {
+    describe("reference to an enum value via external import Qualified Name X.Y", () => {
       const input = "./person";
 
       const sourceText = `
@@ -1194,7 +1194,7 @@ describe("generate", () => {
       });
     });
 
-    describe("reference to an enum value via import Quantified Name X.Y referenced in mapping", () => {
+    describe("reference to an enum value via import Qualified Name X.Y referenced in mapping", () => {
       const input = "./person";
       const output = "./person.zod";
       const inputOutputMappings: InputOutputMapping[] = [{ input, output }];
