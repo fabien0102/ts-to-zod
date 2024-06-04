@@ -1,4 +1,4 @@
-import { test } from "@oclif/test";
+import { runCommand } from "@oclif/test";
 import fs from "fs";
 import { sep, posix } from "path";
 
@@ -10,15 +10,10 @@ import { sep, posix } from "path";
  */
 describe("Oclif-provided Flags Tests", () => {
   describe("--help flag", () => {
-    test
-      .stdout()
-      .command([".", "--help"])
+    it("should provide the right help message", async () => {
+      const { stdout } = await runCommand([".", "--help"]);
 
-      // --help flag works with an early exit so we need to catch it first
-      // See: https://github.com/oclif/test/issues/40#issuecomment-1299565083
-      .catch(/EEXIT: 0/)
-      .it("should provide the right help message", (ctx) => {
-        expect(ctx.stdout).toMatchInlineSnapshot(`
+      expect(stdout).toMatchInlineSnapshot(`
       "Generate Zod schemas from a Typescript file
       
       USAGE
@@ -54,7 +49,7 @@ describe("Oclif-provided Flags Tests", () => {
 
       "
       `);
-      });
+    });
   });
 });
 
@@ -62,43 +57,53 @@ describe("Oclif-provided Flags Tests", () => {
 // describe("EXIT codes Tests", () => {});
 
 describe("Config Prompt Tests", () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let stdin: any;
+  beforeEach(() => {
+    stdin = require("mock-stdin").stdin();
+  });
   describe("Skip config prompt", () => {
-    const basicInputPath = makePosixPath("src/cli/fixtures/basic/input.ts");
-    const basicSnapshotPath = makePosixPath(
-      "src/cli/fixtures/basic/output.zod.snapshot.ts"
-    );
-    const basicOutputPath = makePosixPath(
-      "src/cli/fixtures/basic/output.zod.ts"
-    );
-
-    test
-      // Up Arrow key code \u001B[A + ENTER key code \n with a delay of 2000ms
-      .stdin("\u001B[A\n", 2000)
-      .stdout()
-      .stderr()
-      .command([".", basicInputPath, basicOutputPath])
-      .it(
-        "should have selected the right option and generated the file not in the config",
-        (ctx) => {
-          expect(normalizeLineEndings(ctx.stdout)).toMatchSnapshot();
-
-          // Ora spinner outputs to stderr by default, we
-          expect(ctx.stderr).toContain("- Validating generated types");
-          expect(ctx.stderr).toContain("✔ Validating generated types");
-
-          expect(
-            normalizeLineEndings(
-              fs.readFileSync(basicOutputPath, "utf-8").toString()
-            )
-          ).toEqual(
-            normalizeLineEndings(
-              fs.readFileSync(basicSnapshotPath, "utf-8").toString()
-            )
-          );
-
-          removeFile(basicOutputPath);
-        }
+    it("should have selected the right option and generated the file not in the config", async () => {
+      const basicInputPath = makePosixPath("src/cli/fixtures/basic/input.ts");
+      const basicSnapshotPath = makePosixPath(
+        "src/cli/fixtures/basic/output.zod.snapshot.ts"
       );
+      const basicOutputPath = makePosixPath(
+        "src/cli/fixtures/basic/output.zod.ts"
+      );
+
+      // Up Arrow key code \u001B[A + ENTER key code \n with a delay of 2000ms
+      setTimeout(() => stdin.send("\u001B[A\n"), 2000);
+
+      const { stdout, stderr } = await runCommand([
+        ".",
+        basicInputPath,
+        basicOutputPath,
+      ]);
+
+      expect(
+        replaceAngleBracket(normalizeLineEndings(stdout))
+      ).toMatchSnapshot();
+
+      // Ora spinner outputs to stderr by default, we
+      expect(stderr).toContain("- Validating generated types");
+      expect(stderr).toContain("✔ Validating generated types");
+
+      expect(
+        normalizeLineEndings(
+          fs.readFileSync(basicOutputPath, "utf-8").toString()
+        )
+      ).toEqual(
+        normalizeLineEndings(
+          fs.readFileSync(basicSnapshotPath, "utf-8").toString()
+        )
+      );
+
+      removeFile(basicOutputPath);
+    });
+  });
+  afterEach(() => {
+    stdin.restore();
   });
 });
 
@@ -112,4 +117,8 @@ function makePosixPath(str: string) {
 
 function normalizeLineEndings(content: string) {
   return content.replace(/\r\n/g, "\n"); // Replace Windows (\r\n) with Unix (\n)
+}
+
+function replaceAngleBracket(content: string) {
+  return content.replace(/>/g, "❯");
 }
