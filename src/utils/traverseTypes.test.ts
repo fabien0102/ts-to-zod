@@ -452,6 +452,19 @@ describe("traverseTypes", () => {
         { name: "Person", partOfQualifiedName: true },
       ]);
     });
+
+    it("should extract type when leading an IndexedAccessType", () => {
+      const source = `
+        export type Hero = {
+          super: Person["super"]
+        }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual([
+        { name: "Hero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+      ]);
+    });
   });
 });
 

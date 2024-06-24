@@ -66,6 +66,8 @@ export function getReferencedTypeNames(
       ts.isUnionTypeNode(typeNode)
     ) {
       typeNode.types.forEach(handleTypeNode);
+    } else if (ts.isIndexedAccessTypeNode(typeNode)) {
+      handleTypeNode(typeNode.objectType);
     }
   };
 
