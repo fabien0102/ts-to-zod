@@ -1,6 +1,6 @@
 import { runCommand } from "@oclif/test";
 import fs from "fs";
-import { sep, posix, join } from "path";
+import { sep, posix } from "path";
 
 /**
  * For the CLI tests to run, we need to run them in a Node environment with
