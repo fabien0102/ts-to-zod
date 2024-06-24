@@ -1,6 +1,6 @@
 import { runCommand } from "@oclif/test";
 import fs from "fs";
-import { sep, posix } from "path";
+import { sep, posix, join } from "path";
 
 /**
  * For the CLI tests to run, we need to run them in a Node environment with
@@ -8,6 +8,7 @@ import { sep, posix } from "path";
  * with experimental support for ECMAScript Modules (ESM).
  * See: https://jestjs.io/docs/ecmascript-modules
  */
+
 describe("Oclif-provided Flags Tests", () => {
   describe("--help flag", () => {
     it("should provide the right help message", async () => {
@@ -89,14 +90,8 @@ describe("Config Prompt Tests", () => {
       expect(stderr).toContain("- Validating generated types");
       expect(stderr).toContain("✔ Validating generated types");
 
-      expect(
-        normalizeLineEndings(
-          fs.readFileSync(basicOutputPath, "utf-8").toString()
-        )
-      ).toEqual(
-        normalizeLineEndings(
-          fs.readFileSync(basicSnapshotPath, "utf-8").toString()
-        )
+      expect(readFileCrossEnv(basicOutputPath)).toEqual(
+        readFileCrossEnv(basicSnapshotPath)
       );
 
       removeFile(basicOutputPath);
@@ -119,6 +114,19 @@ function normalizeLineEndings(content: string) {
   return content.replace(/\r\n/g, "\n"); // Replace Windows (\r\n) with Unix (\n)
 }
 
+/**
+ * Angle brackets from inquirer prompts are not the same in Windows & Unix
+ * This function replaces them with a consistent character
+ */
 function replaceAngleBracket(content: string) {
   return content.replace(/>/g, "❯");
+}
+
+/**
+ * Gets the string content of a file and normalizes a few things to make it comparable to snapshots
+ */
+function readFileCrossEnv(path: string) {
+  return replaceAngleBracket(
+    normalizeLineEndings(fs.readFileSync(path, "utf-8").toString())
+  );
 }
