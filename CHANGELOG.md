@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.7](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.6...v3.8.7) (2024-06-24)
+
+
+### Bug Fixes
+
+* **#244:** handle IndexedAccessType of imported schemas ([#246](https://www.github.com/fabien0102/ts-to-zod/issues/246)) ([0430a2c](https://www.github.com/fabien0102/ts-to-zod/commit/0430a2cb37363fd9d9f5e934450fb460eb464984))
+
 ### [3.8.6](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.5...v3.8.6) (2024-06-24)
 
 
