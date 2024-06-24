@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.6](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.5...v3.8.6) (2024-06-24)
+
+
+### Bug Fixes
+
+* adding support for imported QualifiedName  ([#243](https://www.github.com/fabien0102/ts-to-zod/issues/243)) ([fcb783c](https://www.github.com/fabien0102/ts-to-zod/commit/fcb783cde44eb964ebdbb07e834f0580165cee12))
+
 ### [3.8.5](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.4...v3.8.5) (2024-05-13)
 
 
