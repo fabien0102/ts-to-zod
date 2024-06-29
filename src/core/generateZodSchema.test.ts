@@ -372,6 +372,15 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a schema with omit in interface extension clause", () => {
+    const source = `export interface Superman extends Omit<Clark, "weakness"> {
+     withPower: boolean;
+   }`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanSchema = clarkSchema.omit({ "weakness": true }).extend({ withPower: z.boolean() });"`
+    );
+  });
+
   it("should generate a schema with pick", () => {
     const source = `export type YouJustKnowMyName = Pick<SecretIdentity, "name">;`;
     expect(generate(source)).toMatchInlineSnapshot(
