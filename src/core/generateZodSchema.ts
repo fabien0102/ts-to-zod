@@ -95,7 +95,17 @@ export function generateZodSchemaVariableStatement({
 
           // Looping on types browses the comma-separated interfaces
           const heritages = h.types.map((expression) => {
-            return getDependencyName(expression.getText(sourceFile));
+            const identifierName = expression.expression.getText(sourceFile);
+
+            if (
+              ["Omit", "Pick"].includes(identifierName) &&
+              expression.typeArguments
+            ) {
+              // do something here
+              // probably need to review schemaExtensionClauses to include Pick/Omit handling
+            }
+
+            return getDependencyName(identifierName);
           });
 
           return deps.concat(heritages);
@@ -515,60 +525,15 @@ function buildZodPrimitive({
 
     // Deal with `Omit<>` & `Pick<>` syntax
     if (["Omit", "Pick"].includes(identifierName) && typeNode.typeArguments) {
-      const [originalType, keys] = typeNode.typeArguments;
-      let parameters: ts.ObjectLiteralExpression | undefined;
-
-      if (ts.isLiteralTypeNode(keys)) {
-        parameters = f.createObjectLiteralExpression([
-          f.createPropertyAssignment(
-            keys.literal.getText(sourceFile),
-            f.createTrue()
-          ),
-        ]);
-      }
-      if (ts.isUnionTypeNode(keys)) {
-        parameters = f.createObjectLiteralExpression(
-          keys.types.map((type) => {
-            if (!ts.isLiteralTypeNode(type)) {
-              throw new Error(
-                `${identifierName}<T, K> unknown syntax: (${
-                  ts.SyntaxKind[type.kind]
-                } as K union part not supported)`
-              );
-            }
-            return f.createPropertyAssignment(
-              type.literal.getText(sourceFile),
-              f.createTrue()
-            );
-          })
-        );
-      }
-
-      if (!parameters) {
-        throw new Error(
-          `${identifierName}<T, K> unknown syntax: (${
-            ts.SyntaxKind[keys.kind]
-          } as K not supported)`
-        );
-      }
-
-      return f.createCallExpression(
-        f.createPropertyAccessExpression(
-          buildZodPrimitive({
-            z,
-            typeNode: originalType,
-            isOptional: false,
-            jsDocTags: {},
-            sourceFile,
-            dependencies,
-            getDependencyName,
-            skipParseJSDoc,
-            customJSDocFormatTypes,
-          }),
-          f.createIdentifier(lower(identifierName))
-        ),
-        undefined,
-        [parameters]
+      return buildOmitPickObject(
+        identifierName,
+        typeNode.typeArguments,
+        z,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        skipParseJSDoc,
+        customJSDocFormatTypes
       );
     }
 
@@ -1343,4 +1308,71 @@ function buildSchemaReference(
   }
 
   throw new Error("Unknown IndexedAccessTypeNode.objectType type");
+}
+
+function buildOmitPickObject(
+  identifierName: string,
+  typeArguments: ts.NodeArray<ts.TypeNode>,
+  z: string,
+  sourceFile: ts.SourceFile,
+  dependencies: string[],
+  getDependencyName: (id: string) => string,
+  skipParseJSDoc: boolean,
+  customJSDocFormatTypes: CustomJSDocFormatTypes
+) {
+  const [originalType, keys] = typeArguments;
+  let parameters: ts.ObjectLiteralExpression | undefined;
+
+  if (ts.isLiteralTypeNode(keys)) {
+    parameters = f.createObjectLiteralExpression([
+      f.createPropertyAssignment(
+        keys.literal.getText(sourceFile),
+        f.createTrue()
+      ),
+    ]);
+  }
+  if (ts.isUnionTypeNode(keys)) {
+    parameters = f.createObjectLiteralExpression(
+      keys.types.map((type) => {
+        if (!ts.isLiteralTypeNode(type)) {
+          throw new Error(
+            `${identifierName}<T, K> unknown syntax: (${
+              ts.SyntaxKind[type.kind]
+            } as K union part not supported)`
+          );
+        }
+        return f.createPropertyAssignment(
+          type.literal.getText(sourceFile),
+          f.createTrue()
+        );
+      })
+    );
+  }
+
+  if (!parameters) {
+    throw new Error(
+      `${identifierName}<T, K> unknown syntax: (${
+        ts.SyntaxKind[keys.kind]
+      } as K not supported)`
+    );
+  }
+
+  return f.createCallExpression(
+    f.createPropertyAccessExpression(
+      buildZodPrimitive({
+        z,
+        typeNode: originalType,
+        isOptional: false,
+        jsDocTags: {},
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        skipParseJSDoc,
+        customJSDocFormatTypes,
+      }),
+      f.createIdentifier(lower(identifierName))
+    ),
+    undefined,
+    [parameters]
+  );
 }
