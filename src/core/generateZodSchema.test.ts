@@ -358,7 +358,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should generate a schema with   ", () => {
+  it("should generate a schema with omit ", () => {
     const source = `export type InvincibleSuperman = Omit<Superman, "weakness">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const invincibleSupermanSchema = supermanSchema.omit({ "weakness": true });"`
