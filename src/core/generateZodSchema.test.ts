@@ -358,7 +358,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should generate a schema with omit", () => {
+  it("should generate a schema with   ", () => {
     const source = `export type InvincibleSuperman = Omit<Superman, "weakness">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const invincibleSupermanSchema = supermanSchema.omit({ "weakness": true });"`
@@ -376,9 +376,11 @@ describe("generateZodSchema", () => {
     const source = `export interface Superman extends Omit<Clark, "weakness"> {
      withPower: boolean;
    }`;
-    expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanSchema = clarkSchema.omit({ "weakness": true }).extend({ withPower: z.boolean() });"`
-    );
+    expect(generate(source)).toMatchInlineSnapshot(`
+    "export const supermanSchema = clarkSchema.omit({ "weakness": true }).extend({
+        withPower: z.boolean()
+    });"
+  `);
   });
 
   it("should generate a schema with pick", () => {
@@ -466,6 +468,17 @@ describe("generateZodSchema", () => {
             withPower: z.boolean()
         });"
       `);
+  });
+
+  it("should generate a schema with omit in interface extension clause and multiple clauses", () => {
+    const source = `export interface Superman extends KalL, Omit<Clark, "weakness">, Kryptonian {
+     withPower: boolean;
+   }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+    "export const supermanSchema = kalLSchema.extend(clarkSchema.omit({ "weakness": true }).shape).extend(kryptonianSchema.shape).extend({
+        withPower: z.boolean()
+    });"
+  `);
   });
 
   it("should deal with literal keys", () => {

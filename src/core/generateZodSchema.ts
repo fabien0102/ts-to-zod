@@ -56,6 +56,12 @@ export interface GenerateZodSchemaProps {
   customJSDocFormatTypes: CustomJSDocFormatTypes;
 }
 
+type SchemaExtensionClause = {
+  extendedSchemaName: string;
+  omitOrPickType?: "Omit" | "Pick";
+  omitOrPickKeys?: ts.TypeNode;
+};
+
 /**
  * Generate zod schema declaration
  *
@@ -81,14 +87,14 @@ export function generateZodSchemaVariableStatement({
   let requiresImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
-    let schemaExtensionClauses: string[] | undefined;
+    let schemaExtensionClauses: SchemaExtensionClause[] | undefined;
     if (node.typeParameters) {
       throw new Error("Interface with generics are not supported!");
     }
     if (node.heritageClauses) {
       // Looping on heritageClauses browses the "extends" keywords
       schemaExtensionClauses = node.heritageClauses.reduce(
-        (deps: string[], h) => {
+        (deps: SchemaExtensionClause[], h) => {
           if (h.token !== ts.SyntaxKind.ExtendsKeyword || !h.types) {
             return deps;
           }
@@ -101,11 +107,17 @@ export function generateZodSchemaVariableStatement({
               ["Omit", "Pick"].includes(identifierName) &&
               expression.typeArguments
             ) {
-              // do something here
-              // probably need to review schemaExtensionClauses to include Pick/Omit handling
+              const [originalType, keys] = expression.typeArguments;
+              return {
+                extendedSchemaName: getDependencyName(
+                  originalType.getText(sourceFile)
+                ),
+                omitOrPickType: identifierName as "Omit" | "Pick",
+                omitOrPickKeys: keys,
+              };
             }
 
-            return getDependencyName(identifierName);
+            return { extendedSchemaName: getDependencyName(identifierName) };
           });
 
           return deps.concat(heritages);
@@ -113,7 +125,9 @@ export function generateZodSchemaVariableStatement({
         []
       );
 
-      dependencies = dependencies.concat(schemaExtensionClauses);
+      dependencies = dependencies.concat(
+        schemaExtensionClauses.map((i) => i.extendedSchemaName)
+      );
     }
 
     schema = buildZodObject({
@@ -525,16 +539,20 @@ function buildZodPrimitive({
 
     // Deal with `Omit<>` & `Pick<>` syntax
     if (["Omit", "Pick"].includes(identifierName) && typeNode.typeArguments) {
-      return buildOmitPickObject(
-        identifierName,
-        typeNode.typeArguments,
+      const [originalType, keys] = typeNode.typeArguments;
+      const zodCall = buildZodPrimitive({
         z,
+        typeNode: originalType,
+        isOptional: false,
+        jsDocTags: {},
         sourceFile,
         dependencies,
         getDependencyName,
         skipParseJSDoc,
-        customJSDocFormatTypes
-      );
+        customJSDocFormatTypes,
+      });
+
+      return buildOmitPickObject(identifierName, keys, sourceFile, zodCall);
     }
 
     const dependencyName = getDependencyName(identifierName);
@@ -1001,23 +1019,58 @@ function buildZodSchema(
 }
 
 function buildZodExtendedSchema(
-  schemaList: string[],
+  schemaList: SchemaExtensionClause[],
+  sourceFile: ts.SourceFile,
   args?: ts.Expression[],
   properties?: ZodProperty[]
 ) {
-  let zodCall = f.createIdentifier(schemaList[0]) as ts.Expression;
+  let zodCall = f.createIdentifier(
+    schemaList[0].extendedSchemaName
+  ) as ts.Expression;
+
+  if (schemaList[0].omitOrPickType && schemaList[0].omitOrPickKeys) {
+    const keys = schemaList[0].omitOrPickKeys;
+    const omitOrPickIdentifierName = schemaList[0].omitOrPickType;
+    zodCall = buildOmitPickObject(
+      omitOrPickIdentifierName,
+      keys,
+      sourceFile,
+      zodCall
+    );
+  }
 
   for (let i = 1; i < schemaList.length; i++) {
-    zodCall = f.createCallExpression(
-      f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-      undefined,
-      [
-        f.createPropertyAccessExpression(
-          f.createIdentifier(schemaList[i]),
-          f.createIdentifier("shape")
-        ),
-      ]
-    );
+    const omitOrPickIdentifierName = schemaList[i].omitOrPickType;
+    const keys = schemaList[i].omitOrPickKeys;
+
+    if (omitOrPickIdentifierName && keys) {
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+        undefined,
+        [
+          f.createPropertyAccessExpression(
+            buildOmitPickObject(
+              omitOrPickIdentifierName,
+              keys,
+              sourceFile,
+              f.createIdentifier(schemaList[i].extendedSchemaName)
+            ),
+            f.createIdentifier("shape")
+          ),
+        ]
+      );
+    } else {
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+        undefined,
+        [
+          f.createPropertyAccessExpression(
+            f.createIdentifier(schemaList[i].extendedSchemaName),
+            f.createIdentifier("shape")
+          ),
+        ]
+      );
+    }
   }
 
   if (args?.length) {
@@ -1073,7 +1126,7 @@ function buildZodObject({
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
-  schemaExtensionClauses?: string[];
+  schemaExtensionClauses?: SchemaExtensionClause[];
   skipParseJSDoc: boolean;
   customJSDocFormatTypes: CustomJSDocFormatTypes;
 }) {
@@ -1117,6 +1170,7 @@ function buildZodObject({
   if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
     objectSchema = buildZodExtendedSchema(
       schemaExtensionClauses,
+      sourceFile,
       properties.length > 0
         ? [
             f.createObjectLiteralExpression(
@@ -1311,16 +1365,11 @@ function buildSchemaReference(
 }
 
 function buildOmitPickObject(
-  identifierName: string,
-  typeArguments: ts.NodeArray<ts.TypeNode>,
-  z: string,
+  omitOrPickIdentifierName: string,
+  keys: ts.TypeNode,
   sourceFile: ts.SourceFile,
-  dependencies: string[],
-  getDependencyName: (id: string) => string,
-  skipParseJSDoc: boolean,
-  customJSDocFormatTypes: CustomJSDocFormatTypes
+  zodCall: ts.Expression
 ) {
-  const [originalType, keys] = typeArguments;
   let parameters: ts.ObjectLiteralExpression | undefined;
 
   if (ts.isLiteralTypeNode(keys)) {
@@ -1336,7 +1385,7 @@ function buildOmitPickObject(
       keys.types.map((type) => {
         if (!ts.isLiteralTypeNode(type)) {
           throw new Error(
-            `${identifierName}<T, K> unknown syntax: (${
+            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
               ts.SyntaxKind[type.kind]
             } as K union part not supported)`
           );
@@ -1351,7 +1400,7 @@ function buildOmitPickObject(
 
   if (!parameters) {
     throw new Error(
-      `${identifierName}<T, K> unknown syntax: (${
+      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
         ts.SyntaxKind[keys.kind]
       } as K not supported)`
     );
@@ -1359,18 +1408,8 @@ function buildOmitPickObject(
 
   return f.createCallExpression(
     f.createPropertyAccessExpression(
-      buildZodPrimitive({
-        z,
-        typeNode: originalType,
-        isOptional: false,
-        jsDocTags: {},
-        sourceFile,
-        dependencies,
-        getDependencyName,
-        skipParseJSDoc,
-        customJSDocFormatTypes,
-      }),
-      f.createIdentifier(lower(identifierName))
+      zodCall,
+      f.createIdentifier(lower(omitOrPickIdentifierName))
     ),
     undefined,
     [parameters]
