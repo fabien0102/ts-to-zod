@@ -56,6 +56,12 @@ export interface GenerateZodSchemaProps {
   customJSDocFormatTypes: CustomJSDocFormatTypes;
 }
 
+type SchemaExtensionClause = {
+  extendedSchemaName: string;
+  omitOrPickType?: "Omit" | "Pick";
+  omitOrPickKeys?: ts.TypeNode;
+};
+
 /**
  * Generate zod schema declaration
  *
@@ -81,21 +87,37 @@ export function generateZodSchemaVariableStatement({
   let requiresImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
-    let schemaExtensionClauses: string[] | undefined;
+    let schemaExtensionClauses: SchemaExtensionClause[] | undefined;
     if (node.typeParameters) {
       throw new Error("Interface with generics are not supported!");
     }
     if (node.heritageClauses) {
       // Looping on heritageClauses browses the "extends" keywords
       schemaExtensionClauses = node.heritageClauses.reduce(
-        (deps: string[], h) => {
+        (deps: SchemaExtensionClause[], h) => {
           if (h.token !== ts.SyntaxKind.ExtendsKeyword || !h.types) {
             return deps;
           }
 
           // Looping on types browses the comma-separated interfaces
           const heritages = h.types.map((expression) => {
-            return getDependencyName(expression.getText(sourceFile));
+            const identifierName = expression.expression.getText(sourceFile);
+
+            if (
+              ["Omit", "Pick"].includes(identifierName) &&
+              expression.typeArguments
+            ) {
+              const [originalType, keys] = expression.typeArguments;
+              return {
+                extendedSchemaName: getDependencyName(
+                  originalType.getText(sourceFile)
+                ),
+                omitOrPickType: identifierName as "Omit" | "Pick",
+                omitOrPickKeys: keys,
+              };
+            }
+
+            return { extendedSchemaName: getDependencyName(identifierName) };
           });
 
           return deps.concat(heritages);
@@ -103,7 +125,9 @@ export function generateZodSchemaVariableStatement({
         []
       );
 
-      dependencies = dependencies.concat(schemaExtensionClauses);
+      dependencies = dependencies.concat(
+        schemaExtensionClauses.map((i) => i.extendedSchemaName)
+      );
     }
 
     schema = buildZodObject({
@@ -516,60 +540,19 @@ function buildZodPrimitive({
     // Deal with `Omit<>` & `Pick<>` syntax
     if (["Omit", "Pick"].includes(identifierName) && typeNode.typeArguments) {
       const [originalType, keys] = typeNode.typeArguments;
-      let parameters: ts.ObjectLiteralExpression | undefined;
+      const zodCall = buildZodPrimitive({
+        z,
+        typeNode: originalType,
+        isOptional: false,
+        jsDocTags: {},
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        skipParseJSDoc,
+        customJSDocFormatTypes,
+      });
 
-      if (ts.isLiteralTypeNode(keys)) {
-        parameters = f.createObjectLiteralExpression([
-          f.createPropertyAssignment(
-            keys.literal.getText(sourceFile),
-            f.createTrue()
-          ),
-        ]);
-      }
-      if (ts.isUnionTypeNode(keys)) {
-        parameters = f.createObjectLiteralExpression(
-          keys.types.map((type) => {
-            if (!ts.isLiteralTypeNode(type)) {
-              throw new Error(
-                `${identifierName}<T, K> unknown syntax: (${
-                  ts.SyntaxKind[type.kind]
-                } as K union part not supported)`
-              );
-            }
-            return f.createPropertyAssignment(
-              type.literal.getText(sourceFile),
-              f.createTrue()
-            );
-          })
-        );
-      }
-
-      if (!parameters) {
-        throw new Error(
-          `${identifierName}<T, K> unknown syntax: (${
-            ts.SyntaxKind[keys.kind]
-          } as K not supported)`
-        );
-      }
-
-      return f.createCallExpression(
-        f.createPropertyAccessExpression(
-          buildZodPrimitive({
-            z,
-            typeNode: originalType,
-            isOptional: false,
-            jsDocTags: {},
-            sourceFile,
-            dependencies,
-            getDependencyName,
-            skipParseJSDoc,
-            customJSDocFormatTypes,
-          }),
-          f.createIdentifier(lower(identifierName))
-        ),
-        undefined,
-        [parameters]
-      );
+      return buildOmitPickObject(identifierName, keys, sourceFile, zodCall);
     }
 
     const dependencyName = getDependencyName(identifierName);
@@ -1036,23 +1019,58 @@ function buildZodSchema(
 }
 
 function buildZodExtendedSchema(
-  schemaList: string[],
+  schemaList: SchemaExtensionClause[],
+  sourceFile: ts.SourceFile,
   args?: ts.Expression[],
   properties?: ZodProperty[]
 ) {
-  let zodCall = f.createIdentifier(schemaList[0]) as ts.Expression;
+  let zodCall = f.createIdentifier(
+    schemaList[0].extendedSchemaName
+  ) as ts.Expression;
+
+  if (schemaList[0].omitOrPickType && schemaList[0].omitOrPickKeys) {
+    const keys = schemaList[0].omitOrPickKeys;
+    const omitOrPickIdentifierName = schemaList[0].omitOrPickType;
+    zodCall = buildOmitPickObject(
+      omitOrPickIdentifierName,
+      keys,
+      sourceFile,
+      zodCall
+    );
+  }
 
   for (let i = 1; i < schemaList.length; i++) {
-    zodCall = f.createCallExpression(
-      f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-      undefined,
-      [
-        f.createPropertyAccessExpression(
-          f.createIdentifier(schemaList[i]),
-          f.createIdentifier("shape")
-        ),
-      ]
-    );
+    const omitOrPickIdentifierName = schemaList[i].omitOrPickType;
+    const keys = schemaList[i].omitOrPickKeys;
+
+    if (omitOrPickIdentifierName && keys) {
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+        undefined,
+        [
+          f.createPropertyAccessExpression(
+            buildOmitPickObject(
+              omitOrPickIdentifierName,
+              keys,
+              sourceFile,
+              f.createIdentifier(schemaList[i].extendedSchemaName)
+            ),
+            f.createIdentifier("shape")
+          ),
+        ]
+      );
+    } else {
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+        undefined,
+        [
+          f.createPropertyAccessExpression(
+            f.createIdentifier(schemaList[i].extendedSchemaName),
+            f.createIdentifier("shape")
+          ),
+        ]
+      );
+    }
   }
 
   if (args?.length) {
@@ -1108,7 +1126,7 @@ function buildZodObject({
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
-  schemaExtensionClauses?: string[];
+  schemaExtensionClauses?: SchemaExtensionClause[];
   skipParseJSDoc: boolean;
   customJSDocFormatTypes: CustomJSDocFormatTypes;
 }) {
@@ -1152,6 +1170,7 @@ function buildZodObject({
   if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
     objectSchema = buildZodExtendedSchema(
       schemaExtensionClauses,
+      sourceFile,
       properties.length > 0
         ? [
             f.createObjectLiteralExpression(
@@ -1343,4 +1362,56 @@ function buildSchemaReference(
   }
 
   throw new Error("Unknown IndexedAccessTypeNode.objectType type");
+}
+
+function buildOmitPickObject(
+  omitOrPickIdentifierName: string,
+  keys: ts.TypeNode,
+  sourceFile: ts.SourceFile,
+  zodCall: ts.Expression
+) {
+  let parameters: ts.ObjectLiteralExpression | undefined;
+
+  if (ts.isLiteralTypeNode(keys)) {
+    parameters = f.createObjectLiteralExpression([
+      f.createPropertyAssignment(
+        keys.literal.getText(sourceFile),
+        f.createTrue()
+      ),
+    ]);
+  }
+  if (ts.isUnionTypeNode(keys)) {
+    parameters = f.createObjectLiteralExpression(
+      keys.types.map((type) => {
+        if (!ts.isLiteralTypeNode(type)) {
+          throw new Error(
+            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
+              ts.SyntaxKind[type.kind]
+            } as K union part not supported)`
+          );
+        }
+        return f.createPropertyAssignment(
+          type.literal.getText(sourceFile),
+          f.createTrue()
+        );
+      })
+    );
+  }
+
+  if (!parameters) {
+    throw new Error(
+      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
+        ts.SyntaxKind[keys.kind]
+      } as K not supported)`
+    );
+  }
+
+  return f.createCallExpression(
+    f.createPropertyAccessExpression(
+      zodCall,
+      f.createIdentifier(lower(omitOrPickIdentifierName))
+    ),
+    undefined,
+    [parameters]
+  );
 }
