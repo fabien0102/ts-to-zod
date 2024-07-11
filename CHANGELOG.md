@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.8.8](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.7...v3.8.8) (2024-07-11)
+
+
+### Bug Fixes
+
+* handle negative minimum, maximum, and default values from jsDoc ([#250](https://www.github.com/fabien0102/ts-to-zod/issues/250)) ([998a3c8](https://www.github.com/fabien0102/ts-to-zod/commit/998a3c8b2358893ecb2331d611398202752e784a))
+
 ### [3.8.7](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.6...v3.8.7) (2024-06-24)
 
 
