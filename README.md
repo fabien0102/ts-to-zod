@@ -491,6 +491,7 @@ To learn more about those functions or their usages, `src/core/generate.ts` is a
 $ git clone
 $ cd ts-to-zod
 $ yarn
+$ yarn build
 $ ./bin/run
 USAGE
   $ ts-to-zod [input] [output]
