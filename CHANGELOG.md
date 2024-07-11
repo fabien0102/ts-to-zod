@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.9.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.7...v3.9.0) (2024-07-11)
+
+
+### Features
+
+* **#232:** add support for Omit / Pick in interface extend clause ([#249](https://www.github.com/fabien0102/ts-to-zod/issues/249)) ([1c7b585](https://www.github.com/fabien0102/ts-to-zod/commit/1c7b5851dc6c8a1a7c754e2555cf7e4d08027838))
+
+
+### Bug Fixes
+
+* handle negative minimum, maximum, and default values from jsDoc ([#250](https://www.github.com/fabien0102/ts-to-zod/issues/250)) ([998a3c8](https://www.github.com/fabien0102/ts-to-zod/commit/998a3c8b2358893ecb2331d611398202752e784a))
+
 ### [3.8.7](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.6...v3.8.7) (2024-06-24)
 
 
