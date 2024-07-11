@@ -845,12 +845,15 @@ function buildZodPrimitive({
   }
 
   if (ts.isIndexedAccessTypeNode(typeNode)) {
-    return buildSchemaReference({
-      node: typeNode,
-      getDependencyName,
-      sourceFile,
-      dependencies,
-    });
+    return withZodProperties(
+      buildSchemaReference({
+        node: typeNode,
+        getDependencyName,
+        sourceFile,
+        dependencies,
+      }),
+      zodProperties
+    );
   }
 
   switch (typeNode.kind) {
