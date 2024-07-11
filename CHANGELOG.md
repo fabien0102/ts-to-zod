@@ -1,5 +1,12 @@
 # Changelog
 
+### [3.9.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.9.0...v3.9.1) (2024-07-11)
+
+
+### Bug Fixes
+
+* handling optional & nullable in IndedexedAccessType ([#254](https://www.github.com/fabien0102/ts-to-zod/issues/254)) ([75a6e8e](https://www.github.com/fabien0102/ts-to-zod/commit/75a6e8e91ffb2dc61286f7c90b5a58f6c897dc26))
+
 ## [3.9.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.8.7...v3.9.0) (2024-07-11)
 
 
