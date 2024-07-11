@@ -776,6 +776,13 @@ describe("generateZodSchema", () => {
        * @maxLength 123
        */
       blockedPhoneNumbers: string[];
+
+      /**
+       * The angle of the hero's raised or furrowed eyebrow.
+       *
+       * @minimum -45 @maximum -5 @default -20
+       */
+      eyebrowAngle: number;
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const heroContactSchema = z.object({
@@ -858,7 +865,13 @@ describe("generateZodSchema", () => {
            * @minLength 56
            * @maxLength 123
            */
-          blockedPhoneNumbers: z.array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/)).min(56).max(123)
+          blockedPhoneNumbers: z.array(z.string().regex(/^([+]?d{1,2}[-s]?|)d{3}[-s]?d{3}[-s]?d{4}$/)).min(56).max(123),
+          /**
+           * The angle of the hero's raised or furrowed eyebrow.
+           *
+           * @minimum -45 @maximum -5 @default -20
+           */
+          eyebrowAngle: z.number().min(-45).max(-5).default(-20)
       });"
     `);
   });

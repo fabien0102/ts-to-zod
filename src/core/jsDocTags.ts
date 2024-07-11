@@ -250,7 +250,12 @@ export function jsDocTagToZodProperties(
     zodProperties.push({
       identifier: "min",
       expressions: withErrorMessage(
-        f.createNumericLiteral(jsDocTags.minimum.value),
+        jsDocTags.minimum.value < 0
+          ? f.createPrefixUnaryExpression(
+              ts.SyntaxKind.MinusToken,
+              f.createNumericLiteral(Math.abs(jsDocTags.minimum.value))
+            )
+          : f.createNumericLiteral(jsDocTags.minimum.value),
         jsDocTags.minimum.errorMessage
       ),
     });
@@ -259,7 +264,12 @@ export function jsDocTagToZodProperties(
     zodProperties.push({
       identifier: "max",
       expressions: withErrorMessage(
-        f.createNumericLiteral(jsDocTags.maximum.value),
+        jsDocTags.maximum.value < 0
+          ? f.createPrefixUnaryExpression(
+              ts.SyntaxKind.MinusToken,
+              f.createNumericLiteral(Math.abs(jsDocTags.maximum.value))
+            )
+          : f.createNumericLiteral(jsDocTags.maximum.value),
         jsDocTags.maximum.errorMessage
       ),
     });
@@ -338,7 +348,14 @@ export function jsDocTagToZodProperties(
           : jsDocTags.default === false
           ? [f.createFalse()]
           : typeof jsDocTags.default === "number"
-          ? [f.createNumericLiteral(jsDocTags.default)]
+          ? jsDocTags.default < 0
+            ? [
+                f.createPrefixUnaryExpression(
+                  ts.SyntaxKind.MinusToken,
+                  f.createNumericLiteral(Math.abs(jsDocTags.default))
+                ),
+              ]
+            : [f.createNumericLiteral(jsDocTags.default)]
           : jsDocTags.default === null
           ? [f.createNull()]
           : [f.createStringLiteral(jsDocTags.default)],
