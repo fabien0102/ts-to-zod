@@ -11,6 +11,14 @@ export type Enemy = z.infer<typeof generated.enemySchema>;
 
 export type Superman = z.infer<typeof generated.supermanSchema>;
 
+export type SupermanName = z.infer<typeof generated.supermanNameSchema>;
+
+export type SupermanInvinciblePower = z.infer<
+  typeof generated.supermanInvinciblePowerSchema
+>;
+
+export type PersonTuple = z.infer<typeof generated.personTupleSchema>;
+
 export type Villain = z.infer<typeof generated.villainSchema>;
 
 export type Story = z.infer<typeof generated.storySchema>;
@@ -28,12 +36,6 @@ export type GetSupermanSkill = z.infer<typeof generated.getSupermanSkillSchema>;
 export type HeroContact = z.infer<typeof generated.heroContactSchema>;
 
 export type SupermanEnemy = z.infer<typeof generated.supermanEnemySchema>;
-
-export type SupermanName = z.infer<typeof generated.supermanNameSchema>;
-
-export type SupermanInvinciblePower = z.infer<
-  typeof generated.supermanInvinciblePowerSchema
->;
 
 export type EvilPlan = z.infer<typeof generated.evilPlanSchema>;
 
