@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.10.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.9.1...v3.10.0) (2024-07-24)
+
+
+### Features
+
+* handle rest operator in tuple type ([#257](https://www.github.com/fabien0102/ts-to-zod/issues/257)) ([edc6509](https://www.github.com/fabien0102/ts-to-zod/commit/edc6509265a09c6796545887bd7a2573a2166e91))
+
 ### [3.9.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.9.0...v3.9.1) (2024-07-11)
 
 
