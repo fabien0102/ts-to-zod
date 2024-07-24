@@ -621,10 +621,60 @@ function buildZodPrimitive({
   }
 
   if (ts.isTupleTypeNode(typeNode)) {
-    const values = typeNode.elements.map((i) =>
+    // Handle last item separetely if it is a rest element
+    const lastItem = typeNode.elements[typeNode.elements.length - 1];
+    const restElement =
+      ts.isRestTypeNode(lastItem) && ts.isArrayTypeNode(lastItem.type)
+        ? lastItem.type.elementType
+        : undefined;
+
+    // Handle the rest element
+    if (restElement) {
+      const values = typeNode.elements
+        .slice(0, typeNode.elements.length - 1)
+        .map((node) =>
+          buildZodPrimitive({
+            z,
+            typeNode: ts.isNamedTupleMember(node) ? node.type : node,
+            isOptional: false,
+            jsDocTags: {},
+            sourceFile,
+            dependencies,
+            getDependencyName,
+            skipParseJSDoc,
+            customJSDocFormatTypes,
+          })
+        );
+
+      zodProperties.unshift({
+        identifier: "rest",
+        expressions: [
+          buildZodPrimitive({
+            z,
+            typeNode: restElement,
+            isOptional: false,
+            jsDocTags: {},
+            sourceFile,
+            dependencies,
+            getDependencyName,
+            skipParseJSDoc,
+            customJSDocFormatTypes,
+          }),
+        ],
+      });
+
+      return buildZodSchema(
+        z,
+        "tuple",
+        [f.createArrayLiteralExpression(values)],
+        zodProperties
+      );
+    }
+
+    const values = typeNode.elements.map((node) =>
       buildZodPrimitive({
         z,
-        typeNode: ts.isNamedTupleMember(i) ? i.type : i,
+        typeNode: ts.isNamedTupleMember(node) ? node.type : node,
         isOptional: false,
         jsDocTags: {},
         sourceFile,

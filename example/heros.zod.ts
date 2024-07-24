@@ -38,6 +38,13 @@ export const supermanSchema = z.object({
   ]),
 });
 
+export const supermanNameSchema = supermanSchema.shape.name;
+
+export const supermanInvinciblePowerSchema =
+  supermanSchema.shape.powers.items[2];
+
+export const personTupleSchema = z.tuple([personSchema]).rest(personSchema);
+
 export const villainSchema: z.ZodSchema<Villain> = z.lazy(() =>
   z.object({
     name: z.string(),
@@ -95,11 +102,6 @@ export const heroContactSchema = z.object({
 });
 
 export const supermanEnemySchema = supermanSchema.shape.enemies.valueSchema;
-
-export const supermanNameSchema = supermanSchema.shape.name;
-
-export const supermanInvinciblePowerSchema =
-  supermanSchema.shape.powers.items[2];
 
 export const evilPlanSchema: z.ZodSchema<EvilPlan> = z.lazy(() =>
   z.object({

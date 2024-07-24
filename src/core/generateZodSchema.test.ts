@@ -175,6 +175,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a tuple schema with rest operator", () => {
+    const source = `export type Life = [LoisLane, ...Problem[]];`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const lifeSchema = z.tuple([loisLaneSchema]).rest(problemSchema);"`
+    );
+  });
+
   it("should generate an object schema", () => {
     const source = `export type Superman = {
      name: "superman";

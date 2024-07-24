@@ -24,6 +24,8 @@ export type SupermanEnemy = Superman["enemies"][-1];
 export type SupermanName = Superman["name"];
 export type SupermanInvinciblePower = Superman["powers"][2];
 
+export type PersonTuple = [Person, ...Person[]];
+
 export interface Superman {
   person: Person;
   name: "superman" | "clark kent" | "kal-l";

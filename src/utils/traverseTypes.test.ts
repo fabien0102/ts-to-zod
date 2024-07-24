@@ -465,6 +465,18 @@ describe("traverseTypes", () => {
         { name: "Person", partOfQualifiedName: false },
       ]);
     });
+
+    it("should extract type when after a rest operator", () => {
+      const source = `
+        export type Hero = [Person, ...Skill[]]`;
+
+      const result = extractNames(source);
+      expect(result).toEqual([
+        { name: "Hero", partOfQualifiedName: false },
+        { name: "Person", partOfQualifiedName: false },
+        { name: "Skill", partOfQualifiedName: false },
+      ]);
+    });
   });
 });
 

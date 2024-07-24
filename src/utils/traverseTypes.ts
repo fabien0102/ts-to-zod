@@ -61,6 +61,8 @@ export function getReferencedTypeNames(
       typeNode.forEachChild(visitorExtract);
     } else if (ts.isTupleTypeNode(typeNode)) {
       typeNode.elements.forEach(handleTypeNode);
+    } else if (ts.isRestTypeNode(typeNode)) {
+      handleTypeNode(typeNode.type);
     } else if (
       ts.isIntersectionTypeNode(typeNode) ||
       ts.isUnionTypeNode(typeNode)
