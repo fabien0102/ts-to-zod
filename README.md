@@ -44,17 +44,20 @@ List of supported keywords:
 | `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.string().email()`                 |
 | `@pattern {regex}` <br><br> **Note**: Due to parsing ambiguities, `@pattern` does _not_ support generating error messages. | `@pattern ^hello`          | `z.string().regex(/^hello/)`         |
 
-By default, `FormatType` is defined as:
+By default, `FormatType` is defined as the following type (corresponding Zod validator in comment):
 
 ```ts
 type FormatType =
-  | "date-time"
-  | "email"
-  | "ip"
-  | "ipv4"
-  | "ipv6"
-  | "url"
-  | "uuid";
+  | "date-time" // z.string().datetime()
+  | "date"      // z.string().date()
+  | "time"      // z.string().time()
+  | "duration"  // z.string().duration()
+  | "email"     // z.string().email()
+  | "ip"        // z.string().ip()
+  | "ipv4"      // z.string().ip()
+  | "ipv6"      // z.string().ip()
+  | "url"       // z.string().url()
+  | "uuid";     // z.string().uuid()
 ```
 
 However, see the section on [Custom JSDoc Format Types](#custom-jsdoc-format-types) to learn more about defining other types of formats for string validation.
