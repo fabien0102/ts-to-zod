@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.11.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.10.0...v3.11.0) (2024-08-12)
+
+
+### Features
+
+* add support for date, time and duration format types ([#260](https://www.github.com/fabien0102/ts-to-zod/issues/260)) ([27f107b](https://www.github.com/fabien0102/ts-to-zod/commit/27f107b3244dc9ecd3bc6399ee6ff723f7abd394))
+
 ## [3.10.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.9.1...v3.10.0) (2024-07-24)
 
 
