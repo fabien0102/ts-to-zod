@@ -8,6 +8,9 @@ import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
  */
 const builtInJSDocFormatsTypes = [
   "date-time",
+  "date",
+  "time",
+  "duration",
   "email",
   "ip",
   "ipv4",
@@ -15,7 +18,6 @@ const builtInJSDocFormatsTypes = [
   "url",
   "uuid",
   // "uri",
-  // "date",
 ] as const;
 
 type BuiltInJSDocFormatsType = (typeof builtInJSDocFormatsTypes)[number];

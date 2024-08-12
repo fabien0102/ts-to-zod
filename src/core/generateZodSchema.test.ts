@@ -772,11 +772,32 @@ describe("generateZodSchema", () => {
       age: number;
 
       /**
-       * The hero's birthday.
+       * Hero last seen.
        *
        * @format date-time
        */
+      lastSeen: string;
+
+      /**
+       * The hero's birthday.
+       *
+       * @format date
+       */
       birthday: string;
+
+      /**
+       * The hero's wakeup-time.
+       *
+       * @format time
+       */
+      wakeupTime: string;
+
+      /**
+       * The hero's super power boost duration.
+       *
+       * @format duration
+       */
+      boost: string;
 
       /**
        * The hero's ipv4 address.
@@ -868,11 +889,29 @@ describe("generateZodSchema", () => {
            */
           age: z.number().min(0).max(500),
           /**
-           * The hero's birthday.
+           * Hero last seen.
            *
            * @format date-time
            */
-          birthday: z.string().datetime(),
+          lastSeen: z.string().datetime(),
+          /**
+           * The hero's birthday.
+           *
+           * @format date
+           */
+          birthday: z.string().date(),
+          /**
+           * The hero's wakeup-time.
+           *
+           * @format time
+           */
+          wakeupTime: z.string().time(),
+          /**
+           * The hero's super power boost duration.
+           *
+           * @format duration
+           */
+          boost: z.string().duration(),
           /**
            * The hero's ipv4 address.
            *
