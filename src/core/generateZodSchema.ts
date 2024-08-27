@@ -84,7 +84,7 @@ export function generateZodSchemaVariableStatement({
     | ts.PropertyAccessExpression
     | undefined;
   let dependencies: string[] = [];
-  let requiresImport = false;
+  let enumImport = false;
 
   if (ts.isInterfaceDeclaration(node)) {
     let schemaExtensionClauses: SchemaExtensionClause[] | undefined;
@@ -177,7 +177,7 @@ export function generateZodSchemaVariableStatement({
 
   if (ts.isEnumDeclaration(node)) {
     schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
-    requiresImport = true;
+    enumImport = true;
   }
 
   return {
@@ -196,7 +196,7 @@ export function generateZodSchemaVariableStatement({
         ts.NodeFlags.Const
       )
     ),
-    requiresImport,
+    enumImport,
   };
 }
 
