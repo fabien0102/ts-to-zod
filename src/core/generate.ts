@@ -303,40 +303,38 @@ export function generate({
           !statements.has(varName) &&
           !zodSchemasWithMissingDependencies.has(varName)
       )
-      .forEach(
-        ({ varName, dependencies, statement, typeName, enumImport }) => {
-          const isCircular = dependencies.includes(varName);
-          const notGeneratedDependencies = dependencies
-            .filter((dep) => dep !== varName)
-            .filter((dep) => !statements.has(dep))
-            .filter((dep) => !importedZodSchemas.has(dep));
-          if (notGeneratedDependencies.length === 0) {
-            done = false;
-            if (isCircular) {
-              sourceTypeImports.add(typeName);
-              statements.set(varName, {
-                value: transformRecursiveSchema("z", statement, typeName),
-                typeName,
-              });
-            } else {
-              if (enumImport) {
-                sourceEnumImports.add(typeName);
-              }
-              statements.set(varName, { value: statement, typeName });
+      .forEach(({ varName, dependencies, statement, typeName, enumImport }) => {
+        const isCircular = dependencies.includes(varName);
+        const notGeneratedDependencies = dependencies
+          .filter((dep) => dep !== varName)
+          .filter((dep) => !statements.has(dep))
+          .filter((dep) => !importedZodSchemas.has(dep));
+        if (notGeneratedDependencies.length === 0) {
+          done = false;
+          if (isCircular) {
+            sourceTypeImports.add(typeName);
+            statements.set(varName, {
+              value: transformRecursiveSchema("z", statement, typeName),
+              typeName,
+            });
+          } else {
+            if (enumImport) {
+              sourceEnumImports.add(typeName);
             }
-          } else if (
-            // Check if every dependency is (in `zodSchemas` and not in `zodSchemasWithMissingDependencies`)
-            !notGeneratedDependencies.every(
-              (dep) =>
-                zodSchemaNames.includes(dep) &&
-                !zodSchemasWithMissingDependencies.has(dep)
-            )
-          ) {
-            done = false;
-            zodSchemasWithMissingDependencies.add(varName);
+            statements.set(varName, { value: statement, typeName });
           }
+        } else if (
+          // Check if every dependency is (in `zodSchemas` and not in `zodSchemasWithMissingDependencies`)
+          !notGeneratedDependencies.every(
+            (dep) =>
+              zodSchemaNames.includes(dep) &&
+              !zodSchemasWithMissingDependencies.has(dep)
+          )
+        ) {
+          done = false;
+          zodSchemasWithMissingDependencies.add(varName);
         }
-      );
+      });
   }
 
   // Generate remaining schemas, which have circular dependencies with loop of length > 1 like: A->B—>C->A
@@ -397,8 +395,8 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
   ].map((name) => {
     return sourceEnumImports.has(name)
       ? name // enum import, no type notation added
-      : `type ${name}`
-  })
+      : `type ${name}`;
+  });
 
   const getZodSchemasFile = (
     typesImportPath: string
