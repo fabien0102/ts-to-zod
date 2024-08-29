@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.12.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.11.0...v3.12.0) (2024-08-29)
+
+
+### Features
+
+* add type notation to type imports ([#264](https://www.github.com/fabien0102/ts-to-zod/issues/264)) ([941169d](https://www.github.com/fabien0102/ts-to-zod/commit/941169d1e4b89570cf42ad5356c0d5d2392e3c67))
+
 ## [3.11.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.10.0...v3.11.0) (2024-08-12)
 
 
