@@ -68,6 +68,7 @@ export interface JSDocTagsBase {
    */
   pattern?: string;
   strict?: boolean;
+  schema?: string;
 }
 
 export type ElementJSDocTags = Pick<
@@ -94,6 +95,7 @@ const jsDocTagKeys: Array<keyof JSDocTags> = [
   "maxLength",
   "format",
   "pattern",
+  "schema",
   "elementDescription",
   "elementMinimum",
   "elementMaximum",
@@ -177,6 +179,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             break;
           case "description":
           case "elementDescription":
+          case "schema":
           case "pattern":
           case "elementPattern":
             if (tag.comment) {

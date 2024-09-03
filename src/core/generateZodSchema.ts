@@ -62,6 +62,21 @@ type SchemaExtensionClause = {
   omitOrPickKeys?: ts.TypeNode;
 };
 
+interface BuildZodPrimitiveParams {
+  z: string;
+  typeNode: ts.TypeNode;
+  isOptional: boolean;
+  isNullable?: boolean;
+  isPartial?: boolean;
+  isRequired?: boolean;
+  jsDocTags: JSDocTags;
+  customJSDocFormatTypes: CustomJSDocFormatTypes;
+  sourceFile: ts.SourceFile;
+  dependencies: string[];
+  getDependencyName: (identifierName: string) => string;
+  skipParseJSDoc: boolean;
+}
+
 /**
  * Generate zod schema declaration
  *
@@ -288,6 +303,35 @@ function buildZodProperties({
 }
 
 function buildZodPrimitive({
+  jsDocTags,
+  z,
+  ...rest
+}: BuildZodPrimitiveParams):
+  | ts.CallExpression
+  | ts.Identifier
+  | ts.PropertyAccessExpression {
+  const schema = jsDocTags.schema;
+  delete jsDocTags.schema;
+  const generatedSchema = buildZodPrimitiveInternal({ jsDocTags, z, ...rest });
+  // schema not specified? return generated one
+  if (!schema) {
+    return generatedSchema;
+  }
+  // schema starts with dot? append it
+  if (schema.startsWith(".")) {
+    return f.createPropertyAccessExpression(
+      generatedSchema,
+      f.createIdentifier(schema.slice(1))
+    );
+  }
+  // otherwise use provided schema verbatim
+  return f.createPropertyAccessExpression(
+    f.createIdentifier(z),
+    f.createIdentifier(schema)
+  );
+}
+
+function buildZodPrimitiveInternal({
   z,
   typeNode,
   isOptional,
@@ -300,20 +344,10 @@ function buildZodPrimitive({
   dependencies,
   getDependencyName,
   skipParseJSDoc,
-}: {
-  z: string;
-  typeNode: ts.TypeNode;
-  isOptional: boolean;
-  isNullable?: boolean;
-  isPartial?: boolean;
-  isRequired?: boolean;
-  jsDocTags: JSDocTags;
-  customJSDocFormatTypes: CustomJSDocFormatTypes;
-  sourceFile: ts.SourceFile;
-  dependencies: string[];
-  getDependencyName: (identifierName: string) => string;
-  skipParseJSDoc: boolean;
-}): ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression {
+}: BuildZodPrimitiveParams):
+  | ts.CallExpression
+  | ts.Identifier
+  | ts.PropertyAccessExpression {
   const zodProperties = jsDocTagToZodProperties(
     jsDocTags,
     customJSDocFormatTypes,

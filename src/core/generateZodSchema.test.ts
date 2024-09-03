@@ -964,6 +964,48 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should append schema based on `schema` tag", () => {
+    const source = `export interface HeroContact {
+      /**
+       * The email of the hero.
+       *
+       * @schema .trim().catch('hello@world.com')
+       */
+      email: string;
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const heroContactSchema = z.object({
+          /**
+           * The email of the hero.
+           *
+           * @schema .trim().catch('hello@world.com')
+           */
+          email: z.string().trim().catch('hello@world.com')
+      });"
+    `);
+  });
+
+  it("should overrride schema based on `schema` tag", () => {
+    const source = `export interface HeroContact {
+      /**
+       * The email of the hero.
+       *
+       * @schema coerce.int()
+       */
+      age: number;
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const heroContactSchema = z.object({
+          /**
+           * The email of the hero.
+           *
+           * @schema coerce.int()
+           */
+          age: z.coerce.int()
+      });"
+    `);
+  });
+
   it("should generate custom error message for `format` tag", () => {
     const source = `export interface HeroContact {
       /**
