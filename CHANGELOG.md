@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.13.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.12.0...v3.13.0) (2024-09-03)
+
+
+### Features
+
+* allow to append or override schema via jsdoc tag ([#266](https://www.github.com/fabien0102/ts-to-zod/issues/266)) ([dc7eea8](https://www.github.com/fabien0102/ts-to-zod/commit/dc7eea877049a717691520cd82f077ecac679070))
+
 ## [3.12.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.11.0...v3.12.0) (2024-08-29)
 
 
