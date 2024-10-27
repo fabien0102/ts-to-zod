@@ -311,23 +311,27 @@ function buildZodPrimitive({
   | ts.Identifier
   | ts.PropertyAccessExpression {
   const schema = jsDocTags.schema;
+
+  // Schema override when it doesn't start with a dot, return the schema directly
+  if (schema && !schema.startsWith(".")) {
+    return f.createPropertyAccessExpression(
+      f.createIdentifier(z),
+      f.createIdentifier(schema)
+    );
+  }
+
   delete jsDocTags.schema;
   const generatedSchema = buildZodPrimitiveInternal({ jsDocTags, z, ...rest });
-  // schema not specified? return generated one
+
+  // No schema override? Return generated one
   if (!schema) {
     return generatedSchema;
   }
-  // schema starts with dot? append it
-  if (schema.startsWith(".")) {
-    return f.createPropertyAccessExpression(
-      generatedSchema,
-      f.createIdentifier(schema.slice(1))
-    );
-  }
-  // otherwise use provided schema verbatim
+
+  // Schema override starts with dot? Append it
   return f.createPropertyAccessExpression(
-    f.createIdentifier(z),
-    f.createIdentifier(schema)
+    generatedSchema,
+    f.createIdentifier(schema.slice(1))
   );
 }
 
