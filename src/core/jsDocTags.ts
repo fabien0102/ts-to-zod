@@ -22,6 +22,11 @@ const builtInJSDocFormatsTypes = [
 
 type BuiltInJSDocFormatsType = (typeof builtInJSDocFormatsTypes)[number];
 
+type JsonPrimitive = string | number | boolean | null;
+type JsonArray = JsonValue[];
+type JsonObject = { [key: string]: JsonValue };
+type JsonValue = JsonPrimitive | JsonArray | JsonObject;
+
 /**
  * Type guard to filter supported JSDoc format tag values (built-in).
  *
@@ -58,7 +63,7 @@ export interface JSDocTagsBase {
   description?: string;
   minimum?: TagWithError<number>;
   maximum?: TagWithError<number>;
-  default?: any;
+  default?: JsonValue;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
   format?: TagWithError<BuiltInJSDocFormatsType | CustomJSDocFormatType>;
@@ -487,7 +492,9 @@ function withErrorMessage(expression: ts.Expression, errorMessage?: string) {
 }
 
 // Helper function to create an array literal expression
-function createArrayLiteralExpression(arr: any[]): ts.ArrayLiteralExpression {
+function createArrayLiteralExpression(
+  arr: JsonValue[]
+): ts.ArrayLiteralExpression {
   const elements = arr.map((item) => {
     if (typeof item === "string") return f.createStringLiteral(item);
     if (typeof item === "number") return f.createNumericLiteral(item);
@@ -503,7 +510,7 @@ function createArrayLiteralExpression(arr: any[]): ts.ArrayLiteralExpression {
 
 // Helper function to create an object literal expression
 function createObjectLiteralExpression(
-  obj: Record<string, any>
+  obj: Record<string, JsonValue>
 ): ts.ObjectLiteralExpression {
   const properties = Object.entries(obj).map(([key, value]) => {
     const propertyName = f.createStringLiteral(key);
