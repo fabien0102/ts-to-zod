@@ -514,19 +514,37 @@ function createObjectLiteralExpression(
 ): ts.ObjectLiteralExpression {
   const properties = Object.entries(obj).map(([key, value]) => {
     const propertyName = f.createStringLiteral(key);
-    let initializer: ts.Expression;
-    if (typeof value === "string") initializer = f.createStringLiteral(value);
-    else if (typeof value === "number")
-      initializer = f.createNumericLiteral(value);
-    else if (typeof value === "boolean")
-      initializer = value ? f.createTrue() : f.createFalse();
-    else if (value === null) initializer = f.createNull();
-    else if (Array.isArray(value))
-      initializer = createArrayLiteralExpression(value);
-    else if (typeof value === "object")
-      initializer = createObjectLiteralExpression(value);
-    else initializer = f.createStringLiteral(String(value));
-    return f.createPropertyAssignment(propertyName, initializer);
+    if (typeof value === "string")
+      return f.createPropertyAssignment(
+        propertyName,
+        f.createStringLiteral(value)
+      );
+    if (typeof value === "number")
+      return f.createPropertyAssignment(
+        propertyName,
+        f.createNumericLiteral(value)
+      );
+    if (typeof value === "boolean")
+      return f.createPropertyAssignment(
+        propertyName,
+        value ? f.createTrue() : f.createFalse()
+      );
+    if (value === null)
+      return f.createPropertyAssignment(propertyName, f.createNull());
+    if (Array.isArray(value))
+      return f.createPropertyAssignment(
+        propertyName,
+        createArrayLiteralExpression(value)
+      );
+    if (typeof value === "object")
+      return f.createPropertyAssignment(
+        propertyName,
+        createObjectLiteralExpression(value)
+      );
+    return f.createPropertyAssignment(
+      propertyName,
+      f.createStringLiteral(String(value))
+    );
   });
   return f.createObjectLiteralExpression(properties);
 }
