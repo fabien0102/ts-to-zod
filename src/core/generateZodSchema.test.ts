@@ -1582,6 +1582,67 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should deal with @default with array value", () => {
+    const source = `export interface WithArrayDefault {
+      /**
+       * @default ["superman", "batman", "wonder woman"]
+       */
+      justiceLeague: string[];
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const withArrayDefaultSchema = z.object({
+          /**
+           * @default ["superman", "batman", "wonder woman"]
+           */
+          justiceLeague: z.array(z.string()).default(["superman", "batman", "wonder woman"])
+      });"
+    `);
+  });
+
+  it("should deal with @default with object value", () => {
+    const source = `export interface WithObjectDefault {
+      /**
+       * @default { "name": "Clark Kent", "age": 30, "isHero": true }
+       */
+      superman: { name: string; age: number; isHero: boolean };
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const withObjectDefaultSchema = z.object({
+          /**
+           * @default { "name": "Clark Kent", "age": 30, "isHero": true }
+           */
+          superman: z.object({
+              name: z.string(),
+              age: z.number(),
+              isHero: z.boolean()
+          }).default({ "name": "Clark Kent", "age": 30, "isHero": true })
+      });"
+    `);
+  });
+
+  it("should deal with @default with nested array and object values", () => {
+    const source = `export interface WithNestedDefault {
+      /**
+       * @default { "heroes": ["superman", "batman"], "villains": [{ "name": "Lex Luthor", "age": 40 }] }
+       */
+      dcUniverse: { heroes: string[]; villains: { name: string; age: number }[] };
+    }`;
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const withNestedDefaultSchema = z.object({
+          /**
+           * @default { "heroes": ["superman", "batman"], "villains": [{ "name": "Lex Luthor", "age": 40 }] }
+           */
+          dcUniverse: z.object({
+              heroes: z.array(z.string()),
+              villains: z.array(z.object({
+                  name: z.string(),
+                  age: z.number()
+              }))
+          }).default({ "heroes": ["superman", "batman"], "villains": [{ "name": "Lex Luthor", "age": 40 }] })
+      });"
+    `);
+  });
+
   it("should ignore unknown/broken jsdoc format", () => {
     const source = `export interface Hero {
      /**

@@ -58,7 +58,7 @@ export interface JSDocTagsBase {
   description?: string;
   minimum?: TagWithError<number>;
   maximum?: TagWithError<number>;
-  default?: number | string | boolean | null;
+  default?: any;
   minLength?: TagWithError<number>;
   maxLength?: TagWithError<number>;
   format?: TagWithError<BuiltInJSDocFormatsType | CustomJSDocFormatType>;
@@ -191,28 +191,15 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             jsDocTags[tagName] = { value, errorMessage };
             break;
           case "default":
-            if (tag.comment === "null") {
-              jsDocTags[tagName] = null;
-            } else if (
-              tag.comment &&
-              !tag.comment.includes('"') &&
-              !Number.isNaN(parseInt(tag.comment))
-            ) {
-              // number
-              jsDocTags[tagName] = parseInt(tag.comment);
-            } else if (tag.comment && ["false", "true"].includes(tag.comment)) {
-              // boolean
-              jsDocTags[tagName] = tag.comment === "true";
-            } else if (
-              tag.comment &&
-              tag.comment.startsWith('"') &&
-              tag.comment.endsWith('"')
-            ) {
-              // string with double quotes
-              jsDocTags[tagName] = tag.comment.slice(1, -1);
-            } else if (tag.comment) {
-              // string without quotes
-              jsDocTags[tagName] = tag.comment;
+            if (tag.comment) {
+              try {
+                // Attempt to parse as JSON
+                const parsedValue = JSON.parse(tag.comment);
+                jsDocTags[tagName] = parsedValue;
+              } catch (e) {
+                // If JSON parsing fails, handle as before
+                jsDocTags[tagName] = tag.comment;
+              }
             }
             break;
           case "strict":
@@ -363,7 +350,11 @@ export function jsDocTagToZodProperties(
             : [f.createNumericLiteral(jsDocTags.default)]
           : jsDocTags.default === null
           ? [f.createNull()]
-          : [f.createStringLiteral(jsDocTags.default)],
+          : Array.isArray(jsDocTags.default)
+          ? [createArrayLiteralExpression(jsDocTags.default)]
+          : typeof jsDocTags.default === "object"
+          ? [createObjectLiteralExpression(jsDocTags.default)]
+          : [f.createStringLiteral(String(jsDocTags.default))],
     });
   }
 
@@ -493,4 +484,42 @@ function withErrorMessage(expression: ts.Expression, errorMessage?: string) {
     return [expression, f.createStringLiteral(errorMessage)];
   }
   return [expression];
+}
+
+// Helper function to create an array literal expression
+function createArrayLiteralExpression(arr: any[]): ts.ArrayLiteralExpression {
+  const elements = arr.map((item) => {
+    if (typeof item === "string") return f.createStringLiteral(item);
+    if (typeof item === "number") return f.createNumericLiteral(item);
+    if (typeof item === "boolean")
+      return item ? f.createTrue() : f.createFalse();
+    if (item === null) return f.createNull();
+    if (Array.isArray(item)) return createArrayLiteralExpression(item);
+    if (typeof item === "object") return createObjectLiteralExpression(item);
+    return f.createStringLiteral(String(item));
+  });
+  return f.createArrayLiteralExpression(elements);
+}
+
+// Helper function to create an object literal expression
+function createObjectLiteralExpression(
+  obj: Record<string, any>
+): ts.ObjectLiteralExpression {
+  const properties = Object.entries(obj).map(([key, value]) => {
+    const propertyName = f.createStringLiteral(key);
+    let initializer: ts.Expression;
+    if (typeof value === "string") initializer = f.createStringLiteral(value);
+    else if (typeof value === "number")
+      initializer = f.createNumericLiteral(value);
+    else if (typeof value === "boolean")
+      initializer = value ? f.createTrue() : f.createFalse();
+    else if (value === null) initializer = f.createNull();
+    else if (Array.isArray(value))
+      initializer = createArrayLiteralExpression(value);
+    else if (typeof value === "object")
+      initializer = createObjectLiteralExpression(value);
+    else initializer = f.createStringLiteral(String(value));
+    return f.createPropertyAssignment(propertyName, initializer);
+  });
+  return f.createObjectLiteralExpression(properties);
 }
