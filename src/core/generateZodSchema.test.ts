@@ -1620,15 +1620,6 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should throw on generics", () => {
-    const source = `export interface Villain<TPower> {
-     powers: TPower[]
-   }`;
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Interface with generics are not supported!"`
-    );
-  });
-
   it("should throw on interface with generics", () => {
     const source = `export interface Villain<TPower> {
      powers: TPower[]
