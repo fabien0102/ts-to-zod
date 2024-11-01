@@ -141,8 +141,7 @@ export function generate({
       );
 
       if (eligibleMapping) {
-        const schemaMethod =
-          eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
+        const schemaMethod = eligibleMapping.getSchemaName || getSchemaName;
 
         const identifiers = getImportIdentifiers(node);
         identifiers.forEach((i) =>
