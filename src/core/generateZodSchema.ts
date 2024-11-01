@@ -646,6 +646,56 @@ function buildZodPrimitiveInternal({
       });
     }
 
+    if (jsDocTags.discriminator) {
+      let isValidDiscriminatedUnion = true;
+
+      // Check each member of the union
+      for (const node of nodes) {
+        if (!ts.isTypeLiteralNode(node) && !ts.isTypeReferenceNode(node)) {
+          console.warn(
+            ` »   Warning: discriminated union member "${node.getText(
+              sourceFile
+            )}" is not a type reference or object literal`
+          );
+          isValidDiscriminatedUnion = false;
+          break;
+        }
+
+        // For type references, we'd need to resolve the referenced type
+        // For type literals, we can check directly
+        if (ts.isTypeLiteralNode(node)) {
+          const hasDiscriminator = node.members.some(
+            (member) =>
+              ts.isPropertySignature(member) &&
+              member.name &&
+              member.name.getText(sourceFile) === jsDocTags.discriminator
+          );
+
+          if (!hasDiscriminator) {
+            console.warn(
+              ` »   Warning: discriminated union member "${node.getText(
+                sourceFile
+              )}" missing discriminator field "${jsDocTags.discriminator}"`
+            );
+            isValidDiscriminatedUnion = false;
+            break;
+          }
+        }
+      }
+
+      if (isValidDiscriminatedUnion) {
+        return buildZodSchema(
+          z,
+          "discriminatedUnion",
+          [
+            f.createStringLiteral(jsDocTags.discriminator),
+            f.createArrayLiteralExpression(values),
+          ],
+          zodProperties
+        );
+      }
+    }
+
     return buildZodSchema(
       z,
       "union",
