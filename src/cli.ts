@@ -305,7 +305,10 @@ See more help with --help`,
     errors.map(this.warn.bind(this));
 
     if (!Flags.skipValidation) {
-      const validatorSpinner = ora("Validating generated types").start();
+      const validatorSpinner = ora({
+        text: "Validating generated types",
+        stream: process.stdout,
+      }).start();
       if (Flags.all) validatorSpinner.indent = 1;
 
       const extraFiles = [];
