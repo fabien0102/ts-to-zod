@@ -1648,7 +1648,7 @@ describe("generateZodSchema", () => {
   it("should be able to override the zod import value", () => {
     const source = `export type TheLastTest = true`;
 
-    expect(generate(source, "zod")).toMatchInlineSnapshot(
+    expect(generate(source, 'zod')).toMatchInlineSnapshot(
       `"export const theLastTestSchema = zod.literal(true);"`
     );
   });
