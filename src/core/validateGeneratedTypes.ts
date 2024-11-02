@@ -2,16 +2,16 @@ import {
   createDefaultMapFromNodeModules,
   createFSBackedSystem,
   createVirtualTypeScriptEnvironment,
-} from "@typescript/vfs";
-import ts from "typescript";
-import { join, sep, posix } from "path";
-import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
-import { fixOptionalAny } from "../utils/fixOptionalAny";
-import { getImportIdentifiers } from "../utils/importHandling";
+} from '@typescript/vfs';
+import ts from 'typescript';
+import { join, sep, posix } from 'path';
+import { resolveDefaultProperties } from '../utils/resolveDefaultProperties';
+import { fixOptionalAny } from '../utils/fixOptionalAny';
+import { getImportIdentifiers } from '../utils/importHandling';
 import {
   getImportPath,
   areImportPathsEqualIgnoringExtension,
-} from "../utils/getImportPath";
+} from '../utils/getImportPath';
 
 interface File {
   sourceText: string;
@@ -42,7 +42,7 @@ export function validateGeneratedTypes({
   };
 
   const sourceFile = ts.createSourceFile(
-    "index.ts",
+    'index.ts',
     skipParseJSDoc
       ? sourceTypes.sourceText
       : resolveDefaultProperties(sourceTypes.sourceText),
@@ -111,7 +111,7 @@ export function validateGeneratedTypes({
   return errors.map((diagnostic) => {
     const message = ts.flattenDiagnosticMessageText(
       diagnostic.messageText,
-      "\n"
+      '\n'
     );
     if (diagnostic.file && diagnostic.start) {
       const position = diagnostic.file.getLineAndCharacterOfPosition(
@@ -120,7 +120,7 @@ export function validateGeneratedTypes({
       const details = getDetails(diagnostic.file, position.line);
 
       if (details.zodType && details.specType && details.from) {
-        return details.from === "spec"
+        return details.from === 'spec'
           ? `'${details.specType}' is not compatible with '${details.zodType}':\n${message}`
           : `'${details.zodType}' is not compatible with '${details.specType}':\n${message}`;
       }
@@ -130,27 +130,27 @@ export function validateGeneratedTypes({
 }
 
 function getDetails(file: ts.SourceFile, line: number) {
-  const source = file.getFullText().split("\n")[line];
+  const source = file.getFullText().split('\n')[line];
   const pattern = /expectType<(\w.+)>\({} as (\w.+)\)/;
   const expression: {
     source: string;
     specType?: string;
     zodType?: string;
-    from?: "type" | "spec";
+    from?: 'type' | 'spec';
   } = {
     source,
   };
   Array.from(pattern.exec(source) || []).map((chunk, i) => {
-    if (chunk.startsWith("spec.")) {
-      expression.specType = chunk.slice("spec.".length);
+    if (chunk.startsWith('spec.')) {
+      expression.specType = chunk.slice('spec.'.length);
       if (i === 1) {
-        expression.from = "type";
+        expression.from = 'type';
       }
     }
-    if (chunk.endsWith("InferredType")) {
-      expression.zodType = chunk.slice(0, -"InferredType".length);
+    if (chunk.endsWith('InferredType')) {
+      expression.zodType = chunk.slice(0, -'InferredType'.length);
       if (i === 1) {
-        expression.from = "spec";
+        expression.from = 'spec';
       }
     }
   });

@@ -1,4 +1,4 @@
-import ts from "typescript";
+import ts from 'typescript';
 
 /**
  * Extract the string representation of a literal value
@@ -15,14 +15,14 @@ export function extractLiteralValue(node: ts.Expression): string {
       node.operator === ts.SyntaxKind.MinusToken &&
       ts.isNumericLiteral(node.operand)
     ) {
-      return "-" + node.operand.text;
+      return '-' + node.operand.text;
     }
   }
   if (node.kind === ts.SyntaxKind.TrueKeyword) {
-    return "true";
+    return 'true';
   }
   if (node.kind === ts.SyntaxKind.FalseKeyword) {
-    return "false";
+    return 'false';
   }
-  return "";
+  return '';
 }

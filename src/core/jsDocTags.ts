@@ -1,22 +1,22 @@
-import { getJsDoc } from "tsutils";
-import ts, { factory as f } from "typescript";
+import { getJsDoc } from 'tsutils';
+import ts, { factory as f } from 'typescript';
 import type { ZodString } from 'zod';
-import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import { CustomJSDocFormatType, CustomJSDocFormatTypes } from '../config';
 
 /**
  * List of formats that can be translated in zod functions.
  */
 const builtInJSDocFormatsTypes = [
-  "date-time",
-  "date",
-  "time",
-  "duration",
-  "email",
-  "ip",
-  "ipv4",
-  "ipv6",
-  "url",
-  "uuid",
+  'date-time',
+  'date',
+  'time',
+  'duration',
+  'email',
+  'ip',
+  'ipv4',
+  'ipv6',
+  'url',
+  'uuid',
   // "uri",
 ] as const;
 
@@ -28,7 +28,7 @@ type BuiltInJSDocFormatsType = (typeof builtInJSDocFormatsTypes)[number];
  * @param formatType
  */
 function isBuiltInFormatType(
-  formatType = ""
+  formatType = ''
 ): formatType is BuiltInJSDocFormatsType {
   return builtInJSDocFormatsTypes.map(String).includes(formatType);
 }
@@ -40,7 +40,7 @@ function isBuiltInFormatType(
  * @param customFormatTypes
  */
 function isCustomFormatType(
-  formatType = "",
+  formatType = '',
   customFormatTypes: Array<keyof CustomJSDocFormatTypes>
 ): formatType is CustomJSDocFormatType {
   return customFormatTypes.includes(formatType);
@@ -73,13 +73,13 @@ export interface JSDocTagsBase {
 
 export type ElementJSDocTags = Pick<
   JSDocTagsBase,
-  | "description"
-  | "minimum"
-  | "maximum"
-  | "minLength"
-  | "maxLength"
-  | "pattern"
-  | "format"
+  | 'description'
+  | 'minimum'
+  | 'maximum'
+  | 'minLength'
+  | 'maxLength'
+  | 'pattern'
+  | 'format'
 >;
 
 export type JSDocTags = JSDocTagsBase & {
@@ -87,22 +87,22 @@ export type JSDocTags = JSDocTagsBase & {
 };
 
 const jsDocTagKeys: Array<keyof JSDocTags> = [
-  "description",
-  "minimum",
-  "maximum",
-  "default",
-  "minLength",
-  "maxLength",
-  "format",
-  "pattern",
-  "schema",
-  "elementDescription",
-  "elementMinimum",
-  "elementMaximum",
-  "elementMinLength",
-  "elementMaxLength",
-  "elementPattern",
-  "elementFormat",
+  'description',
+  'minimum',
+  'maximum',
+  'default',
+  'minLength',
+  'maxLength',
+  'format',
+  'pattern',
+  'schema',
+  'elementDescription',
+  'elementMinimum',
+  'elementMaximum',
+  'elementMinLength',
+  'elementMaxLength',
+  'elementPattern',
+  'elementFormat',
 ];
 
 /**
@@ -127,12 +127,12 @@ function parseJsDocComment(comment: string): {
   value: string;
   errorMessage?: string;
 } {
-  const [value, ...rest] = comment.split(" ");
+  const [value, ...rest] = comment.split(' ');
   const errorMessage =
-    rest.join(" ").replace(/(^["']|["']$)/g, "") || undefined;
+    rest.join(' ').replace(/(^["']|["']$)/g, '') || undefined;
 
   return {
-    value: value.replace(",", "").replace(/(^["']|["']$)/g, ""),
+    value: value.replace(',', '').replace(/(^["']|["']$)/g, ''),
     errorMessage,
   };
 }
@@ -156,42 +156,42 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
         const tagName = tag.tagName.escapedText.toString();
 
         // Handling "unary operator" tag first (no tag.comment part needed)
-        if (tagName === "strict") {
+        if (tagName === 'strict') {
           jsDocTags[tagName] = true;
           return;
         }
 
-        if (!isJSDocTagKey(tagName) || typeof tag.comment !== "string") return;
+        if (!isJSDocTagKey(tagName) || typeof tag.comment !== 'string') return;
         const { value, errorMessage } = parseJsDocComment(tag.comment);
 
         switch (tagName) {
-          case "minimum":
-          case "maximum":
-          case "minLength":
-          case "maxLength":
-          case "elementMinLength":
-          case "elementMaxLength":
-          case "elementMinimum":
-          case "elementMaximum":
+          case 'minimum':
+          case 'maximum':
+          case 'minLength':
+          case 'maxLength':
+          case 'elementMinLength':
+          case 'elementMaxLength':
+          case 'elementMinimum':
+          case 'elementMaximum':
             if (value && !Number.isNaN(parseInt(value))) {
               jsDocTags[tagName] = { value: parseInt(value), errorMessage };
             }
             break;
-          case "description":
-          case "elementDescription":
-          case "schema":
-          case "pattern":
-          case "elementPattern":
+          case 'description':
+          case 'elementDescription':
+          case 'schema':
+          case 'pattern':
+          case 'elementPattern':
             if (tag.comment) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
-          case "format":
-          case "elementFormat":
+          case 'format':
+          case 'elementFormat':
             jsDocTags[tagName] = { value, errorMessage };
             break;
-          case "default":
-            if (tag.comment === "null") {
+          case 'default':
+            if (tag.comment === 'null') {
               jsDocTags[tagName] = null;
             } else if (
               tag.comment &&
@@ -200,9 +200,9 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
             ) {
               // number
               jsDocTags[tagName] = parseInt(tag.comment);
-            } else if (tag.comment && ["false", "true"].includes(tag.comment)) {
+            } else if (tag.comment && ['false', 'true'].includes(tag.comment)) {
               // boolean
-              jsDocTags[tagName] = tag.comment === "true";
+              jsDocTags[tagName] = tag.comment === 'true';
             } else if (
               tag.comment &&
               tag.comment.startsWith('"') &&
@@ -215,7 +215,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
               jsDocTags[tagName] = tag.comment;
             }
             break;
-          case "strict":
+          case 'strict':
             break;
           default:
             tagName satisfies never;
@@ -253,7 +253,7 @@ export function jsDocTagToZodProperties(
   const zodProperties: ZodProperty[] = [];
   if (jsDocTags.minimum !== undefined) {
     zodProperties.push({
-      identifier: "min",
+      identifier: 'min',
       expressions: withErrorMessage(
         jsDocTags.minimum.value < 0
           ? f.createPrefixUnaryExpression(
@@ -267,7 +267,7 @@ export function jsDocTagToZodProperties(
   }
   if (jsDocTags.maximum !== undefined) {
     zodProperties.push({
-      identifier: "max",
+      identifier: 'max',
       expressions: withErrorMessage(
         jsDocTags.maximum.value < 0
           ? f.createPrefixUnaryExpression(
@@ -281,7 +281,7 @@ export function jsDocTagToZodProperties(
   }
   if (jsDocTags.minLength !== undefined) {
     zodProperties.push({
-      identifier: "min",
+      identifier: 'min',
       expressions: withErrorMessage(
         f.createNumericLiteral(jsDocTags.minLength.value),
         jsDocTags.minLength.errorMessage
@@ -290,7 +290,7 @@ export function jsDocTagToZodProperties(
   }
   if (jsDocTags.maxLength !== undefined) {
     zodProperties.push({
-      identifier: "max",
+      identifier: 'max',
       expressions: withErrorMessage(
         f.createNumericLiteral(jsDocTags.maxLength.value),
         jsDocTags.maxLength.errorMessage
@@ -314,45 +314,45 @@ export function jsDocTagToZodProperties(
   }
   // strict() must be before optional() and nullable()
   if (jsDocTags.strict) {
-    zodProperties.push({ identifier: "strict" });
+    zodProperties.push({ identifier: 'strict' });
   }
   // partial() must be before optional() and nullable()
   if (isPartial) {
     zodProperties.push({
-      identifier: "partial",
+      identifier: 'partial',
     });
   }
   if (isOptional) {
     zodProperties.push({
-      identifier: "optional",
+      identifier: 'optional',
     });
   }
   if (isNullable || jsDocTags.default === null) {
     zodProperties.push({
-      identifier: "nullable",
+      identifier: 'nullable',
     });
   }
   if (isRequired) {
     zodProperties.push({
-      identifier: "required",
+      identifier: 'required',
     });
   }
   if (jsDocTags.description !== undefined) {
     zodProperties.push({
-      identifier: "describe",
+      identifier: 'describe',
       expressions: [f.createStringLiteral(jsDocTags.description)],
     });
   }
 
   if (jsDocTags.default !== undefined) {
     zodProperties.push({
-      identifier: "default",
+      identifier: 'default',
       expressions:
         jsDocTags.default === true
           ? [f.createTrue()]
           : jsDocTags.default === false
           ? [f.createFalse()]
-          : typeof jsDocTags.default === "number"
+          : typeof jsDocTags.default === 'number'
           ? jsDocTags.default < 0
             ? [
                 f.createPrefixUnaryExpression(
@@ -378,14 +378,14 @@ export function jsDocTagToZodProperties(
  * @returns A ZodProperty representing a Zod string validation function call.
  */
 function formatToZodProperty(
-  format: Required<JSDocTags>["format"],
+  format: Required<JSDocTags>['format'],
   customFormatTypes: CustomJSDocFormatTypes
 ): ZodProperty {
   if (isCustomFormatType(format.value, Object.keys(customFormatTypes))) {
     const rule = customFormatTypes[format.value];
-    const regex = typeof rule === "string" ? rule : rule.regex;
+    const regex = typeof rule === 'string' ? rule : rule.regex;
     const errorMessage =
-      typeof rule === "string" ? undefined : rule.errorMessage;
+      typeof rule === 'string' ? undefined : rule.errorMessage;
 
     return createZodRegexProperty(regex, format.errorMessage ?? errorMessage);
   }
@@ -409,12 +409,12 @@ function builtInFormatTypeToZodPropertyIdentifier(
   formatType: BuiltInJSDocFormatsType
 ): keyof ZodString {
   switch (formatType) {
-    case "date-time":
-      return "datetime";
-    case "ipv4":
-    case "ipv6":
-    case "ip":
-      return "ip";
+    case 'date-time':
+      return 'datetime';
+    case 'ipv4':
+    case 'ipv6':
+    case 'ip':
+      return 'ip';
     default:
       return formatType as keyof ZodString;
   }
@@ -433,10 +433,10 @@ function builtInFormatTypeToZodPropertyArguments(
   errorMessage?: string
 ): ts.Expression[] | undefined {
   switch (formatType) {
-    case "ipv4":
-      return createZodStringIpArgs("v4", errorMessage);
-    case "ipv6":
-      return createZodStringIpArgs("v6", errorMessage);
+    case 'ipv4':
+      return createZodStringIpArgs('v4', errorMessage);
+    case 'ipv6':
+      return createZodStringIpArgs('v6', errorMessage);
     default:
       return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
   }
@@ -451,16 +451,16 @@ function builtInFormatTypeToZodPropertyArguments(
  * @returns A list of expressions which represent the function arguments.
  */
 function createZodStringIpArgs(
-  version: "v4" | "v6",
+  version: 'v4' | 'v6',
   errorMessage?: string
 ): ts.Expression[] {
   const propertyAssignments: ts.ObjectLiteralElementLike[] = [
-    f.createPropertyAssignment("version", f.createStringLiteral(version)),
+    f.createPropertyAssignment('version', f.createStringLiteral(version)),
   ];
 
   if (errorMessage) {
     propertyAssignments.push(
-      f.createPropertyAssignment("message", f.createStringLiteral(errorMessage))
+      f.createPropertyAssignment('message', f.createStringLiteral(errorMessage))
     );
   }
 
@@ -480,7 +480,7 @@ function createZodRegexProperty(
   errorMessage?: string
 ): ZodProperty {
   return {
-    identifier: "regex",
+    identifier: 'regex',
     expressions: withErrorMessage(
       f.createRegularExpressionLiteral(`/${regex}/`),
       errorMessage

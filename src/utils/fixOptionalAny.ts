@@ -1,4 +1,4 @@
-import ts, { factory as f } from "typescript";
+import ts, { factory as f } from 'typescript';
 
 /**
  * Add optional property to `any`, `undefined` or imported types to workaround comparison issue.

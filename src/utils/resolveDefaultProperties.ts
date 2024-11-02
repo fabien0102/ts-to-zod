@@ -1,5 +1,5 @@
-import ts from "typescript";
-import { getJSDocTags } from "../core/jsDocTags";
+import ts from 'typescript';
+import { getJSDocTags } from '../core/jsDocTags';
 
 /**
  * Remove optional properties when `@default` jsdoc tag is defined.
@@ -9,7 +9,7 @@ import { getJSDocTags } from "../core/jsDocTags";
  */
 export function resolveDefaultProperties(sourceText: string) {
   const sourceFile = ts.createSourceFile(
-    "index.ts",
+    'index.ts',
     sourceText,
     ts.ScriptTarget.Latest
   );

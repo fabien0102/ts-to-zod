@@ -1,8 +1,8 @@
-import { spawn, Thread, Worker } from "threads";
+import { spawn, Thread, Worker } from 'threads';
 import {
   validateGeneratedTypes,
   ValidateGeneratedTypesProps,
-} from "../core/validateGeneratedTypes";
+} from '../core/validateGeneratedTypes';
 
 /**
  * Validate generated types in a worker.
@@ -14,7 +14,7 @@ export async function validateGeneratedTypesInWorker(
   props: ValidateGeneratedTypesProps
 ) {
   const validatorWorker = await spawn<typeof validateGeneratedTypes>(
-    new Worker("./validator.worker")
+    new Worker('./validator.worker')
   );
 
   const errors = await validatorWorker(props);

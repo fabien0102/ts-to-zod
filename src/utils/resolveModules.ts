@@ -1,5 +1,5 @@
-import { pascal } from "case";
-import ts, { factory as f, SourceFile } from "typescript";
+import { pascal } from 'case';
+import ts, { factory as f, SourceFile } from 'typescript';
 
 /**
  * Resolve all modules from a source text.
@@ -8,7 +8,7 @@ import ts, { factory as f, SourceFile } from "typescript";
  */
 export function resolveModules(sourceText: string): SourceFile {
   const sourceFile = ts.createSourceFile(
-    "index.ts",
+    'index.ts',
     sourceText,
     ts.ScriptTarget.Latest
   );
@@ -41,7 +41,7 @@ function parseSourceFile(sourceFile: SourceFile): SourceFile {
 
   const sourceText = print(sourceFile);
 
-  return ts.createSourceFile("index.ts", sourceText, ts.ScriptTarget.Latest);
+  return ts.createSourceFile('index.ts', sourceText, ts.ScriptTarget.Latest);
 }
 
 /**

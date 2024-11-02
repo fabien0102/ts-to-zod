@@ -1,9 +1,9 @@
-import ts from "typescript";
-import { findNode } from "./findNode";
-import { createImportNode, getImportIdentifiers } from "./importHandling";
+import ts from 'typescript';
+import { findNode } from './findNode';
+import { createImportNode, getImportIdentifiers } from './importHandling';
 
-describe("getImportIdentifiers", () => {
-  it("should return nothing with a StringLiteral import", () => {
+describe('getImportIdentifiers', () => {
+  it('should return nothing with a StringLiteral import', () => {
     const sourceText = `
         import "module";
         `;
@@ -11,82 +11,82 @@ describe("getImportIdentifiers", () => {
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([]);
   });
 
-  it("should get the identifier from default", () => {
+  it('should get the identifier from default', () => {
     const sourceText = `
     import MyGlobal from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      'MyGlobal',
     ]);
   });
 
-  it("should get the identifier with whole module aliased import", () => {
+  it('should get the identifier with whole module aliased import', () => {
     const sourceText = `
     import * as MyGlobal from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      'MyGlobal',
     ]);
   });
 
-  it("should get the selected identifier", () => {
+  it('should get the selected identifier', () => {
     const sourceText = `
     import { MyGlobal } from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      'MyGlobal',
     ]);
   });
 
-  it("should get the selected aliased identifier", () => {
+  it('should get the selected aliased identifier', () => {
     const sourceText = `
     import { AA as MyGlobal } from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      'MyGlobal',
     ]);
   });
 
-  it("should get the selected identifiers", () => {
+  it('should get the selected identifiers', () => {
     const sourceText = `
     import { MyGlobal, MyGlobal2 } from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
-      "MyGlobal2",
+      'MyGlobal',
+      'MyGlobal2',
     ]);
   });
 
-  it("should get the identifier from default, mixed with others", () => {
+  it('should get the identifier from default, mixed with others', () => {
     const sourceText = `
     import MyGlobal, { MyGlobal2 } from "module";
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
-      "MyGlobal2",
+      'MyGlobal',
+      'MyGlobal2',
     ]);
   });
 });
 
-describe("createImportNode", () => {
+describe('createImportNode', () => {
   function printNode(node: ts.Node) {
     const printer = ts.createPrinter();
     return printer.printNode(
       ts.EmitHint.Unspecified,
       node,
-      ts.createSourceFile("", "", ts.ScriptTarget.Latest)
+      ts.createSourceFile('', '', ts.ScriptTarget.Latest)
     );
   }
 
-  it("should create an ImportDeclaration node correctly", () => {
-    const identifiers = ["Test1", "Test2"];
-    const path = "./testPath";
+  it('should create an ImportDeclaration node correctly', () => {
+    const identifiers = ['Test1', 'Test2'];
+    const path = './testPath';
 
     const expected = 'import { Test1, Test2 } from "./testPath";';
 
@@ -95,9 +95,9 @@ describe("createImportNode", () => {
     expect(printNode(result)).toEqual(expected);
   });
 
-  it("should handle empty identifiers array", () => {
+  it('should handle empty identifiers array', () => {
     const identifiers: string[] = [];
-    const path = "./testPath";
+    const path = './testPath';
 
     // Yes, this is valid
     const expected = 'import {} from "./testPath";';
@@ -110,7 +110,7 @@ describe("createImportNode", () => {
 
 function getImportNode(sourceText: string): ts.ImportDeclaration {
   const sourceFile = ts.createSourceFile(
-    "index.ts",
+    'index.ts',
     sourceText,
     ts.ScriptTarget.Latest
   );
@@ -120,7 +120,7 @@ function getImportNode(sourceText: string): ts.ImportDeclaration {
     (node): node is ts.ImportDeclaration => ts.isImportDeclaration(node)
   );
   if (!importNode) {
-    throw new Error("No `type` or `interface` found!");
+    throw new Error('No `type` or `interface` found!');
   }
   return importNode;
 }

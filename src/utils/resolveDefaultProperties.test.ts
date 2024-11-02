@@ -1,7 +1,7 @@
-import { resolveDefaultProperties } from "./resolveDefaultProperties";
+import { resolveDefaultProperties } from './resolveDefaultProperties';
 
-describe("resolveDefaultProperties", () => {
-  it("should remove the question mark if @default is defined (interface)", () => {
+describe('resolveDefaultProperties', () => {
+  it('should remove the question mark if @default is defined (interface)', () => {
     const sourceText = `
     /**
      * A citizen
@@ -29,7 +29,7 @@ describe("resolveDefaultProperties", () => {
     `);
   });
 
-  it("should remove the question mark if @default is defined (type)", () => {
+  it('should remove the question mark if @default is defined (type)', () => {
     const sourceText = `
     /**
      * A citizen
@@ -57,7 +57,7 @@ describe("resolveDefaultProperties", () => {
     `);
   });
 
-  it("should remove `undefined` if @default is defined", () => {
+  it('should remove `undefined` if @default is defined', () => {
     const sourceText = `
     /**
      * A citizen
@@ -85,7 +85,7 @@ describe("resolveDefaultProperties", () => {
     `);
   });
 
-  it("should do nothing if no @default", () => {
+  it('should do nothing if no @default', () => {
     const sourceText = `
     /**
      * A citizen

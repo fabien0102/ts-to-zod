@@ -1,9 +1,9 @@
-import { Person } from "./person";
+import { Person } from './person';
 
 export enum EnemyPower {
-  Flight = "flight",
-  Strength = "strength",
-  Speed = "speed",
+  Flight = 'flight',
+  Strength = 'strength',
+  Speed = 'speed',
 }
 
 // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -20,19 +20,19 @@ export interface Enemy extends Person {
   mainPower: `${EnemyPower}`;
 }
 
-export type SupermanEnemy = Superman["enemies"][-1];
-export type SupermanName = Superman["name"];
-export type SupermanInvinciblePower = Superman["powers"][2];
+export type SupermanEnemy = Superman['enemies'][-1];
+export type SupermanName = Superman['name'];
+export type SupermanInvinciblePower = Superman['powers'][2];
 
 export type PersonTuple = [Person, ...Person[]];
 
 export interface Superman {
   person: Person;
-  name: "superman" | "clark kent" | "kal-l";
+  name: 'superman' | 'clark kent' | 'kal-l';
   enemies: Record<string, Enemy>;
   age: number;
   underKryptonite?: boolean;
-  powers: ["fly", "laser", "invincible"];
+  powers: ['fly', 'laser', 'invincible'];
 }
 
 export interface Villain {
@@ -72,7 +72,7 @@ export interface WithDefaults {
   /**
    * @default clark
    */
-  name: "clark" | "superman" | "kal-l";
+  name: 'clark' | 'superman' | 'kal-l';
   /**
    * @default The Answer to the Ultimate Question of Life
    */

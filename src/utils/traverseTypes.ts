@@ -1,13 +1,13 @@
-import ts from "typescript";
+import ts from 'typescript';
 
 const typeScriptHelper = [
-  "Array",
-  "Promise",
-  "Omit",
-  "Pick",
-  "Record",
-  "Partial",
-  "Required",
+  'Array',
+  'Promise',
+  'Omit',
+  'Pick',
+  'Record',
+  'Partial',
+  'Required',
 ];
 
 export type TypeNode =

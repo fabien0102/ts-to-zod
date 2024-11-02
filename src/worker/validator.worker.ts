@@ -1,5 +1,5 @@
-import { expose } from "threads";
-import { validateGeneratedTypes } from "../core/validateGeneratedTypes";
+import { expose } from 'threads';
+import { validateGeneratedTypes } from '../core/validateGeneratedTypes';
 
 /**
  * Expose validateGeneratedTypes as a worker

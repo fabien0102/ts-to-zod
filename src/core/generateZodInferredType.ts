@@ -1,4 +1,4 @@
-import ts, { factory as f } from "typescript";
+import ts, { factory as f } from 'typescript';
 
 export interface GenerateZodInferredTypeProps {
   aliasName: string;
@@ -25,7 +25,7 @@ export function generateZodInferredType({
     f.createTypeReferenceNode(
       f.createQualifiedName(
         f.createIdentifier(zodImportValue),
-        f.createIdentifier("infer")
+        f.createIdentifier('infer')
       ),
       [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
     )

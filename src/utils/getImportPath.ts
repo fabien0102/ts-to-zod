@@ -1,5 +1,5 @@
-import slash from "slash";
-import { join, normalize, parse, relative } from "path";
+import slash from 'slash';
+import { join, normalize, parse, relative } from 'path';
 
 /**
  * Resolve the path of an import.
@@ -19,7 +19,7 @@ export function areImportPathsEqualIgnoringExtension(
   path1: string,
   path2: string
 ): boolean {
-  return relative(normalizePath(path1), normalizePath(path2)) === "";
+  return relative(normalizePath(path1), normalizePath(path2)) === '';
 }
 
 const normalizePath = (path: string) => {

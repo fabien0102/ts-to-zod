@@ -1,4 +1,4 @@
-import * as ts from "typescript";
+import * as ts from 'typescript';
 
 /**
  * Find and return a typescript node in a sourcefile.

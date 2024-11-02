@@ -1,10 +1,10 @@
-import ts from "typescript";
-import { generateZodInferredType } from "./generateZodInferredType";
+import ts from 'typescript';
+import { generateZodInferredType } from './generateZodInferredType';
 
-describe("generateZodInferredType", () => {
-  it("should generate inferred type zod schema", () => {
+describe('generateZodInferredType', () => {
+  it('should generate inferred type zod schema', () => {
     const sourceFile = ts.createSourceFile(
-      "index.ts",
+      'index.ts',
       `export const supermanSchema = z.object({
       name: z.string(),
     })`,
@@ -12,9 +12,9 @@ describe("generateZodInferredType", () => {
     );
 
     const output = generateZodInferredType({
-      aliasName: "Superman",
-      zodConstName: "supermanSchema",
-      zodImportValue: "z",
+      aliasName: 'Superman',
+      zodConstName: 'supermanSchema',
+      zodImportValue: 'z',
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });

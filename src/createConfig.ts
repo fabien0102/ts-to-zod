@@ -1,8 +1,8 @@
-import inquirer, { DistinctQuestion } from "inquirer";
-import { existsSync, outputFile } from "fs-extra";
-import { join } from "path";
-import { Subject } from "rxjs";
-import prettier from "prettier";
+import inquirer, { DistinctQuestion } from 'inquirer';
+import { existsSync, outputFile } from 'fs-extra';
+import { join } from 'path';
+import { Subject } from 'rxjs';
+import prettier from 'prettier';
 
 /**
  * Create `ts-to-zod.config.js` file.
@@ -16,8 +16,8 @@ export async function createConfig(
 ) {
   if (existsSync(configPath)) {
     const { answer } = await inquirer.prompt<{ answer: boolean }>({
-      type: "confirm",
-      name: "answer",
+      type: 'confirm',
+      name: 'answer',
       message: `${tsToZodConfigFileName} already exists, do you want to override it?`,
     });
     if (!answer) {
@@ -25,19 +25,19 @@ export async function createConfig(
     }
   }
 
-  const project = join(__dirname, "../tsconfig.json");
+  const project = join(__dirname, '../tsconfig.json');
   const dev = existsSync(project);
 
   let answers: Answers | undefined;
   let prefix: string | undefined;
 
   const getOutputDefault = () => {
-    if (answers?.mode === "single") {
-      return answers.config.input.replace(/\.ts(x)?$/, ".zod.ts$1");
-    } else if (answers?.mode === "multi") {
+    if (answers?.mode === 'single') {
+      return answers.config.input.replace(/\.ts(x)?$/, '.zod.ts$1');
+    } else if (answers?.mode === 'multi') {
       return answers.config[answers.config.length - 1].input.replace(
         /\.ts(x)?$/,
-        ".zod.ts$1"
+        '.zod.ts$1'
       );
     }
   };
@@ -47,9 +47,9 @@ export async function createConfig(
 
   const askForInput = () => {
     prompts.next({
-      type: "input",
+      type: 'input',
       name: `input-${i}`,
-      message: "Where is your file with types?",
+      message: 'Where is your file with types?',
       default: prefix ? `${prefix}.ts` : undefined,
       prefix: prefix ? `[${prefix}]` : undefined,
     });
@@ -57,9 +57,9 @@ export async function createConfig(
 
   const askForOutput = (prefix?: string) => {
     prompts.next({
-      type: "input",
+      type: 'input',
       name: `output-${i}`,
-      message: "Where do you want to save the generated zod schemas?",
+      message: 'Where do you want to save the generated zod schemas?',
       default: getOutputDefault(),
       prefix: prefix ? `[${prefix}]` : undefined,
     });
@@ -67,17 +67,17 @@ export async function createConfig(
 
   const askForConfigName = () => {
     prompts.next({
-      type: "input",
+      type: 'input',
       name: `configName-${i}`,
-      message: "How should we call your configuration?",
+      message: 'How should we call your configuration?',
     });
   };
 
   const askForOneMore = () => {
     prompts.next({
-      type: "confirm",
+      type: 'confirm',
       name: `oneMore-${i++}`,
-      message: "Do you want to add another config?",
+      message: 'Do you want to add another config?',
     });
   };
 
@@ -86,48 +86,48 @@ export async function createConfig(
       // inquirer type are a bit broken…
       const question = q as { name: string; answer: string };
 
-      if (question.name === "mode") {
-        if (question.answer.toLowerCase().includes("single")) {
-          answers = { mode: "single", config: { input: "", output: "" } };
+      if (question.name === 'mode') {
+        if (question.answer.toLowerCase().includes('single')) {
+          answers = { mode: 'single', config: { input: '', output: '' } };
           askForInput();
         } else {
-          answers = { mode: "multi", config: [] };
+          answers = { mode: 'multi', config: [] };
           askForConfigName();
         }
       }
 
-      if (question.name.startsWith("input")) {
-        if (answers?.mode === "single") {
+      if (question.name.startsWith('input')) {
+        if (answers?.mode === 'single') {
           answers.config.input = question.answer;
-        } else if (answers?.mode === "multi") {
+        } else if (answers?.mode === 'multi') {
           answers.config[answers.config.length - 1].input = question.answer;
         }
         askForOutput();
       }
 
-      if (question.name.startsWith("output")) {
-        if (answers?.mode === "single") {
+      if (question.name.startsWith('output')) {
+        if (answers?.mode === 'single') {
           answers.config.output = question.answer;
           prompts.complete();
-        } else if (answers?.mode === "multi") {
+        } else if (answers?.mode === 'multi') {
           answers.config[answers.config.length - 1].output = question.answer;
           askForOneMore();
         }
       }
 
-      if (question.name.startsWith("configName")) {
-        if (answers?.mode === "multi") {
+      if (question.name.startsWith('configName')) {
+        if (answers?.mode === 'multi') {
           answers.config.push({
             name: question.answer,
-            input: "",
-            output: "",
+            input: '',
+            output: '',
           });
         }
         prefix = question.answer;
         askForInput();
       }
 
-      if (question.name.startsWith("oneMore")) {
+      if (question.name.startsWith('oneMore')) {
         if (question.answer) {
           askForConfigName();
         } else {
@@ -140,12 +140,12 @@ export async function createConfig(
 
   // First question to start the flow
   prompts.next({
-    type: "list",
-    name: "mode",
-    message: "What kind of configuration do you need?",
+    type: 'list',
+    name: 'mode',
+    message: 'What kind of configuration do you need?',
     choices: [
-      { value: "single", name: "Single configuration" },
-      { value: "multi", name: "Multiple configurations" },
+      { value: 'single', name: 'Single configuration' },
+      { value: 'multi', name: 'Multiple configurations' },
     ],
   });
 
@@ -165,10 +165,10 @@ module.exports = `;
     await outputFile(
       configPath,
       await prettier.format(header + JSON.stringify(answers.config), {
-        parser: "babel",
+        parser: 'babel',
         ...prettierConfig,
       }),
-      "utf-8"
+      'utf-8'
     );
     return true;
   }
@@ -178,13 +178,13 @@ module.exports = `;
 
 type Answers =
   | {
-      mode: "single";
+      mode: 'single';
       config: {
         input: string;
         output: string;
       };
     }
   | {
-      mode: "multi";
+      mode: 'multi';
       config: Array<{ name: string; input: string; output: string }>;
     };

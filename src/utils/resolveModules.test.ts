@@ -1,8 +1,8 @@
-import ts from "typescript";
-import { resolveModules } from "./resolveModules";
+import ts from 'typescript';
+import { resolveModules } from './resolveModules';
 
-describe("resolveModules", () => {
-  it("should prefix interface", () => {
+describe('resolveModules', () => {
+  it('should prefix interface', () => {
     const sourceText = `export namespace Metropolis {
       export interface Superman {
         name: string;
@@ -19,7 +19,7 @@ describe("resolveModules", () => {
     `);
   });
 
-  it("should prefix type", () => {
+  it('should prefix type', () => {
     const sourceText = `export namespace Metropolis {
       export type Name = "superman" | "clark kent" | "kal-l";
     }`;
@@ -30,7 +30,7 @@ describe("resolveModules", () => {
     `);
   });
 
-  it("should prefix enum", () => {
+  it('should prefix enum', () => {
     const sourceText = `export namespace Metropolis {
       export enum Superhero {
         Superman = "superman",
@@ -48,7 +48,7 @@ describe("resolveModules", () => {
     `);
   });
 
-  it("should prefix every type references", () => {
+  it('should prefix every type references', () => {
     const sourceText = `
     export type Weakness = "krytonite" | "lois"
 

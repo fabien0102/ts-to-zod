@@ -1,5 +1,5 @@
-import ts from "typescript";
-import { SimplifiedJSDocTag } from "../config";
+import ts from 'typescript';
+import { SimplifiedJSDocTag } from '../config';
 
 /**
  * Get a simplified version of a node JSDocTags.
@@ -13,7 +13,7 @@ export function getSimplifiedJsDocTags(
   jsDocs.forEach((jsDoc) => {
     (jsDoc.tags || []).forEach((tag) => {
       const name = tag.tagName.escapedText.toString();
-      const value = typeof tag.comment === "string" ? tag.comment : undefined;
+      const value = typeof tag.comment === 'string' ? tag.comment : undefined;
       tags.push({ name, value });
     });
   });

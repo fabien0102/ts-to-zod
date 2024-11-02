@@ -1,36 +1,36 @@
-import { camel } from "case";
-import { getJsDoc } from "tsutils";
-import ts from "typescript";
+import { camel } from 'case';
+import { getJsDoc } from 'tsutils';
+import ts from 'typescript';
 import {
   InputOutputMapping,
   JSDocTagFilter,
   NameFilter,
   CustomJSDocFormatTypes,
-} from "../config";
-import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
-import { resolveModules } from "../utils/resolveModules";
+} from '../config';
+import { getSimplifiedJsDocTags } from '../utils/getSimplifiedJsDocTags';
+import { resolveModules } from '../utils/resolveModules';
 import {
   getReferencedTypeNames,
   isTypeNode,
   TypeNameReference,
   TypeNode,
-} from "../utils/traverseTypes";
+} from '../utils/traverseTypes';
 
 import {
   getImportIdentifiers,
   createImportNode,
-} from "../utils/importHandling";
+} from '../utils/importHandling';
 
-import { generateIntegrationTests } from "./generateIntegrationTests";
-import { generateZodInferredType } from "./generateZodInferredType";
+import { generateIntegrationTests } from './generateIntegrationTests';
+import { generateZodInferredType } from './generateZodInferredType';
 import {
   generateZodSchemaVariableStatement,
   generateZodSchemaVariableStatementForImport,
-} from "./generateZodSchema";
-import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath";
+} from './generateZodSchema';
+import { transformRecursiveSchema } from './transformRecursiveSchema';
+import { areImportPathsEqualIgnoringExtension } from '../utils/getImportPath';
 
-const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
+const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + 'Schema';
 
 export interface GenerateProps {
   /**
@@ -245,7 +245,7 @@ export function generate({
     const typeName = node.name.text;
     const varName = getSchemaName(typeName);
     const zodSchema = generateZodSchemaVariableStatement({
-      zodImportValue: "z",
+      zodImportValue: 'z',
       node,
       sourceFile,
       varName,
@@ -264,7 +264,7 @@ export function generate({
       dependencies: [],
       statement: generateZodSchemaVariableStatementForImport({
         varName,
-        zodImportValue: "z",
+        zodImportValue: 'z',
       }),
       enumImport: false,
       typeName: importName,
@@ -314,7 +314,7 @@ export function generate({
           if (isCircular) {
             sourceTypeImports.add(typeName);
             statements.set(varName, {
-              value: transformRecursiveSchema("z", statement, typeName),
+              value: transformRecursiveSchema('z', statement, typeName),
               typeName,
             });
           } else {
@@ -347,7 +347,7 @@ export function generate({
     .forEach(({ varName, statement, typeName }) => {
       sourceTypeImports.add(typeName);
       statements.set(varName, {
-        value: transformRecursiveSchema("z", statement, typeName),
+        value: transformRecursiveSchema('z', statement, typeName),
         typeName,
       });
     });
@@ -358,7 +358,7 @@ export function generate({
   if (zodSchemasWithMissingDependencies.size > 0) {
     errors.push(
       `Some schemas can't be generated due to direct or indirect missing dependencies:
-${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
+${Array.from(zodSchemasWithMissingDependencies).join('\n')}`
     );
   }
 
@@ -405,21 +405,21 @@ import { z } from 'zod';
 ${
   sourceTypeImportsValues.length
     ? `import { ${sourceTypeImportsValues.join(
-        ", "
+        ', '
       )} } from "${typesImportPath}";\n`
-    : ""
+    : ''
 }
 ${
   zodImportToOutput.length
-    ? zodImportToOutput.map((node) => print(node)).join("\n") + "\n\n"
-    : ""
+    ? zodImportToOutput.map((node) => print(node)).join('\n') + '\n\n'
+    : ''
 }${
     originalImportsToOutput.length
-      ? originalImportsToOutput.map((node) => print(node)).join("\n") + "\n\n"
-      : ""
+      ? originalImportsToOutput.map((node) => print(node)).join('\n') + '\n\n'
+      : ''
   }${Array.from(statements.values())
     .map((statement) => print(statement.value))
-    .join("\n\n")}
+    .join('\n\n')}
 `;
 
   const testCases = generateIntegrationTests(
@@ -452,14 +452,14 @@ ${Array.from(statements.values())
     const zodInferredSchema = generateZodInferredType({
       aliasName: `${getSchemaName(statement.typeName)}InferredType`,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
-      zodImportValue: "z",
+      zodImportValue: 'z',
     });
 
     return print(zodInferredSchema);
   })
-  .join("\n\n")}
+  .join('\n\n')}
 
-${testCases.map(print).join("\n")}
+${testCases.map(print).join('\n')}
 `;
 
   const getInferredTypes = (
@@ -475,12 +475,12 @@ ${Array.from(statements.values())
     const zodInferredSchema = generateZodInferredType({
       aliasName: statement.typeName,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
-      zodImportValue: "z",
+      zodImportValue: 'z',
     });
 
     return print(zodInferredSchema);
   })
-  .join("\n\n")}
+  .join('\n\n')}
 `;
 
   return {

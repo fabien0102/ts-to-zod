@@ -1,4 +1,4 @@
-import { factory as f } from "typescript";
+import { factory as f } from 'typescript';
 
 interface TestCase {
   zodType: string;
@@ -18,7 +18,7 @@ export function generateIntegrationTests(testCases: TestCase[]) {
   return testCases
     .map((testCase) => [
       f.createCallExpression(
-        f.createIdentifier("expectType"),
+        f.createIdentifier('expectType'),
         [f.createTypeReferenceNode(testCase.tsType)],
         [
           f.createAsExpression(
@@ -28,7 +28,7 @@ export function generateIntegrationTests(testCases: TestCase[]) {
         ]
       ),
       f.createCallExpression(
-        f.createIdentifier("expectType"),
+        f.createIdentifier('expectType'),
         [f.createTypeReferenceNode(testCase.zodType)],
         [
           f.createAsExpression(

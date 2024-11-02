@@ -1,116 +1,116 @@
-import { camel } from "case";
-import ts from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { generateZodSchemaVariableStatement } from "./generateZodSchema";
+import { camel } from 'case';
+import ts from 'typescript';
+import type { CustomJSDocFormatTypes } from '../config';
+import { findNode } from '../utils/findNode';
+import { generateZodSchemaVariableStatement } from './generateZodSchema';
 
-describe("generateZodSchema", () => {
-  it("should generate a string schema", () => {
+describe('generateZodSchema', () => {
+  it('should generate a string schema', () => {
     const source = `export type MyHeroName = string;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const myHeroNameSchema = z.string();"`
     );
   });
 
-  it("should generate a number schema", () => {
+  it('should generate a number schema', () => {
     const source = `export type MyHeroAge = number;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const myHeroAgeSchema = z.number();"`
     );
   });
 
-  it("should generate an any schema", () => {
+  it('should generate an any schema', () => {
     const source = `export type MyHeroPower = any;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const myHeroPowerSchema = z.any();"`
     );
   });
 
-  it("should generate a boolean schema", () => {
+  it('should generate a boolean schema', () => {
     const source = `export type HavePower = boolean;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const havePowerSchema = z.boolean();"`
     );
   });
 
-  it("should generate an undefined schema", () => {
+  it('should generate an undefined schema', () => {
     const source = `export type Nothing = undefined;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const nothingSchema = z.undefined();"`
     );
   });
 
-  it("should generate a null schema", () => {
+  it('should generate a null schema', () => {
     const source = `export type MyHeroWeakness = null;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const myHeroWeaknessSchema = z.null();"`
     );
   });
 
-  it("should generate a void schema", () => {
+  it('should generate a void schema', () => {
     const source = `export type MyEnemyChance = void;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const myEnemyChanceSchema = z.void();"`
     );
   });
 
-  it("should generate a bigint schema", () => {
+  it('should generate a bigint schema', () => {
     const source = `export type loisLaneCapturedCount = bigint;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const loisLaneCapturedCountSchema = z.bigint();"`
     );
   });
 
-  it("should generate a date schema", () => {
+  it('should generate a date schema', () => {
     const source = `export type lastIncidentInMetropolis = Date;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const lastIncidentInMetropolisSchema = z.date();"`
     );
   });
 
-  it("should generate a literal schema (string)", () => {
+  it('should generate a literal schema (string)', () => {
     const source = `export type Kryptonite = "kryptonite";`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const kryptoniteSchema = z.literal("kryptonite");"`
     );
   });
 
-  it("should generate a literal schema (number)", () => {
+  it('should generate a literal schema (number)', () => {
     const source = `export type IdentitiesCount = 2;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const identitiesCountSchema = z.literal(2);"`
     );
   });
 
-  it("should generate a literal schema (zero)", () => {
+  it('should generate a literal schema (zero)', () => {
     const source = `export type IdentitiesCount = 0;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const identitiesCountSchema = z.literal(0);"`
     );
   });
 
-  it("should generate a literal schema (negative number)", () => {
+  it('should generate a literal schema (negative number)', () => {
     const source = `export type IdentitiesCount = -1;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const identitiesCountSchema = z.literal(-1);"`
     );
   });
 
-  it("should generate a literal schema (true)", () => {
+  it('should generate a literal schema (true)', () => {
     const source = `export type IsSuperman = true;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const isSupermanSchema = z.literal(true);"`
     );
   });
 
-  it("should generate a literal schema (false)", () => {
+  it('should generate a literal schema (false)', () => {
     const source = `export type CanBeatZod = false;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const canBeatZodSchema = z.literal(false);"`
     );
   });
 
-  it("should generate a literal schema (enum)", () => {
+  it('should generate a literal schema (enum)', () => {
     const source = `
     export type BestSuperhero = {
       superhero: Superhero.Superman
@@ -123,7 +123,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a nativeEnum schema", () => {
+  it('should generate a nativeEnum schema', () => {
     const source = `export enum Superhero = {
       Superman = "superman",
       ClarkKent = "clark_kent",
@@ -133,56 +133,56 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should generate a never", () => {
+  it('should generate a never', () => {
     const source = `export type CanBeatZod = never;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const canBeatZodSchema = z.never();"`
     );
   });
 
-  it("should map unknown type correctly", () => {
+  it('should map unknown type correctly', () => {
     const source = `export type T = unknown;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const tSchema = z.unknown();"`
     );
   });
 
-  it("should generate an array schema (T[] notation)", () => {
+  it('should generate an array schema (T[] notation)', () => {
     const source = `export type Villains = string[];`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const villainsSchema = z.array(z.string());"`
     );
   });
 
-  it("should generate an array schema (Array<T> notation)", () => {
+  it('should generate an array schema (Array<T> notation)', () => {
     const source = `export type Villains = Array<string>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const villainsSchema = z.array(z.string());"`
     );
   });
 
-  it("should generate a tuple schema", () => {
+  it('should generate a tuple schema', () => {
     const source = `export type Life = [LoisLane, Problem[]];`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const lifeSchema = z.tuple([loisLaneSchema, z.array(problemSchema)]);"`
     );
   });
 
-  it("should generate a tuple schema (named)", () => {
+  it('should generate a tuple schema (named)', () => {
     const source = `export type Story = [subject: string, problems: string[]];`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const storySchema = z.tuple([z.string(), z.array(z.string())]);"`
     );
   });
 
-  it("should generate a tuple schema with rest operator", () => {
+  it('should generate a tuple schema with rest operator', () => {
     const source = `export type Life = [LoisLane, ...Problem[]];`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const lifeSchema = z.tuple([loisLaneSchema]).rest(problemSchema);"`
     );
   });
 
-  it("should generate an object schema", () => {
+  it('should generate an object schema', () => {
     const source = `export type Superman = {
      name: "superman";
      weakness: Kryptonite;
@@ -199,7 +199,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a numerical key", () => {
+  it('should generate a numerical key', () => {
     const source = `export type responses = {
      200: {
       content: {
@@ -223,35 +223,35 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a promise schema", () => {
+  it('should generate a promise schema', () => {
     const source = `export type KrytonResponse = Promise<boolean>`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const krytonResponseSchema = z.promise(z.boolean());"`
     );
   });
 
-  it("should generate a referenced schema", () => {
+  it('should generate a referenced schema', () => {
     const source = `export type Villain = BadGuy;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const villainSchema = badGuySchema;"`
     );
   });
 
-  it("should generate a union schema", () => {
+  it('should generate a union schema', () => {
     const source = `export type Identity = "superman" | "clark kent";`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const identitySchema = z.union([z.literal("superman"), z.literal("clark kent")]);"`
     );
   });
 
-  it("should generate a literal schema for a single union", () => {
+  it('should generate a literal schema for a single union', () => {
     const source = `export type Identity = | "superman";`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const identitySchema = z.literal("superman");"`
     );
   });
 
-  it("should generate two joined schemas", () => {
+  it('should generate two joined schemas', () => {
     const source = `export type SupermanWithWeakness = Superman & { weakness: Kryptonite };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanWithWeaknessSchema = supermanSchema.and(z.object({
@@ -260,28 +260,28 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a record schema", () => {
+  it('should generate a record schema', () => {
     const source = `export type EnemiesPowers = Record<string, Power>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const enemiesPowersSchema = z.record(powerSchema);"`
     );
   });
 
-  it("should generate a set schema", () => {
+  it('should generate a set schema', () => {
     const source = `export type EnemiesPowers = Set<string>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const enemiesPowersSchema = z.set(z.string());"`
     );
   });
 
-  it("should generate a function schema", () => {
+  it('should generate a function schema', () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const killSupermanSchema = z.function().args(z.boolean(), z.string()).returns(z.promise(z.boolean()));"`
     );
   });
 
-  it("should generate a function with optional parameter", () => {
+  it('should generate a function with optional parameter', () => {
     const source = `export type GetSupermanSkill = (
       key: string,
       params?: Record<string, string | number>
@@ -292,21 +292,21 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should generate a function schema (with `any` fallback on param)", () => {
+  it('should generate a function schema (with `any` fallback on param)', () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const killSupermanSchema = z.function().args(z.boolean(), z.any()).returns(z.promise(z.boolean()));"`
     );
   });
 
-  it("should throw on not supported key in omit", () => {
+  it('should throw on not supported key in omit', () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Omit<T, K> unknown syntax: (TypeReference as K not supported)"`
     );
   });
 
-  it("should throw on not supported interface with extends and index signature", () => {
+  it('should throw on not supported interface with extends and index signature', () => {
     const source = `export interface Superman extends Clark {
      [key: string]: any;
    };`;
@@ -316,70 +316,70 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on not supported key in omit (union)", () => {
+  it('should throw on not supported key in omit (union)', () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Omit<T, K> unknown syntax: (TypeReference as K union part not supported)"`
     );
   });
 
-  it("should throw on not supported key in pick", () => {
+  it('should throw on not supported key in pick', () => {
     const source = `export type UnsupportedType = Pick<Superman, Krytonite>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Pick<T, K> unknown syntax: (TypeReference as K not supported)"`
     );
   });
 
-  it("should throw on not supported key in pick (union)", () => {
+  it('should throw on not supported key in pick (union)', () => {
     const source = `export type UnsupportedType = Pick<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Pick<T, K> unknown syntax: (TypeReference as K union part not supported)"`
     );
   });
 
-  it("should fallback on the original type for Readonly<T>", () => {
+  it('should fallback on the original type for Readonly<T>', () => {
     const source = `export type ReadonlySuperman = Readonly<Superman>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const readonlySupermanSchema = supermanSchema;"`
     );
   });
 
-  it("should fallback on Array for ReadonlyArray<T>", () => {
+  it('should fallback on Array for ReadonlyArray<T>', () => {
     const source = `export type ReadonlySupermen = ReadonlyArray<Superman>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const readonlySupermenSchema = z.array(supermanSchema);"`
     );
   });
 
-  it("should generate a partial schema", () => {
+  it('should generate a partial schema', () => {
     const source = `export type SupermanUnderKryptonite = Partial<Hero>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const supermanUnderKryptoniteSchema = heroSchema.partial();"`
     );
   });
 
-  it("should generate a required schema", () => {
+  it('should generate a required schema', () => {
     const source = `export type IDidFindYou = Required<VillainLocation>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const iDidFindYouSchema = villainLocationSchema.required();"`
     );
   });
 
-  it("should generate a schema with omit ", () => {
+  it('should generate a schema with omit ', () => {
     const source = `export type InvincibleSuperman = Omit<Superman, "weakness">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const invincibleSupermanSchema = supermanSchema.omit({ "weakness": true });"`
     );
   });
 
-  it("should generate a schema with omit (multiple keys)", () => {
+  it('should generate a schema with omit (multiple keys)', () => {
     const source = `export type VeryInvincibleSuperman = Omit<Superman, "weakness" | "wife">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const veryInvincibleSupermanSchema = supermanSchema.omit({ "weakness": true, "wife": true });"`
     );
   });
 
-  it("should generate a schema with omit in interface extension clause", () => {
+  it('should generate a schema with omit in interface extension clause', () => {
     const source = `export interface Superman extends Omit<Clark, "weakness"> {
      withPower: boolean;
    }`;
@@ -390,21 +390,21 @@ describe("generateZodSchema", () => {
   `);
   });
 
-  it("should generate a schema with pick", () => {
+  it('should generate a schema with pick', () => {
     const source = `export type YouJustKnowMyName = Pick<SecretIdentity, "name">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const youJustKnowMyNameSchema = secretIdentitySchema.pick({ "name": true });"`
     );
   });
 
-  it("should generate a schema with pick (multiple keys)", () => {
+  it('should generate a schema with pick (multiple keys)', () => {
     const source = `export type YouKnowTooMuch = Pick<SecretIdentity, "name" | "location">;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const youKnowTooMuchSchema = secretIdentitySchema.pick({ "name": true, "location": true });"`
     );
   });
 
-  it("should generate a complex schema from an interface", () => {
+  it('should generate a complex schema from an interface', () => {
     const source = `export interface Superman {
      name: "superman" | "clark kent" | "kal-l";
      enemies: Record<string, Enemy>;
@@ -423,7 +423,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate an extended schema", () => {
+  it('should generate an extended schema', () => {
     const source = `export interface Superman extends Clark {
      withPower: boolean;
    }`;
@@ -434,14 +434,14 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate an variable assignment if an extending type has no new fields", () => {
-    const source = "export interface Superman extends Clark {}";
+  it('should generate an variable assignment if an extending type has no new fields', () => {
+    const source = 'export interface Superman extends Clark {}';
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const supermanSchema = clarkSchema;"`
     );
   });
 
-  it("should generate a merged schema when two extends are used", () => {
+  it('should generate a merged schema when two extends are used', () => {
     const source = `export interface Superman extends Clark extends KalL {
         withPower: boolean;
      };`;
@@ -453,7 +453,7 @@ describe("generateZodSchema", () => {
       `);
   });
 
-  it("should generate a merged schema when extending with two comma-separated interfaces", () => {
+  it('should generate a merged schema when extending with two comma-separated interfaces', () => {
     const source = `export interface Superman extends Clark, KalL {
         withPower: boolean;
      };`;
@@ -465,7 +465,7 @@ describe("generateZodSchema", () => {
       `);
   });
 
-  it("should generate a merged schema when extending with multiple comma-separated interfaces", () => {
+  it('should generate a merged schema when extending with multiple comma-separated interfaces', () => {
     const source = `export interface Superman extends Clark, KalL, Kryptonian {
         withPower: boolean;
      };`;
@@ -477,7 +477,7 @@ describe("generateZodSchema", () => {
       `);
   });
 
-  it("should generate a schema with omit in interface extension clause and multiple clauses", () => {
+  it('should generate a schema with omit in interface extension clause and multiple clauses', () => {
     const source = `export interface Superman extends KalL, Omit<Clark, "weakness">, Kryptonian {
      withPower: boolean;
    }`;
@@ -488,7 +488,7 @@ describe("generateZodSchema", () => {
   `);
   });
 
-  it("should deal with literal keys", () => {
+  it('should deal with literal keys', () => {
     const source = `export interface Villain {
      "i.will.kill.everybody": true;
    };`;
@@ -499,7 +499,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with index access type (1st level)", () => {
+  it('should deal with index access type (1st level)', () => {
     const source = `export type SupermanName = Superman["name"]`;
 
     expect(generate(source)).toMatchInlineSnapshot(
@@ -507,7 +507,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (nested level)", () => {
+  it('should deal with index access type (nested level)', () => {
     const source = `export type SupermanFlyPower = Superman["power"]["fly"]`;
 
     expect(generate(source)).toMatchInlineSnapshot(
@@ -515,7 +515,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (array item)", () => {
+  it('should deal with index access type (array item)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -527,7 +527,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (array item bis)", () => {
+  it('should deal with index access type (array item bis)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -539,7 +539,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (record item)", () => {
+  it('should deal with index access type (record item)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -551,7 +551,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (record item) (interface)", () => {
+  it('should deal with index access type (record item) (interface)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export interface Superman {
@@ -563,7 +563,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with nullable index access type (1st level)", () => {
+  it('should deal with nullable index access type (1st level)', () => {
     const source = `export type SupermanName = Superman["name"] | null`;
 
     expect(generate(source)).toMatchInlineSnapshot(
@@ -571,7 +571,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with optional index access type (1st level)", () => {
+  it('should deal with optional index access type (1st level)', () => {
     const source = `export type SupermanName = {
       name?: Superman["name"]
     }`;
@@ -583,7 +583,7 @@ describe("generateZodSchema", () => {
       `);
   });
 
-  it("should deal with record with a union as key", () => {
+  it('should deal with record with a union as key', () => {
     const source = `
     export type AvailablePower = Record<Power, boolean>;
     `;
@@ -593,7 +593,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (tuple)", () => {
+  it('should deal with index access type (tuple)', () => {
     const source = `export type SupermanPower = Superman["powers"][1];
 
     export type Superman = {
@@ -606,7 +606,7 @@ describe("generateZodSchema", () => {
   });
 
   // TODO
-  it.skip("should deal with index access type (nested array item)", () => {
+  it.skip('should deal with index access type (nested array item)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1][-1];
 
     export type Superman = {
@@ -618,7 +618,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (inline array item)", () => {
+  it('should deal with index access type (inline array item)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -630,7 +630,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (inline array item bis)", () => {
+  it('should deal with index access type (inline array item bis)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -642,7 +642,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with index access type (inline record)", () => {
+  it('should deal with index access type (inline record)', () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
     export type Superman = {
@@ -654,42 +654,42 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should deal with parenthesized schema type", () => {
+  it('should deal with parenthesized schema type', () => {
     const source = `export type SecretVillain = (NormalGuy | Villain);`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const secretVillainSchema = z.union([normalGuySchema, villainSchema]);"`
     );
   });
 
-  it("should deal with parenthesized type or null", () => {
+  it('should deal with parenthesized type or null', () => {
     const source = `export type SecretVillain = (NormalGuy | Villain) | null;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const secretVillainSchema = z.union([normalGuySchema, villainSchema]).nullable();"`
     );
   });
 
-  it("should deal with literal parenthesized type or null", () => {
+  it('should deal with literal parenthesized type or null', () => {
     const source = `export type Example = ("A" | "B") | null;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const exampleSchema = z.union([z.literal("A"), z.literal("B")]).nullable();"`
     );
   });
 
-  it("should deal with joined schema parenthesized type or null", () => {
+  it('should deal with joined schema parenthesized type or null', () => {
     const source = `export type person = (NormalGuy & BadGuy & randomGuy) | null;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const personSchema = normalGuySchema.and(badGuySchema).and(randomGuySchema).nullable();"`
     );
   });
 
-  it("should deal with index signature", () => {
+  it('should deal with index signature', () => {
     const source = `export type Movies = {[title: string]: Movie};`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const moviesSchema = z.record(movieSchema);"`
     );
   });
 
-  it("should deal with composed index signature", () => {
+  it('should deal with composed index signature', () => {
     const source = `export type Movies = {
       "Man of Steel": Movie & {title: "Man of Steel"};
       [title: string]: Movie;
@@ -703,7 +703,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with optional index signature", () => {
+  it('should deal with optional index signature', () => {
     const source = `export interface Collection {
       movies?: {[title: string] : Movie}
     }`;
@@ -714,7 +714,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with optional array", () => {
+  it('should deal with optional array', () => {
     const source = `export interface Collection {
       movies?: Array<string>
     }`;
@@ -725,14 +725,14 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate an empty object schema", () => {
+  it('should generate an empty object schema', () => {
     const source = `export type Empty = {};`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const emptySchema = z.object({});"`
     );
   });
 
-  it("should generate custom validators based on jsdoc tags", () => {
+  it('should generate custom validators based on jsdoc tags', () => {
     const source = `export interface HeroContact {
       /**
        * The email of the hero.
@@ -964,7 +964,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should append schema based on `schema` tag", () => {
+  it('should append schema based on `schema` tag', () => {
     const source = `export interface HeroContact {
       /**
        * The email of the hero.
@@ -985,7 +985,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should overrride schema based on `schema` tag", () => {
+  it('should overrride schema based on `schema` tag', () => {
     const source = `export interface HeroContact {
       /**
        * The email of the hero.
@@ -1006,7 +1006,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate custom error message for `format` tag", () => {
+  it('should generate custom error message for `format` tag', () => {
     const source = `export interface HeroContact {
       /**
        * The email of the hero.
@@ -1079,7 +1079,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate custom error message based on jsdoc tags", () => {
+  it('should generate custom error message based on jsdoc tags', () => {
     const source = `export interface HeroContact {
       /**
        * The email of the hero.
@@ -1130,7 +1130,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate custom error messages for custom jsdoc format types", () => {
+  it('should generate custom error messages for custom jsdoc format types', () => {
     const source = `export interface Info {
       /**
        * A birthday.
@@ -1156,12 +1156,12 @@ describe("generateZodSchema", () => {
     expect(
       generate(source, undefined, undefined, {
         date: {
-          regex: "^\\d{4}-\\d{2}-\\d{2}$",
-          errorMessage: "Must be in YYYY-MM-DD format.",
+          regex: '^\\d{4}-\\d{2}-\\d{2}$',
+          errorMessage: 'Must be in YYYY-MM-DD format.',
         },
 
-        "phone-number": "^\\d{3}-\\d{3}-\\d{4}$",
-        price: "^$\\d+.\\d{2}$",
+        'phone-number': '^\\d{3}-\\d{3}-\\d{4}$',
+        price: '^$\\d+.\\d{2}$',
       })
     ).toMatchInlineSnapshot(`
       "export const infoSchema = z.object({
@@ -1187,7 +1187,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate validator on top-level types", () => {
+  it('should generate validator on top-level types', () => {
     const source = `/**
     * @minLength 1
     */
@@ -1201,7 +1201,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate add strict() validation when @strict is used", () => {
+  it('should generate add strict() validation when @strict is used', () => {
     const source = `/**
     * @strict
     */
@@ -1224,7 +1224,7 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should add strict() validation when @strict is used on subtype", () => {
+  it('should add strict() validation when @strict is used on subtype', () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1242,7 +1242,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should add strict() before optional() validation when @strict is used on optional subtype", () => {
+  it('should add strict() before optional() validation when @strict is used on optional subtype', () => {
     const source = `export interface A {
       /** @strict */
       a?: {
@@ -1260,7 +1260,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should add strict() before nullable() validation when @strict is used on nullable subtype", () => {
+  it('should add strict() before nullable() validation when @strict is used on nullable subtype', () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1278,7 +1278,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should add describe() when @description is used (top-level)", () => {
+  it('should add describe() when @description is used (top-level)', () => {
     const source = `/**
     * @description Originally Superman could leap, but not fly.
     */
@@ -1301,7 +1301,7 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should add describe() when @description is used (property-level)", () => {
+  it('should add describe() when @description is used (property-level)', () => {
     const source = `
     export type Superman = {
       name: "superman";
@@ -1325,7 +1325,7 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should add describe() when @description is used (array elements)", () => {
+  it('should add describe() when @description is used (array elements)', () => {
     const source = `
     export type Superman = {
       name: "superman";
@@ -1349,7 +1349,7 @@ describe("generateZodSchema", () => {
      `);
   });
 
-  it("should deal with nullable", () => {
+  it('should deal with nullable', () => {
     const source = `export interface A {
       /** @minimum 0 */
       a: number | null;
@@ -1372,7 +1372,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should allow nullable on optional properties", () => {
+  it('should allow nullable on optional properties', () => {
     const source = `export interface A {
       a?: number | null;
     }
@@ -1385,7 +1385,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with array of null or null", () => {
+  it('should deal with array of null or null', () => {
     const source = `export type Example = {
         field?: Array<string | null> | null
     }`;
@@ -1397,7 +1397,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with partial or null", () => {
+  it('should deal with partial or null', () => {
     const source = `export type Example = {
         field: Partial<{foo: string}> | null
     }`;
@@ -1411,7 +1411,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with optional partial", () => {
+  it('should deal with optional partial', () => {
     const source = `export type Example = {
         field?: Partial<{foo: string}>
     }`;
@@ -1425,7 +1425,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with ReadonlyArray or null", () => {
+  it('should deal with ReadonlyArray or null', () => {
     const source = `export type Example = {
         field: ReadonlyArray<"foo" | "bar"> | null
     }`;
@@ -1437,7 +1437,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with Record or null", () => {
+  it('should deal with Record or null', () => {
     const source = `export type Example = {
         field: Record<string, string> | null
     }`;
@@ -1449,7 +1449,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should allow nullable on union properties", () => {
+  it('should allow nullable on union properties', () => {
     const source = `export interface A {
       a: number | string | null;
     }
@@ -1462,7 +1462,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should handle parenthesis type nodes", () => {
+  it('should handle parenthesis type nodes', () => {
     const source = `export interface A {
       a: (number) | string | null;
       b: (string)
@@ -1479,7 +1479,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should allow nullable on optional union properties", () => {
+  it('should allow nullable on optional union properties', () => {
     const source = `export interface A {
       a?: number | string | null;
     }
@@ -1492,7 +1492,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with @default with all types", () => {
+  it('should deal with @default with all types', () => {
     const source = `export interface WithDefaults {
      /**
       * @default 42
@@ -1549,7 +1549,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should deal with @default null value", () => {
+  it('should deal with @default null value', () => {
     const source = `export interface WithDefaults {
       /**
        * @default null
@@ -1582,7 +1582,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should ignore unknown/broken jsdoc format", () => {
+  it('should ignore unknown/broken jsdoc format', () => {
     const source = `export interface Hero {
      /**
       * @secret
@@ -1620,7 +1620,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should throw on generics", () => {
+  it('should throw on generics', () => {
     const source = `export interface Villain<TPower> {
      powers: TPower[]
    }`;
@@ -1629,7 +1629,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on interface with generics", () => {
+  it('should throw on interface with generics', () => {
     const source = `export interface Villain<TPower> {
      powers: TPower[]
    }`;
@@ -1638,14 +1638,14 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on type with generics", () => {
+  it('should throw on type with generics', () => {
     const source = `export type SecretVillain<T> = RandomPeople<T>`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"Type with generics are not supported!"`
     );
   });
 
-  it("should be able to override the zod import value", () => {
+  it('should be able to override the zod import value', () => {
     const source = `export type TheLastTest = true`;
 
     expect(generate(source, 'zod')).toMatchInlineSnapshot(
@@ -1653,7 +1653,7 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should not generate any zod validation if `skipParseJSDoc` is `true`", () => {
+  it('should not generate any zod validation if `skipParseJSDoc` is `true`', () => {
     const source = `export interface A {
       /** @minimum 0 */
       a: number | null;
@@ -1663,7 +1663,7 @@ describe("generateZodSchema", () => {
       c: string | null;
     }`;
 
-    expect(generate(source, "z", true)).toMatchInlineSnapshot(`
+    expect(generate(source, 'z', true)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @minimum 0 */
           a: z.number().nullable(),
@@ -1689,7 +1689,7 @@ function generate(
   customJSDocFormatTypes: CustomJSDocFormatTypes = {}
 ) {
   const sourceFile = ts.createSourceFile(
-    "index.ts",
+    'index.ts',
     sourceText,
     ts.ScriptTarget.Latest
   );
@@ -1706,7 +1706,7 @@ function generate(
       ts.isEnumDeclaration(node)
   );
   if (!declaration) {
-    throw new Error("No `type` or `interface` found!");
+    throw new Error('No `type` or `interface` found!');
   }
   const interfaceName = declaration.name.text;
   const zodConstName = `${camel(interfaceName)}Schema`;

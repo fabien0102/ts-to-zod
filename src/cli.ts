@@ -1,25 +1,25 @@
-import { Command, Flags, Errors, Args, Interfaces } from "@oclif/core";
-import chokidar from "chokidar";
-import { existsSync, outputFile, readFile } from "fs-extra";
-import inquirer from "inquirer";
-import ora from "ora";
-import { join, normalize, parse, relative } from "path";
-import prettier from "prettier";
-import slash from "slash";
-import ts from "typescript";
-import { Config, TsToZodConfig, InputOutputMapping } from "./config";
+import { Command, Flags, Errors, Args, Interfaces } from '@oclif/core';
+import chokidar from 'chokidar';
+import { existsSync, outputFile, readFile } from 'fs-extra';
+import inquirer from 'inquirer';
+import ora from 'ora';
+import { join, normalize, parse, relative } from 'path';
+import prettier from 'prettier';
+import slash from 'slash';
+import ts from 'typescript';
+import { Config, TsToZodConfig, InputOutputMapping } from './config';
 import {
   getSchemaNameSchema,
   nameFilterSchema,
   tsToZodConfigSchema,
-} from "./config.zod";
-import { GenerateProps, generate } from "./core/generate";
-import { createConfig } from "./createConfig";
+} from './config.zod';
+import { GenerateProps, generate } from './core/generate';
+import { createConfig } from './createConfig';
 import {
   areImportPathsEqualIgnoringExtension,
   getImportPath,
-} from "./utils/getImportPath";
-import * as worker from "./worker";
+} from './utils/getImportPath';
+import * as worker from './worker';
 
 let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
@@ -27,16 +27,16 @@ const configKeys: string[] = [];
 
 function isEsm() {
   try {
-    const packageJsonPath = join(process.cwd(), "package.json");
+    const packageJsonPath = join(process.cwd(), 'package.json');
     const rawPackageJson = require(slash(relative(__dirname, packageJsonPath)));
-    return rawPackageJson.type === "module";
+    return rawPackageJson.type === 'module';
   } catch (e) {}
   return false;
 }
 
 // Try to load `ts-to-zod.config.c?js`
 // We are doing this here to be able to infer the `flags` & `usage` in the cli help
-const fileExtension = isEsm() ? "cjs" : "js";
+const fileExtension = isEsm() ? 'cjs' : 'js';
 const tsToZodConfigFileName = `ts-to-zod.config.${fileExtension}`;
 const configPath = join(process.cwd(), tsToZodConfigFileName);
 try {
@@ -63,7 +63,7 @@ try {
 }
 
 class TsToZod extends Command {
-  static description = "Generate Zod schemas from a Typescript file";
+  static description = 'Generate Zod schemas from a Typescript file';
 
   static examples: Command.Example[] = [
     `$ ts-to-zod src/types.ts src/types.zod.ts`,
@@ -71,61 +71,61 @@ class TsToZod extends Command {
 
   static usage = haveMultiConfig
     ? [
-        "--all",
+        '--all',
         ...configKeys.map(
-          (key) => `--config ${key.includes(" ") ? `"${key}"` : key}`
+          (key) => `--config ${key.includes(' ') ? `"${key}"` : key}`
         ),
       ]
     : undefined;
 
   static flags = {
-    version: Flags.version({ char: "v" }),
-    help: Flags.help({ char: "h" }),
+    version: Flags.version({ char: 'v' }),
+    help: Flags.help({ char: 'h' }),
     keepComments: Flags.boolean({
-      char: "k",
-      description: "Keep parameters comments",
+      char: 'k',
+      description: 'Keep parameters comments',
     }),
     init: Flags.boolean({
-      char: "i",
+      char: 'i',
       description: `Create a ${tsToZodConfigFileName} file`,
     }),
     skipParseJSDoc: Flags.boolean({
       default: false,
-      description: "Skip the creation of zod validators from JSDoc annotations",
+      description: 'Skip the creation of zod validators from JSDoc annotations',
     }),
     skipValidation: Flags.boolean({
       default: false,
-      description: "Skip the validation step (not recommended)",
+      description: 'Skip the validation step (not recommended)',
     }),
     inferredTypes: Flags.string({
-      description: "Path of z.infer<> types file",
+      description: 'Path of z.infer<> types file',
     }),
     watch: Flags.boolean({
-      char: "w",
+      char: 'w',
       default: false,
-      description: "Watch input file(s) for changes and re-run related task",
+      description: 'Watch input file(s) for changes and re-run related task',
     }),
     // -- Multi config flags --
     config: Flags.string({
-      char: "c",
+      char: 'c',
       options: configKeys,
-      description: "Execute one config",
+      description: 'Execute one config',
       hidden: !haveMultiConfig,
     }),
     all: Flags.boolean({
-      char: "a",
+      char: 'a',
       default: false,
-      description: "Execute all configs",
+      description: 'Execute all configs',
       hidden: !haveMultiConfig,
     }),
   };
 
   static args = {
     input: Args.file({
-      description: "input file (typescript)",
+      description: 'input file (typescript)',
     }),
     output: Args.file({
-      description: "output file (zod schemas)",
+      description: 'output file (zod schemas)',
     }),
   };
 
@@ -161,7 +161,7 @@ class TsToZod extends Command {
         );
       } catch (e) {
         const error =
-          typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
+          typeof e === 'string' || e instanceof Error ? e : JSON.stringify(e);
         this.error(error);
       }
     } else {
@@ -178,8 +178,8 @@ class TsToZod extends Command {
         ? fileConfig.map((i) => i.input)
         : fileConfig?.input || args.input || [];
 
-      this.log("\nWatching for changes…");
-      chokidar.watch(inputs).on("change", async (path) => {
+      this.log('\nWatching for changes…');
+      chokidar.watch(inputs).on('change', async (path) => {
         console.clear();
         this.log(`Changes detected in "${slash(path)}"`);
         const config = Array.isArray(fileConfig)
@@ -192,7 +192,7 @@ class TsToZod extends Command {
         } else {
           this.error(result.error);
         }
-        this.log("\nWatching for changes…");
+        this.log('\nWatching for changes…');
       });
     }
   }
@@ -262,26 +262,26 @@ See more help with --help`,
             ({ path, expectedExtensions }) =>
               `"${path}" must be ${expectedExtensions
                 .map((i) => `"${i}"`)
-                .join(", ")}`
+                .join(', ')}`
           )
-          .join("\n")}`,
+          .join('\n')}`,
       };
     }
 
-    const sourceText = await readFile(inputPath, "utf-8");
+    const sourceText = await readFile(inputPath, 'utf-8');
 
     const generateOptions: GenerateProps = {
       sourceText,
       inputOutputMappings: relativeIOMappings,
       ...fileConfig,
     };
-    if (typeof Flags.keepComments === "boolean") {
+    if (typeof Flags.keepComments === 'boolean') {
       generateOptions.keepComments = Flags.keepComments;
     }
-    if (typeof Flags.skipParseJSDoc === "boolean") {
+    if (typeof Flags.skipParseJSDoc === 'boolean') {
       generateOptions.skipParseJSDoc = Flags.skipParseJSDoc;
     }
-    if (typeof Flags.inferredTypes === "string") {
+    if (typeof Flags.inferredTypes === 'string') {
       generateOptions.inferredTypes = Flags.inferredTypes;
     }
 
@@ -298,22 +298,22 @@ See more help with --help`,
       return {
         success: false,
         error:
-          "--output= must also be provided when input files have some circular dependencies",
+          '--output= must also be provided when input files have some circular dependencies',
       };
     }
 
     errors.map(this.warn.bind(this));
 
     if (!Flags.skipValidation) {
-      const validatorSpinner = ora("Validating generated types").start();
+      const validatorSpinner = ora('Validating generated types').start();
       if (Flags.all) validatorSpinner.indent = 1;
 
       const extraFiles = [];
       for (const io of inputOutputMappings) {
-        if (getImportPath(inputPath, io.input) !== "/") {
+        if (getImportPath(inputPath, io.input) !== '/') {
           try {
             const fileInputPath = join(process.cwd(), io.input);
-            const inputFile = await readFile(fileInputPath, "utf-8");
+            const inputFile = await readFile(fileInputPath, 'utf-8');
             extraFiles.push({
               sourceText: inputFile,
               relativePath: io.input,
@@ -324,7 +324,7 @@ See more help with --help`,
 
           try {
             const fileOutputPath = join(process.cwd(), io.output);
-            const outputFile = await readFile(fileOutputPath, "utf-8");
+            const outputFile = await readFile(fileOutputPath, 'utf-8');
             extraFiles.push({
               sourceText: outputFile,
               relativePath: io.output,
@@ -337,11 +337,11 @@ See more help with --help`,
         }
       }
 
-      let outputForValidation = output || "";
+      let outputForValidation = output || '';
 
       // If we're generating over the same file, we need to set a fake output path for validation
       if (!output || areImportPathsEqualIgnoringExtension(input, output)) {
-        const outputFileName = "source.zod.ts";
+        const outputFileName = 'source.zod.ts';
         const { dir } = parse(normalize(input));
 
         outputForValidation = join(dir, outputFileName);
@@ -354,10 +354,10 @@ See more help with --help`,
         },
         integrationTests: {
           sourceText: getIntegrationTestFile(
-            getImportPath("./source.integration.ts", input),
-            getImportPath("./source.integration.ts", outputForValidation)
+            getImportPath('./source.integration.ts', input),
+            getImportPath('./source.integration.ts', outputForValidation)
           ),
-          relativePath: "./source.integration.ts",
+          relativePath: './source.integration.ts',
         },
         zodSchemas: {
           sourceText: getZodSchemasFile(
@@ -376,7 +376,7 @@ See more help with --help`,
       if (generationErrors.length > 0) {
         return {
           success: false,
-          error: generationErrors.join("\n"),
+          error: generationErrors.join('\n'),
         };
       }
     }
@@ -403,7 +403,7 @@ See more help with --help`,
                 },
               }).outputText
             : zodInferredTypesFile,
-          { parser: "babel-ts", ...prettierConfig }
+          { parser: 'babel-ts', ...prettierConfig }
         )
       );
     }
@@ -419,14 +419,14 @@ See more help with --help`,
               newLine: ts.NewLineKind.LineFeed,
             },
           }).outputText,
-          { parser: "babel-ts", ...prettierConfig }
+          { parser: 'babel-ts', ...prettierConfig }
         )
       );
     } else {
       await outputFile(
         outputPath,
         await prettier.format(zodSchemasFile, {
-          parser: "babel-ts",
+          parser: 'babel-ts',
           ...prettierConfig,
         })
       );
@@ -447,28 +447,28 @@ See more help with --help`,
     if (Array.isArray(config)) {
       if (!flags.all && !flags.config) {
         const { mode } = await inquirer.prompt<{
-          mode: "none" | "multi" | `single-${string}`;
+          mode: 'none' | 'multi' | `single-${string}`;
         }>([
           {
-            name: "mode",
+            name: 'mode',
             message: `You have multiple configs available in "${tsToZodConfigFileName}"\n What do you want?`,
-            type: "list",
+            type: 'list',
             choices: [
               {
-                value: "multi",
+                value: 'multi',
                 name: `${TsToZod.flags.all.description} (--all)`,
               },
               ...configKeys.map((key) => ({
                 value: `single-${key}`,
                 name: `Execute "${key}" config (--config=${key})`,
               })),
-              { value: "none", name: "Don't use the config" },
+              { value: 'none', name: "Don't use the config" },
             ],
           },
         ]);
-        if (mode.startsWith("single-")) {
-          flags.config = mode.slice("single-".length);
-        } else if (mode === "multi") {
+        if (mode.startsWith('single-')) {
+          flags.config = mode.slice('single-'.length);
+        } else if (mode === 'multi') {
           flags.all = true;
         }
       }
@@ -497,8 +497,8 @@ See more help with --help`,
   }
 }
 
-const typescriptExtensions = [".ts", ".tsx"];
-const javascriptExtensions = [".js", ".jsx"];
+const typescriptExtensions = ['.ts', '.tsx'];
+const javascriptExtensions = ['.js', '.jsx'];
 
 /**
  * Validate if the file extension is ts or tsx.

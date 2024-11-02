@@ -1,12 +1,12 @@
-import { validateGeneratedTypes } from "./validateGeneratedTypes";
+import { validateGeneratedTypes } from './validateGeneratedTypes';
 
-describe("validateGeneratedTypes", () => {
-  it("should return no error if the types match", () => {
+describe('validateGeneratedTypes', () => {
+  it('should return no error if the types match', () => {
     const sourceTypes = {
       sourceText: `
       export type MyNumber = number;
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -14,7 +14,7 @@ describe("validateGeneratedTypes", () => {
     import { z } from 'zod';
     export const myNumberSchema = z.number();
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -34,7 +34,7 @@ describe("validateGeneratedTypes", () => {
       expectType<myNumberSchemaInferredType>({} as spec.MyNumber);
       expectType<spec.MyNumber>({} as myNumberSchemaInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -47,14 +47,14 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a non-optional any", () => {
+  it('should return no error if we use a non-optional any', () => {
     const sourceTypes = {
       sourceText: `
       export interface Citizen {
         villain: any;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -64,7 +64,7 @@ describe("validateGeneratedTypes", () => {
       villain: z.any()
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -84,7 +84,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -97,7 +97,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a non-imported type", () => {
+  it('should return no error if we reference a non-imported type', () => {
     const sourceTypes = {
       sourceText: `
       export type Villain = {
@@ -108,7 +108,7 @@ describe("validateGeneratedTypes", () => {
         villain: Villain | null;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -123,7 +123,7 @@ describe("validateGeneratedTypes", () => {
       villain: villainSchema.nullable()
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -143,7 +143,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -156,7 +156,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a non-imported type in an Array", () => {
+  it('should return no error if we reference a non-imported type in an Array', () => {
     const sourceTypes = {
       sourceText: `
       export type Villain = {
@@ -167,7 +167,7 @@ describe("validateGeneratedTypes", () => {
         villains: Array<Villain>;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -182,7 +182,7 @@ describe("validateGeneratedTypes", () => {
       villains: z.array(villainSchema)
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -202,7 +202,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -226,7 +226,7 @@ describe("validateGeneratedTypes", () => {
         };
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -240,7 +240,7 @@ describe("validateGeneratedTypes", () => {
       })
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -260,7 +260,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -273,7 +273,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference an external import", () => {
+  it('should return no error if we reference an external import', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "./hero-module.ts"
@@ -282,7 +282,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -294,7 +294,7 @@ describe("validateGeneratedTypes", () => {
       hero: heroSchema
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -314,7 +314,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -327,7 +327,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference an array of external imports", () => {
+  it('should return no error if we reference an array of external imports', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "./hero-module.ts"
@@ -336,7 +336,7 @@ describe("validateGeneratedTypes", () => {
         heros: Array<Hero>
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -348,7 +348,7 @@ describe("validateGeneratedTypes", () => {
       heros: z.array(heroSchema)
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -368,7 +368,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -381,7 +381,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a zod import", () => {
+  it('should return no error if we reference a zod import', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "./hero-module.ts"
@@ -390,7 +390,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -402,19 +402,19 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const extraFiles = [
       {
         sourceText: `export type Hero = { name: string; }`,
-        relativePath: "hero-module.ts",
+        relativePath: 'hero-module.ts',
       },
       {
         sourceText: `
         import { z } from 'zod';
         export const heroSchema = z.object({ name: z.string() })`,
-        relativePath: "zHero.ts",
+        relativePath: 'zHero.ts',
       },
     ];
 
@@ -435,7 +435,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -449,7 +449,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a zod import in a subdirectory", () => {
+  it('should return no error if we reference a zod import in a subdirectory', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "./zod/hero-module.ts"
@@ -458,7 +458,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -470,7 +470,7 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const extraFiles = [
@@ -503,7 +503,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -517,7 +517,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a zod import in a parent directory", () => {
+  it('should return no error if we reference a zod import in a parent directory', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "../hero-module.ts"
@@ -526,7 +526,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "folder/source.ts",
+      relativePath: 'folder/source.ts',
     };
 
     const zodSchemas = {
@@ -538,7 +538,7 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "folder/source.zod.ts",
+      relativePath: 'folder/source.zod.ts',
     };
 
     const extraFiles = [
@@ -571,7 +571,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -585,7 +585,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a zod import in an exotic path", () => {
+  it('should return no error if we reference a zod import in an exotic path', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "hero-module.ts"
@@ -594,7 +594,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -606,13 +606,13 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "folder1/folder2/source.zod.ts",
+      relativePath: 'folder1/folder2/source.zod.ts',
     };
 
     const extraFiles = [
       {
         sourceText: `export type Hero = { name: string; }`,
-        relativePath: "hero-module.ts",
+        relativePath: 'hero-module.ts',
       },
       {
         sourceText: `
@@ -639,7 +639,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -653,7 +653,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we reference a zod import without its extension", () => {
+  it('should return no error if we reference a zod import without its extension', () => {
     const sourceTypes = {
       sourceText: `
       import { Hero } from "./hero-module"
@@ -662,7 +662,7 @@ describe("validateGeneratedTypes", () => {
         hero: Hero
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -674,19 +674,19 @@ describe("validateGeneratedTypes", () => {
         hero: heroSchema
       });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const extraFiles = [
       {
         sourceText: `export type Hero = { name: string; }`,
-        relativePath: "hero-module.ts",
+        relativePath: 'hero-module.ts',
       },
       {
         sourceText: `
         import { z } from 'zod';
         export const heroSchema = z.object({ name: z.string() })`,
-        relativePath: "zHero.ts",
+        relativePath: 'zHero.ts',
       },
     ];
 
@@ -707,7 +707,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -721,7 +721,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a deep external import", () => {
+  it('should return no error if we use a deep external import', () => {
     const sourceTypes = {
       sourceText: `
       import { Villain } from "./villain-module.ts"
@@ -736,7 +736,7 @@ describe("validateGeneratedTypes", () => {
         }
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -755,7 +755,7 @@ describe("validateGeneratedTypes", () => {
       })
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -775,7 +775,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -788,7 +788,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a deep external import with union", () => {
+  it('should return no error if we use a deep external import with union', () => {
     const sourceTypes = {
       sourceText: `
       import { Villain } from "./villain-module.ts"
@@ -803,7 +803,7 @@ describe("validateGeneratedTypes", () => {
         }
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -822,7 +822,7 @@ describe("validateGeneratedTypes", () => {
       })
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -842,7 +842,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -855,7 +855,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a deep external import with union", () => {
+  it('should return no error if we use a deep external import with union', () => {
     const sourceTypes = {
       sourceText: `
       import { Villain } from "./villain-module.ts"
@@ -870,7 +870,7 @@ describe("validateGeneratedTypes", () => {
         }
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -889,7 +889,7 @@ describe("validateGeneratedTypes", () => {
       })
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -909,7 +909,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -922,14 +922,14 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a non-optional undefined", () => {
+  it('should return no error if we use a non-optional undefined', () => {
     const sourceTypes = {
       sourceText: `
       export interface Citizen {
         villain: undefined;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -939,7 +939,7 @@ describe("validateGeneratedTypes", () => {
       villain: z.undefined()
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -959,7 +959,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -972,14 +972,14 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should return no error if we use a non-optional undefined in union type", () => {
+  it('should return no error if we use a non-optional undefined in union type', () => {
     const sourceTypes = {
       sourceText: `
       export interface Citizen {
         villain: string | undefined;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -989,7 +989,7 @@ describe("validateGeneratedTypes", () => {
       villain: z.union([z.string(), z.undefined()])
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -1009,7 +1009,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -1027,7 +1027,7 @@ describe("validateGeneratedTypes", () => {
       sourceText: `
       export type MyNumber = number;
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -1035,7 +1035,7 @@ describe("validateGeneratedTypes", () => {
       import { z } from 'zod';
       export const myStringSchema = z.string();
       `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -1055,7 +1055,7 @@ describe("validateGeneratedTypes", () => {
         expectType<myStringSchemaInferredType>({} as spec.MyNumber);
         expectType<spec.MyNumber>({} as myStringSchemaInferredType);
     `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -1075,7 +1075,7 @@ describe("validateGeneratedTypes", () => {
     `);
   });
 
-  it("should deal with optional value with default", () => {
+  it('should deal with optional value with default', () => {
     const sourceTypes = {
       sourceText: `
       export interface Citizen {
@@ -1085,7 +1085,7 @@ describe("validateGeneratedTypes", () => {
         isVillain?: boolean;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -1095,7 +1095,7 @@ describe("validateGeneratedTypes", () => {
       isVillain: z.boolean().optional().default(true)
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -1115,7 +1115,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({
@@ -1128,7 +1128,7 @@ describe("validateGeneratedTypes", () => {
     expect(errors).toEqual([]);
   });
 
-  it("should skip defaults if `skipParseJSDoc` is `true`", () => {
+  it('should skip defaults if `skipParseJSDoc` is `true`', () => {
     const sourceTypes = {
       sourceText: `
       export interface Citizen {
@@ -1138,7 +1138,7 @@ describe("validateGeneratedTypes", () => {
         isVillain?: boolean;
       };
     `,
-      relativePath: "source.ts",
+      relativePath: 'source.ts',
     };
 
     const zodSchemas = {
@@ -1148,7 +1148,7 @@ describe("validateGeneratedTypes", () => {
       isVillain: z.boolean().optional()
     });
     `,
-      relativePath: "source.zod.ts",
+      relativePath: 'source.zod.ts',
     };
 
     const integrationTests = {
@@ -1168,7 +1168,7 @@ describe("validateGeneratedTypes", () => {
       expectType<CitizenInferredType>({} as spec.Citizen);
       expectType<spec.Citizen>({} as CitizenInferredType);
   `,
-      relativePath: "source.integration.ts",
+      relativePath: 'source.integration.ts',
     };
 
     const errors = validateGeneratedTypes({

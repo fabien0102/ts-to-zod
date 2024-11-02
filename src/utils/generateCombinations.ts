@@ -7,7 +7,7 @@ function recursiveGenerateCombinations(
     return [current];
   }
 
-  const currentArray = arrays[index].length === 0 ? [""] : arrays[index];
+  const currentArray = arrays[index].length === 0 ? [''] : arrays[index];
 
   const results: string[][] = [];
   for (const element of currentArray) {
@@ -23,6 +23,6 @@ function recursiveGenerateCombinations(
 
 export function generateCombinations(arrays: string[][]): string[] {
   return recursiveGenerateCombinations(arrays)
-    .map((combination) => combination.join(""))
-    .filter((combination) => combination !== "");
+    .map((combination) => combination.join(''))
+    .filter((combination) => combination !== '');
 }

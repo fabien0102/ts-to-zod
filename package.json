@@ -87,7 +87,8 @@
   "prettier": {
     "printWidth": 80,
     "semi": true,
-    "trailingComma": "es5"
+    "trailingComma": "es5",
+    "singleQuote": true
   },
   "oclif": {
     "bin": "ts-to-zod",
