@@ -35,11 +35,9 @@ describe("Oclif-provided Flags Tests", () => {
         -i, --init                   Create a ts-to-zod.config.js file
         -k, --keepComments           Keep parameters comments
         -v, --version                Show CLI version.
-        -w, --watch                  Watch input file(s) for changes and re-run
-                                     related task
+        -w, --watch                  Watch input file(s) for changes and re-run related task
             --inferredTypes=<value>  Path of z.infer<> types file
-            --skipParseJSDoc         Skip the creation of zod validators from JSDoc
-                                     annotations
+            --skipParseJSDoc         Skip the creation of zod validators from JSDoc annotations
             --skipValidation         Skip the validation step (not recommended)
       
       DESCRIPTION
@@ -76,19 +74,17 @@ describe("Config Prompt Tests", () => {
       // Up Arrow key code \u001B[A + ENTER key code \n with a delay of 2000ms
       setTimeout(() => stdin.send("\u001B[A\n"), 2000);
 
-      const { stdout, stderr } = await runCommand([
+      const { stdout } = await runCommand([
         ".",
         basicInputPath,
         basicOutputPath,
       ]);
 
       expect(
-        replaceAngleBracket(normalizeLineEndings(stdout))
+        removeLoadingDots(replaceAngleBracket(normalizeLineEndings(stdout)))
       ).toMatchSnapshot();
 
-      // Ora spinner outputs to stderr by default, we
-      expect(stderr).toContain("- Validating generated types");
-      expect(stderr).toContain("✔ Validating generated types");
+      expect(stdout).toContain("✔ Validating generated types");
 
       expect(readFileCrossEnv(basicOutputPath)).toEqual(
         readFileCrossEnv(basicSnapshotPath)
@@ -108,6 +104,10 @@ function removeFile(filePath: string) {
 
 function makePosixPath(str: string) {
   return str.split(sep).join(posix.sep);
+}
+
+function removeLoadingDots(content: string) {
+  return content.replace(/(⠋|⠙|⠹|⠸|⠼|⠴|⠦|⠧) Validating generated types/g, "");
 }
 
 function normalizeLineEndings(content: string) {
