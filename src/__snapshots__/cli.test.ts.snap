@@ -15,6 +15,7 @@ exports[`Config Prompt Tests Skip config prompt should have selected the right o
   Execute "config" config (--config=config) 
 ❯ Don't use the config ? You have multiple configs available in "ts-to-zod.config.js"
  What do you want? Don't use the config
+✔ Validating generated types
 🎉 Zod schemas generated!
 "
 `;
