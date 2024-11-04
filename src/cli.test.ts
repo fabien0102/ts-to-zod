@@ -35,9 +35,11 @@ describe("Oclif-provided Flags Tests", () => {
         -i, --init                   Create a ts-to-zod.config.js file
         -k, --keepComments           Keep parameters comments
         -v, --version                Show CLI version.
-        -w, --watch                  Watch input file(s) for changes and re-run related task
+        -w, --watch                  Watch input file(s) for changes and re-run
+                                     related task
             --inferredTypes=<value>  Path of z.infer<> types file
-            --skipParseJSDoc         Skip the creation of zod validators from JSDoc annotations
+            --skipParseJSDoc         Skip the creation of zod validators from JSDoc
+                                     annotations
             --skipValidation         Skip the validation step (not recommended)
       
       DESCRIPTION
