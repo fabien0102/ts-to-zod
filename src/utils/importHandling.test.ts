@@ -17,7 +17,7 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      { name: "MyGlobal" },
     ]);
   });
 
@@ -27,7 +27,7 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      { name: "MyGlobal" },
     ]);
   });
 
@@ -37,7 +37,7 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      { name: "MyGlobal" },
     ]);
   });
 
@@ -47,7 +47,7 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
+      { name: "MyGlobal", original: "AA" },
     ]);
   });
 
@@ -57,8 +57,8 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
-      "MyGlobal2",
+      { name: "MyGlobal" },
+      { name: "MyGlobal2" },
     ]);
   });
 
@@ -68,8 +68,8 @@ describe("getImportIdentifiers", () => {
     `;
 
     expect(getImportIdentifiers(getImportNode(sourceText))).toEqual([
-      "MyGlobal",
-      "MyGlobal2",
+      { name: "MyGlobal" },
+      { name: "MyGlobal2" },
     ]);
   });
 });
@@ -85,7 +85,7 @@ describe("createImportNode", () => {
   }
 
   it("should create an ImportDeclaration node correctly", () => {
-    const identifiers = ["Test1", "Test2"];
+    const identifiers = [{ name: "Test1" }, { name: "Test2" }];
     const path = "./testPath";
 
     const expected = 'import { Test1, Test2 } from "./testPath";';
@@ -96,11 +96,25 @@ describe("createImportNode", () => {
   });
 
   it("should handle empty identifiers array", () => {
-    const identifiers: string[] = [];
     const path = "./testPath";
 
     // Yes, this is valid
     const expected = 'import {} from "./testPath";';
+    const result = createImportNode([], path);
+
+    expect(printNode(result)).toEqual(expected);
+  });
+
+  it("should create an ImportDeclaration with alias", () => {
+    const identifiers = [
+      { name: "Test1", original: "T1" },
+      { name: "Test2" },
+      { name: "Test3", original: "T3" },
+    ];
+    const path = "./testPath";
+
+    const expected =
+      'import { T1 as Test1, Test2, T3 as Test3 } from "./testPath";';
 
     const result = createImportNode(identifiers, path);
 

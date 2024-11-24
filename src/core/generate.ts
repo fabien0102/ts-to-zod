@@ -19,6 +19,8 @@ import {
 import {
   getImportIdentifiers,
   createImportNode,
+  ImportIdentifier,
+  getSingleImportIdentierForNode,
 } from "../utils/importHandling";
 
 import { generateIntegrationTests } from "./generateIntegrationTests";
@@ -129,7 +131,7 @@ export function generate({
 
     if (ts.isImportDeclaration(node) && node.importClause) {
       const identifiers = getImportIdentifiers(node);
-      identifiers.forEach((i) => typeNameMapping.set(i, node));
+      identifiers.forEach(({ name }) => typeNameMapping.set(name, node));
 
       // Check if we're importing from a mapped file
       const eligibleMapping = inputOutputMappings.find(
@@ -144,20 +146,26 @@ export function generate({
         const schemaMethod =
           eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
 
-        const identifiers = getImportIdentifiers(node);
-        identifiers.forEach((i) =>
-          importedZodNamesAvailable.set(i, schemaMethod(i))
+        identifiers.forEach(({ name }) =>
+          importedZodNamesAvailable.set(name, schemaMethod(name))
         );
 
         const zodImportNode = createImportNode(
-          identifiers.map(schemaMethod),
+          identifiers.map(({ name, original }) => {
+            return {
+              name: schemaMethod(name),
+              original: original ? schemaMethod(original) : undefined,
+            };
+          }),
           eligibleMapping.output
         );
         zodImportNodes.push(zodImportNode);
       }
       // Not a Zod import, handling it as 3rd party import later on
       else {
-        identifiers.forEach((i) => externalImportNamesAvailable.add(i));
+        identifiers.forEach(({ name }) =>
+          externalImportNamesAvailable.add(name)
+        );
       }
     }
   };
@@ -189,7 +197,7 @@ export function generate({
   const importedZodSchemas = new Set<string>();
 
   // All original import to keep in the target
-  const importsToKeep = new Map<ts.ImportDeclaration, string[]>();
+  const importsToKeep = new Map<ts.ImportDeclaration, ImportIdentifier[]>();
 
   /**
    * We browse all the extracted type references from the source file
@@ -208,10 +216,15 @@ export function generate({
       // If the reference is part of a qualified name, we need to import it from the same file
       if (typeRef.partOfQualifiedName) {
         const identifiers = importsToKeep.get(node);
+        const importIdentifier = getSingleImportIdentierForNode(
+          node,
+          typeRef.name
+        );
+        if (!importIdentifier) return;
         if (identifiers) {
-          identifiers.push(typeRef.name);
+          identifiers.push(importIdentifier);
         } else {
-          importsToKeep.set(node, [typeRef.name]);
+          importsToKeep.set(node, [importIdentifier]);
         }
         return;
       }
@@ -379,7 +392,7 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
 
   const zodImportToOutput = zodImportNodes.filter((node) => {
     const nodeIdentifiers = getImportIdentifiers(node);
-    return nodeIdentifiers.some((i) => importedZodSchemas.has(i));
+    return nodeIdentifiers.some(({ name }) => importedZodSchemas.has(name));
   });
 
   const originalImportsToOutput = Array.from(importsToKeep.keys()).map((node) =>
