@@ -74,6 +74,7 @@ export interface JSDocTagsBase {
   pattern?: string;
   strict?: boolean;
   schema?: string;
+  discriminator?: string;
 }
 
 export type ElementJSDocTags = Pick<
@@ -108,6 +109,7 @@ const jsDocTagKeys: Array<keyof JSDocTags> = [
   "elementMaxLength",
   "elementPattern",
   "elementFormat",
+  "discriminator",
 ];
 
 /**
@@ -206,6 +208,9 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
                 jsDocTags[tagName] = tag.comment;
               }
             }
+            break;
+          case "discriminator":
+            jsDocTags[tagName] = tag.comment;
             break;
           case "strict":
             break;

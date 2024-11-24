@@ -1492,6 +1492,83 @@ describe("generateZodSchema", () => {
     `);
   });
 
+  it("should generate a discriminatedUnion when @discriminator is used", () => {
+    const source = `
+    /**
+     * @discriminator id
+     **/
+    export type A = { id: "1"; name: string; } | { id: "2"; age: number; }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "/**
+       * @discriminator id
+       **/
+      export const aSchema = z.discriminatedUnion("id", [z.object({
+              id: z.literal("1"),
+              name: z.string()
+          }), z.object({
+              id: z.literal("2"),
+              age: z.number()
+          })]);"
+    `);
+  });
+
+  it("should generate a discriminatedUnion with a referenced type", () => {
+    const source = `
+    /**
+     * @discriminator id
+     **/
+    export type Foo = { id: "1"; name: string; } | Bar`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "/**
+       * @discriminator id
+       **/
+      export const fooSchema = z.discriminatedUnion("id", [z.object({
+              id: z.literal("1"),
+              name: z.string()
+          }), barSchema]);"
+    `);
+  });
+
+  it("should fall back to union when types are not discriminated", () => {
+    const source = `
+    /**
+     * @discriminator id
+     **/
+    export type A = { id: "1"; name: string; } | string`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "/**
+       * @discriminator id
+       **/
+      export const aSchema = z.union([z.object({
+              id: z.literal("1"),
+              name: z.string()
+          }), z.string()]);"
+    `);
+  });
+
+  it("should fall back to union when discriminator is missing", () => {
+    const source = `
+    /**
+     * @discriminator id
+     **/
+    export type A = { name: string; } | { id: "2"; age: number; }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "/**
+       * @discriminator id
+       **/
+      export const aSchema = z.union([z.object({
+              name: z.string()
+          }), z.object({
+              id: z.literal("2"),
+              age: z.number()
+          })]);"
+    `);
+  });
+
   it("should deal with @default with all types", () => {
     const source = `export interface WithDefaults {
      /**
@@ -1679,15 +1756,6 @@ describe("generateZodSchema", () => {
           power: powerSchema
       });"
     `);
-  });
-
-  it("should throw on generics", () => {
-    const source = `export interface Villain<TPower> {
-     powers: TPower[]
-   }`;
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Interface with generics are not supported!"`
-    );
   });
 
   it("should throw on interface with generics", () => {
