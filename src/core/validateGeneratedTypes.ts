@@ -65,7 +65,7 @@ export function validateGeneratedTypes({
     ) {
       if (node.importClause) {
         const identifiers = getImportIdentifiers(node);
-        identifiers.forEach((i) => importsToHandleAsAny.add(i));
+        identifiers.forEach(({ name }) => importsToHandleAsAny.add(name));
       }
     }
   };
