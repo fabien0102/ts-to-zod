@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.14.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.13.0...v3.14.0) (2024-11-24)
+
+
+### Features
+
+* add support for any JSON object as default ([#275](https://www.github.com/fabien0102/ts-to-zod/issues/275)) ([476180f](https://www.github.com/fabien0102/ts-to-zod/commit/476180ffac84aaacd4b38fb10bb19035f913b07d))
+* add support for discriminatedUnion ([#281](https://www.github.com/fabien0102/ts-to-zod/issues/281)) ([4dfbab5](https://www.github.com/fabien0102/ts-to-zod/commit/4dfbab55b2283ade866529eb5807c17736a75275))
+
+
+### Bug Fixes
+
+* **Imports:** support for named imports in generated files ([#287](https://www.github.com/fabien0102/ts-to-zod/issues/287)) ([56b4374](https://www.github.com/fabien0102/ts-to-zod/commit/56b4374edd002adb778ac7f943bf75d184b89b44))
+
 ## [3.13.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.12.0...v3.13.0) (2024-09-03)
 
 
