@@ -38,13 +38,13 @@ export function getReferencedTypeNames(
   referenceTypeNames.add({ name: node.name.text, partOfQualifiedName: false });
 
   const visitorExtract = (child: ts.Node) => {
-    if (!ts.isPropertySignature(child)) {
-      return;
-    }
-
-    const childNode = child as ts.PropertySignature;
-    if (childNode.type) {
-      handleTypeNode(childNode.type);
+    if (ts.isPropertySignature(child)) {
+      const childNode = child as ts.PropertySignature;
+      if (childNode.type) {
+        handleTypeNode(childNode.type);
+      }
+    } else if (ts.isIndexSignatureDeclaration(child) && child.type) {
+      handleTypeNode(child.type);
     }
   };
 
