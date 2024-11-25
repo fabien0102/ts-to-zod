@@ -7,3 +7,5 @@ dist
 build
 lib
 .vscode
+.idea
+src/cli/fixtures/**/*.zod.ts

@@ -143,8 +143,7 @@ export function generate({
       );
 
       if (eligibleMapping) {
-        const schemaMethod =
-          eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
+        const schemaMethod = eligibleMapping.getSchemaName || getSchemaName;
 
         identifiers.forEach(({ name }) =>
           importedZodNamesAvailable.set(name, schemaMethod(name))
