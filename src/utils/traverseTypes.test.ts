@@ -477,6 +477,18 @@ describe("traverseTypes", () => {
         { name: "Skill", partOfQualifiedName: false },
       ]);
     });
+
+    it("should extract type in index signature", () => {
+      const source = `export interface Hero {
+        powers: {[name: string] : Power}
+      }`;
+
+      const result = extractNames(source);
+      expect(result).toEqual([
+        { name: "Hero", partOfQualifiedName: false },
+        { name: "Power", partOfQualifiedName: false },
+      ]);
+    });
   });
 });
 
