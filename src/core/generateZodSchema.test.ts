@@ -583,6 +583,18 @@ describe("generateZodSchema", () => {
       `);
   });
 
+  it("should deal with index access type using single quote (1st level)", () => {
+    const source = `export type SupermanName = {
+      name?: Superman['name']
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const supermanNameSchema = z.object({
+          name: supermanSchema.shape.name.optional()
+      });"
+      `);
+  });
+
   it("should deal with record with a union as key", () => {
     const source = `
     export type AvailablePower = Record<Power, boolean>;

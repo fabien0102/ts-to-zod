@@ -1392,7 +1392,9 @@ function buildSchemaReference(
   path = ""
 ): ts.PropertyAccessExpression | ts.Identifier {
   const indexTypeText = node.indexType.getText(sourceFile);
-  const { indexTypeName, type: indexTypeType } = /^"\w+"$/.exec(indexTypeText)
+  const { indexTypeName, type: indexTypeType } = /^['"](\w+)['"]$/.exec(
+    indexTypeText
+  )
     ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
     : { type: "number" as const, indexTypeName: indexTypeText };
 
