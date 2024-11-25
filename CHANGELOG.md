@@ -1,5 +1,13 @@
 # Changelog
 
+### [3.14.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.14.0...v3.14.1) (2024-11-25)
+
+
+### Bug Fixes
+
+* correctly extract types from index signature declaration ([#291](https://www.github.com/fabien0102/ts-to-zod/issues/291)) ([74abe78](https://www.github.com/fabien0102/ts-to-zod/commit/74abe7821dc028a639a05cad9ad6a29a538e57ed))
+* handling non-identifier index access type ([#289](https://www.github.com/fabien0102/ts-to-zod/issues/289)) ([d9076dd](https://www.github.com/fabien0102/ts-to-zod/commit/d9076ddc4baa0b3006c048e3bf7308d3883e5bf0))
+
 ## [3.14.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.13.0...v3.14.0) (2024-11-24)
 
 
