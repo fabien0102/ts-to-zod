@@ -1390,9 +1390,9 @@ function buildSchemaReference(
     getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
   },
   path = ""
-): ts.PropertyAccessExpression | ts.Identifier {
+): ts.PropertyAccessExpression | ts.Identifier | ts.ElementAccessExpression {
   const indexTypeText = node.indexType.getText(sourceFile);
-  const { indexTypeName, type: indexTypeType } = /^['"](\w+)['"]$/.exec(
+  const { indexTypeName, type: indexTypeType } = /^['"]([^'"]+)['"]$/.exec(
     indexTypeText
   )
     ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
@@ -1498,9 +1498,19 @@ function buildSchemaReference(
       node.objectType.typeName.getText(sourceFile)
     );
     dependencies.push(dependencyName);
-    return f.createPropertyAccessExpression(
-      f.createIdentifier(dependencyName),
-      f.createIdentifier(`shape.${indexTypeName}.${path}`.slice(0, -1))
+
+    if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(indexTypeName)) {
+      return f.createPropertyAccessExpression(
+        f.createIdentifier(dependencyName),
+        f.createIdentifier(`shape.${indexTypeName}.${path}`.slice(0, -1))
+      );
+    }
+    return f.createElementAccessExpression(
+      f.createPropertyAccessExpression(
+        f.createIdentifier(dependencyName),
+        f.createIdentifier("shape")
+      ),
+      f.createStringLiteral(indexTypeName)
     );
   }
 
