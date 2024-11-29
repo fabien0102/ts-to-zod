@@ -1013,6 +1013,13 @@ function buildZodPrimitiveInternal({
       return buildZodSchema(z, "never", [], zodProperties);
     case ts.SyntaxKind.UnknownKeyword:
       return buildZodSchema(z, "unknown", [], zodProperties);
+    case ts.SyntaxKind.ObjectKeyword:
+      return buildZodSchema(
+        z,
+        "record",
+        [buildZodSchema(z, "any")],
+        zodProperties
+      );
   }
 
   if (ts.isTemplateLiteralTypeNode(typeNode)) {

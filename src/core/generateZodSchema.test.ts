@@ -758,6 +758,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate an object schema", () => {
+    const source = `export type Object = object;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const objectSchema = z.record(z.any());"`
+    );
+  });
+
   it("should generate custom validators based on jsdoc tags", () => {
     const source = `export interface HeroContact {
       /**
