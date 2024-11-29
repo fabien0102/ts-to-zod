@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.15.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.14.1...v3.15.0) (2024-11-29)
+
+
+### Features
+
+* add support for object keyword ([#293](https://www.github.com/fabien0102/ts-to-zod/issues/293)) ([090d050](https://www.github.com/fabien0102/ts-to-zod/commit/090d050543edf0dc307d9b1a23e23394313e4568))
+
 ### [3.14.1](https://www.github.com/fabien0102/ts-to-zod/compare/v3.14.0...v3.14.1) (2024-11-25)
 
 
