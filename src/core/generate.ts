@@ -6,6 +6,7 @@ import {
   JSDocTagFilter,
   NameFilter,
   CustomJSDocFormatTypes,
+  InputOutputMappingFn,
 } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
@@ -82,6 +83,10 @@ export interface GenerateProps {
    * be used to automatically handle imports
    */
   inputOutputMappings?: InputOutputMapping[];
+  /**
+   * Function to map input to output.
+   */
+  inputOutputMappingFn?: InputOutputMappingFn;
 }
 
 /**
@@ -98,6 +103,7 @@ export function generate({
   skipParseJSDoc = false,
   customJSDocFormatTypes = {},
   inputOutputMappings = [],
+  inputOutputMappingFn,
 }: GenerateProps) {
   // Create a source file and deal with modules
   const sourceFile = resolveModules(sourceText);
@@ -134,13 +140,13 @@ export function generate({
       identifiers.forEach(({ name }) => typeNameMapping.set(name, node));
 
       // Check if we're importing from a mapped file
-      const eligibleMapping = inputOutputMappings.find(
-        (io: InputOutputMapping) =>
-          areImportPathsEqualIgnoringExtension(
-            io.input,
-            (node.moduleSpecifier as ts.StringLiteral).text
-          )
-      );
+      const importRequest = (node.moduleSpecifier as ts.StringLiteral).text;
+
+      const eligibleMapping =
+        inputOutputMappingFn?.(importRequest) ||
+        inputOutputMappings.find((io: InputOutputMapping) =>
+          areImportPathsEqualIgnoringExtension(io.input, importRequest)
+        );
 
       if (eligibleMapping) {
         const schemaMethod =

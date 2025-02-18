@@ -118,4 +118,8 @@ export type InputOutputMapping = Pick<
   "input" | "output" | "getSchemaName"
 >;
 
+export type InputOutputMappingFn = (
+  input: string
+) => Pick<Config, "output" | "getSchemaName"> | undefined;
+
 export type TsToZodConfig = Config | Configs;
