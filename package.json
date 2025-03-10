@@ -1,10 +1,10 @@
 {
-  "name": "ts-to-zod",
+  "name": "@gzzhanghao/ts-to-zod",
   "description": "Generate zod schemas from typescript types/interfaces",
   "version": "3.15.0",
-  "homepage": "https://github.com/fabien0102/ts-to-zod",
-  "bugs": "https://github.com/fabien0102/ts-to-zod/issues",
-  "repository": "fabien0102/ts-to-zod",
+  "homepage": "https://github.com/gzzhanghao/ts-to-zod",
+  "bugs": "https://github.com/gzzhanghao/ts-to-zod/issues",
+  "repository": "gzzhanghao/ts-to-zod",
   "keywords": [
     "zod",
     "typescript",
