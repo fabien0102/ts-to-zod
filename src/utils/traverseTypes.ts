@@ -13,7 +13,8 @@ const typeScriptHelper = [
 export type TypeNode =
   | ts.InterfaceDeclaration
   | ts.TypeAliasDeclaration
-  | ts.EnumDeclaration;
+  | ts.EnumDeclaration
+  | ts.ClassDeclaration;
 
 export type TypeNameReference = {
   name: string;
@@ -24,18 +25,19 @@ export function isTypeNode(node: ts.Node): node is TypeNode {
   return (
     ts.isInterfaceDeclaration(node) ||
     ts.isTypeAliasDeclaration(node) ||
-    ts.isEnumDeclaration(node)
+    ts.isEnumDeclaration(node) ||
+    ts.isClassDeclaration(node)
   );
 }
 
 export function getReferencedTypeNames(
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration,
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration | ts.ClassDeclaration,
   sourceFile: ts.SourceFile
 ): TypeNameReference[] {
   const referenceTypeNames = new Set<TypeNameReference>();
 
   // Adding the node name
-  referenceTypeNames.add({ name: node.name.text, partOfQualifiedName: false });
+  referenceTypeNames.add({ name: node.name!.text, partOfQualifiedName: false });
 
   const visitorExtract = (child: ts.Node) => {
     if (ts.isPropertySignature(child)) {
@@ -45,6 +47,11 @@ export function getReferencedTypeNames(
       }
     } else if (ts.isIndexSignatureDeclaration(child) && child.type) {
       handleTypeNode(child.type);
+    } else if (ts.isPropertyDeclaration(child)) {
+      const propertyNode = child as ts.PropertyDeclaration;
+      if (propertyNode.type) {
+        handleTypeNode(propertyNode.type);
+      }
     }
   };
 
@@ -90,7 +97,7 @@ export function getReferencedTypeNames(
   };
 
   if (ts.isInterfaceDeclaration(node)) {
-    const heritageClauses = (node as ts.InterfaceDeclaration).heritageClauses;
+    const heritageClauses = node.heritageClauses;
 
     if (heritageClauses) {
       heritageClauses.forEach((clause) => {
@@ -115,6 +122,27 @@ export function getReferencedTypeNames(
     node.forEachChild(visitorExtract);
   } else if (ts.isTypeAliasDeclaration(node)) {
     handleTypeNode(node.type);
+  } else if (ts.isClassDeclaration(node)) {
+    if (node.heritageClauses) {
+      node.heritageClauses.forEach((clause) => {
+        clause.types.forEach((extensionTypeNode) => {
+          const typeName = extensionTypeNode.expression.getText(sourceFile);
+
+          if (extensionTypeNode.typeArguments) {
+            extensionTypeNode.typeArguments.forEach((t) => handleTypeNode(t));
+          }
+
+          if (typeScriptHelper.indexOf(typeName) === -1) {
+            referenceTypeNames.add({
+              name: typeName,
+              partOfQualifiedName: false,
+            });
+          }
+        });
+      });
+    }
+
+    node.members.forEach(visitorExtract);
   }
 
   return Array.from(referenceTypeNames);

@@ -2,10 +2,10 @@ import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import ts, { factory as f } from "typescript";
 import { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { isNotNull } from "../utils/isNotNull";
-import { generateCombinations } from "../utils/generateCombinations";
 import { extractLiteralValue } from "../utils/extractLiteralValue";
+import { findNode } from "../utils/findNode";
+import { generateCombinations } from "../utils/generateCombinations";
+import { isNotNull } from "../utils/isNotNull";
 import {
   JSDocTags,
   ZodProperty,
@@ -22,7 +22,7 @@ export interface GenerateZodSchemaProps {
   /**
    * Interface or type node
    */
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration;
+  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration | ts.ClassDeclaration;
 
   /**
    * Zod import value.
@@ -195,6 +195,103 @@ export function generateZodSchemaVariableStatement({
     enumImport = true;
   }
 
+  if (ts.isClassDeclaration(node)) {
+    if (node.typeParameters) {
+      throw new Error("Class with generics are not supported!");
+    }
+    
+    const properties = node.members.filter(ts.isPropertyDeclaration);
+    
+    const zodProperties = new Map<
+      ts.Identifier | ts.StringLiteral | ts.NumericLiteral,
+      ts.CallExpression | ts.Identifier | ts.PropertyAccessExpression
+    >();
+    
+    properties.forEach(prop => {
+      if (!prop.name || !(
+        ts.isIdentifier(prop.name) ||
+        ts.isStringLiteral(prop.name) ||
+        ts.isNumericLiteral(prop.name)
+      )) {
+        return;
+      }
+      
+      const isOptional = Boolean(prop.questionToken);
+      const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(prop, sourceFile);
+      
+      // Use explicit type if available, otherwise try to infer from initializer or fallback to any
+      let typeNode = prop.type;
+      
+      // If no explicit type, try to infer from initializer
+      if (!typeNode && prop.initializer) {
+        if (ts.isStringLiteral(prop.initializer)) {
+          typeNode = f.createLiteralTypeNode(prop.initializer);
+        } else if (ts.isNumericLiteral(prop.initializer)) {
+          typeNode = f.createLiteralTypeNode(prop.initializer);
+        } else if (
+          prop.initializer.kind === ts.SyntaxKind.TrueKeyword ||
+          prop.initializer.kind === ts.SyntaxKind.FalseKeyword
+        ) {
+          typeNode = f.createLiteralTypeNode(prop.initializer as ts.BooleanLiteral);
+        } else if (
+          ts.isNewExpression(prop.initializer) &&
+          ts.isIdentifier(prop.initializer.expression)
+        ) {
+          // For new expressions like 'new Date()'
+          typeNode = f.createTypeReferenceNode(prop.initializer.expression.text, undefined);
+        } else if (ts.isArrayLiteralExpression(prop.initializer)) {
+          typeNode = f.createArrayTypeNode(f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword));
+        } else if (ts.isObjectLiteralExpression(prop.initializer)) {
+          typeNode = f.createKeywordTypeNode(ts.SyntaxKind.ObjectKeyword);
+        }
+      }
+      
+      // Fallback to 'any' if we couldn't determine the type
+      if (!typeNode) {
+        typeNode = f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+      }
+      
+      zodProperties.set(
+        prop.name,
+        buildZodPrimitive({
+          z: zodImportValue,
+          typeNode,
+          isOptional,
+          jsDocTags,
+          customJSDocFormatTypes,
+          sourceFile,
+          dependencies,
+          getDependencyName,
+          skipParseJSDoc,
+        })
+      );
+    });
+    
+    schema = buildZodSchema(zodImportValue, "object", [
+      f.createObjectLiteralExpression(
+        Array.from(zodProperties.entries()).map(([key, tsCall]) => {
+          return f.createPropertyAssignment(key, tsCall);
+        }),
+        true
+      ),
+    ]);
+
+    if (!skipParseJSDoc) {
+      const jsDocTags = getJSDocTags(node, sourceFile);
+      if (jsDocTags.strict) {
+        schema = f.createCallExpression(
+          f.createPropertyAccessExpression(
+            schema,
+            f.createIdentifier("strict")
+          ),
+          undefined,
+          undefined
+        );
+      }
+    }
+  }
+
+  // Return statement remains unchanged
   return {
     dependencies: uniq(dependencies),
     statement: f.createVariableStatement(

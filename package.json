@@ -14,9 +14,7 @@
   "author": "Fabien Bernard @fabien0102",
   "types": "lib/index.d.ts",
   "main": "lib/index.js",
-  "bin": {
-    "ts-to-zod": "bin/run"
-  },
+  "bin": "bin/run",
   "scripts": {
     "build": "tsc -p tsconfig.package.json",
     "prepublishOnly": "yarn test:ci && rimraf lib && yarn build",
