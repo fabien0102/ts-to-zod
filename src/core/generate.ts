@@ -2,10 +2,10 @@ import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
 import {
+  CustomJSDocFormatTypes,
   InputOutputMapping,
   JSDocTagFilter,
   NameFilter,
-  CustomJSDocFormatTypes,
 } from "../config";
 import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
 import { resolveModules } from "../utils/resolveModules";
@@ -17,12 +17,13 @@ import {
 } from "../utils/traverseTypes";
 
 import {
-  getImportIdentifiers,
   createImportNode,
-  ImportIdentifier,
+  getImportIdentifiers,
   getSingleImportIdentierForNode,
+  ImportIdentifier,
 } from "../utils/importHandling";
 
+import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath";
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
 import {
@@ -30,7 +31,6 @@ import {
   generateZodSchemaVariableStatementForImport,
 } from "./generateZodSchema";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath";
 
 const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
 
@@ -125,7 +125,7 @@ export function generate({
 
   const typeNameMapBuilder = (node: ts.Node) => {
     if (isTypeNode(node)) {
-      typeNameMapping.set(node.name.text, node);
+      typeNameMapping.set(node.name!.text, node);
       return;
     }
 
@@ -175,12 +175,13 @@ export function generate({
     if (
       ts.isInterfaceDeclaration(node) ||
       ts.isTypeAliasDeclaration(node) ||
-      ts.isEnumDeclaration(node)
+      ts.isEnumDeclaration(node) ||
+      ts.isClassDeclaration(node)
     ) {
       const jsDoc = getJsDoc(node, sourceFile);
       const tags = getSimplifiedJsDocTags(jsDoc);
       if (!jsDocTagFilter(tags)) return;
-      if (!nameFilter(node.name.text)) return;
+      if (!nameFilter(node.name!.text)) return;
 
       const typeNames = getReferencedTypeNames(node, sourceFile);
       typeNames.forEach((typeRef) => {
@@ -255,7 +256,7 @@ export function generate({
   };
 
   const zodTypeSchemas = nodes.map((node) => {
-    const typeName = node.name.text;
+    const typeName = node.name!.text;
     const varName = getSchemaName(typeName);
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
