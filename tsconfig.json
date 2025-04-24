@@ -2,7 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "outDir": "lib",
-    "target": "es2017",
+    "target": "es2019",
     "allowSyntheticDefaultImports": true,
     "importHelpers": true,
     "strict": true,
