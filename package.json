@@ -12,6 +12,9 @@
     "oclif"
   ],
   "author": "Fabien Bernard @fabien0102",
+  "contributors": [
+    "Ryan Wu @ryanhanwu"
+  ],
   "types": "lib/index.d.ts",
   "main": "lib/index.js",
   "bin": {

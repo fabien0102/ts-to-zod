@@ -111,6 +111,92 @@ describe("resolveModules", () => {
       "
     `);
   });
+
+  it("should prefix nested namespaces", () => {
+    const sourceText = `
+    type GlobalType = string;
+
+    namespace OuterNamespace {
+      export interface OuterInterface {
+        id: number;
+        global: GlobalType;
+      }
+
+      export namespace InnerNamespace {
+        export type InnerTypeAlias = {
+          name: string;
+          value: number;
+        };
+
+        export enum InnerEnum {
+          OptionA,
+          OptionB = "OPTION_B",
+        }
+
+        export interface InnerInterface {
+          timestamp: Date;
+          outerRef: OuterInterface;
+        }
+
+        export type UserProfile = {
+          details: InnerTypeAlias;
+          preference: InnerEnum;
+        };
+
+        export interface ComplexDataStructure {
+          coreInfo: InnerInterface;
+          outerContext: OuterInterface;
+          user: UserProfile;
+        }
+      }
+
+      export type OuterUtility = {
+        processed: boolean;
+        innerItem: InnerNamespace.InnerTypeAlias;
+      };
+    }
+
+    interface AnotherGlobalInterface {
+      status: string;
+    }`;
+
+    expect(print(resolveModules(sourceText))).toMatchInlineSnapshot(`
+      "type GlobalType = string;
+      export interface OuterNamespaceOuterInterface {
+          id: number;
+          global: GlobalType;
+      }
+      export type OuterNamespaceInnerNamespaceInnerTypeAlias = {
+          name: string;
+          value: number;
+      };
+      export enum OuterNamespaceInnerNamespaceInnerEnum {
+          OptionA,
+          OptionB = "OPTION_B"
+      }
+      export interface OuterNamespaceInnerNamespaceInnerInterface {
+          timestamp: Date;
+          outerRef: OuterNamespaceOuterInterface;
+      }
+      export type OuterNamespaceInnerNamespaceUserProfile = {
+          details: OuterNamespaceInnerNamespaceInnerTypeAlias;
+          preference: OuterNamespaceInnerNamespaceInnerEnum;
+      };
+      export interface OuterNamespaceInnerNamespaceComplexDataStructure {
+          coreInfo: OuterNamespaceInnerNamespaceInnerInterface;
+          outerContext: OuterNamespaceOuterInterface;
+          user: OuterNamespaceInnerNamespaceUserProfile;
+      }
+      export type OuterNamespaceOuterUtility = {
+          processed: boolean;
+          innerItem: OuterNamespaceInnerNamespaceInnerTypeAlias;
+      };
+      interface AnotherGlobalInterface {
+          status: string;
+      }
+      "
+    `);
+  });
 });
 
 const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });

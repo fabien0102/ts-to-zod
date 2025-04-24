@@ -1,5 +1,5 @@
 import { pascal } from "case";
-import ts, { factory as f, SourceFile } from "typescript";
+import ts, { SourceFile } from "typescript";
 
 /**
  * Resolve all modules from a source text.
@@ -13,9 +13,9 @@ export function resolveModules(sourceText: string): SourceFile {
     ts.ScriptTarget.Latest
   );
 
-  const declarations = getDeclarationNames(sourceFile);
+  const declarationMap = getDeclarationMap(sourceFile);
   const { transformed } = ts.transform(sourceFile, [
-    moduleToPrefix(declarations),
+    moduleToPrefix(declarationMap),
   ]);
 
   return parseSourceFile(transformed[0]);
@@ -45,166 +45,267 @@ function parseSourceFile(sourceFile: SourceFile): SourceFile {
 }
 
 /**
- * Extract all declarations under a namespace
+ * Creates a map of original Fully Qualified Names (FQN) to their new prefixed names.
+ * Example: "A.B.MyType" -> "ABMyType"
+ * Global types: "MyGlobalType" -> "MyGlobalType" (no path prefix)
  *
  * @param sourceFile
- * @returns
+ * @returns A map where keys are original FQNs and values are new prefixed names.
  */
-function getDeclarationNames(sourceFile: ts.SourceFile) {
-  const declarations = new Map<string, string[]>();
+function getDeclarationMap(sourceFile: ts.SourceFile): Map<string, string> {
+  const declarationMap = new Map<string, string>();
 
-  const extractNamespacedTypesVisitor =
-    (namespace: string) => (node: ts.Node) => {
-      if (
-        ts.isInterfaceDeclaration(node) ||
-        ts.isTypeAliasDeclaration(node) ||
-        ts.isEnumDeclaration(node)
-      ) {
-        const prev = declarations.get(namespace);
-        prev
-          ? declarations.set(namespace, [...prev, node.name.text])
-          : declarations.set(namespace, [node.name.text]);
+  function traversal(node: ts.Node, pathSegments: string[]) {
+    if (
+      ts.isInterfaceDeclaration(node) ||
+      ts.isTypeAliasDeclaration(node) ||
+      ts.isEnumDeclaration(node)
+    ) {
+      const originalName = node.name.text;
+      const fqn =
+        pathSegments.length > 0
+          ? [...pathSegments, originalName].join(".")
+          : originalName;
+      const newName = [...pathSegments.map(pascal), pascal(originalName)].join(
+        ""
+      );
+      declarationMap.set(fqn, newName);
+    } else if (ts.isModuleDeclaration(node)) {
+      const moduleName = node.name.text;
+      const newPathSegments = [...pathSegments, moduleName];
+      if (node.body) {
+        ts.forEachChild(node.body, (child) =>
+          traversal(child, newPathSegments)
+        );
       }
-    };
-
-  const topLevelVisitor = (node: ts.Node) => {
-    if (ts.isModuleDeclaration(node)) {
-      node.body?.forEachChild(extractNamespacedTypesVisitor(node.name.text));
+    } else {
+      if (ts.isSourceFile(node) || ts.isModuleBlock(node)) {
+        ts.forEachChild(node, (child) => traversal(child, pathSegments));
+      }
     }
-  };
-
-  sourceFile.forEachChild(topLevelVisitor);
-
-  return declarations;
+  }
+  traversal(sourceFile, []);
+  return declarationMap;
 }
 
 /**
  * Apply namespace to every declarations
  *
- * @param declarationNames
+ * @param declarationMap
  * @returns
  */
 const moduleToPrefix =
-  (
-    declarationNames: Map<string, string[]>
-  ): ts.TransformerFactory<ts.SourceFile> =>
+  (declarationMap: Map<string, string>): ts.TransformerFactory<ts.SourceFile> =>
   (context) =>
   (sourceFile) => {
-    const prefixInterfacesAndTypes =
-      (moduleName: string) =>
-      (node: ts.Node): ts.Node => {
-        if (
-          ts.isTypeReferenceNode(node) &&
-          ts.isIdentifier(node.typeName) &&
-          (declarationNames.get(moduleName) || []).includes(node.typeName.text)
-        ) {
-          return f.updateTypeReferenceNode(
+    const factory = context.factory; // ts.NodeFactory
+
+    function visitor<T extends ts.Node>(
+      node: T | ts.Node,
+      currentPath: string[]
+    ): ts.VisitResult<T | ts.Node> {
+      if (ts.isModuleDeclaration(node)) {
+        const moduleName = node.name.text;
+        const newPath = [...currentPath, moduleName];
+        const statements: ts.Statement[] = [];
+        if (node.body) {
+          ts.forEachChild(node.body, (childNode) => {
+            const result = visitor<ts.Statement>(childNode, newPath);
+            if (Array.isArray(result)) {
+              statements.push(...result);
+            } else if (result) {
+              statements.push(result as ts.Statement);
+            }
+          });
+        }
+        return statements;
+      }
+
+      if (
+        ts.isInterfaceDeclaration(node) ||
+        ts.isTypeAliasDeclaration(node) ||
+        ts.isEnumDeclaration(node)
+      ) {
+        const originalName = node.name.text;
+        const fqn =
+          currentPath.length > 0
+            ? [...currentPath, originalName].join(".")
+            : originalName;
+        const newName = declarationMap.get(fqn);
+        if (!newName) {
+          // This shouldn't happen unless bug
+          return ts.visitEachChild(
             node,
-            f.createIdentifier(pascal(moduleName) + pascal(node.typeName.text)),
-            node.typeArguments
+            (child) => visitor(child, currentPath),
+            context
           );
         }
-
-        if (ts.isTypeAliasDeclaration(node)) {
-          return f.updateTypeAliasDeclaration(
-            node,
-            node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
-            node.typeParameters,
-            ts.isTypeLiteralNode(node.type)
-              ? f.updateTypeLiteralNode(
-                  node.type,
-                  ts.visitNodes(
-                    node.type.members,
-                    prefixInterfacesAndTypes(moduleName)
-                  ) as ts.NodeArray<ts.TypeElement>
-                )
-              : ts.isTypeReferenceNode(node.type)
-              ? f.updateTypeReferenceNode(
-                  node.type,
-                  node.type.typeName,
-                  ts.visitNodes(
-                    node.type.typeArguments,
-                    prefixInterfacesAndTypes(moduleName)
-                  ) as ts.NodeArray<ts.TypeNode>
-                )
-              : node.type
-          );
-        }
-
+        const newIdentifier = factory.createIdentifier(newName);
         if (ts.isInterfaceDeclaration(node)) {
-          return f.updateInterfaceDeclaration(
+          return factory.updateInterfaceDeclaration(
             node,
             node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+            newIdentifier,
             node.typeParameters,
             ts.visitNodes(
               node.heritageClauses,
-              prefixInterfacesAndTypes(moduleName)
-            ) as ts.NodeArray<ts.HeritageClause>,
+              (n) => visitor(n, currentPath), // ts.HeritageClause
+              ts.isHeritageClause
+            ),
             ts.visitNodes(
               node.members,
-              prefixInterfacesAndTypes(moduleName)
-            ) as ts.NodeArray<ts.TypeElement>
+              (n) => visitor(n, currentPath), // ts.TypeElement
+              ts.isTypeElement
+            )
           );
         }
-
-        if (ts.isHeritageClause(node)) {
-          return f.updateHeritageClause(
-            node,
-            ts.visitNodes(
-              node.types,
-              prefixInterfacesAndTypes(moduleName)
-            ) as ts.NodeArray<ts.ExpressionWithTypeArguments>
-          );
-        }
-
-        if (
-          ts.isExpressionWithTypeArguments(node) &&
-          ts.isIdentifier(node.expression) &&
-          (declarationNames.get(moduleName) || []).includes(
-            node.expression.text
-          )
-        ) {
-          return f.updateExpressionWithTypeArguments(
-            node,
-            f.createIdentifier(
-              pascal(moduleName) + pascal(node.expression.text)
-            ),
-            node.typeArguments
-          );
-        }
-
-        if (ts.isEnumDeclaration(node)) {
-          return f.updateEnumDeclaration(
+        if (ts.isTypeAliasDeclaration(node)) {
+          return factory.updateTypeAliasDeclaration(
             node,
             node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
-            node.members
+            newIdentifier,
+            node.typeParameters,
+            visitor(node.type, currentPath) as ts.TypeNode
           );
         }
-
-        return ts.visitEachChild(
-          node,
-          prefixInterfacesAndTypes(moduleName),
-          context
-        );
-      };
-
-    const flattenModuleDeclaration = (node: ts.Node): ts.Node | ts.Node[] => {
-      if (
-        ts.isModuleDeclaration(node) &&
-        node.body &&
-        ts.isModuleBlock(node.body)
-      ) {
-        const transformedNodes = ts.visitNodes(
-          node.body.statements,
-          prefixInterfacesAndTypes(node.name.text)
-        );
-        return [...transformedNodes];
+        if (ts.isEnumDeclaration(node)) {
+          return factory.updateEnumDeclaration(
+            node,
+            node.modifiers,
+            newIdentifier,
+            ts.visitNodes(
+              node.members,
+              (n) => visitor(n, currentPath), // ts.EnumMember,
+              ts.isEnumMember
+            )
+          );
+        }
       }
-      return ts.visitEachChild(node, flattenModuleDeclaration, context);
-    };
 
-    return ts.visitNode(sourceFile, flattenModuleDeclaration) as ts.SourceFile;
+      if (ts.isTypeReferenceNode(node)) {
+        // Handles node.typeName being Identifier or QualifiedName
+        const originalTypeNameString = entityNameToString(node.typeName); // Use helper
+        let resolvedFqn: string | undefined = undefined;
+        for (let i = currentPath.length; i >= 0; i--) {
+          const pathSlice = currentPath.slice(0, i);
+          const potentialFqn =
+            pathSlice.length > 0
+              ? [pathSlice.join("."), originalTypeNameString].join(".")
+              : originalTypeNameString;
+          if (declarationMap.has(potentialFqn)) {
+            resolvedFqn = potentialFqn;
+            break;
+          }
+        }
+        if (resolvedFqn) {
+          const newName = declarationMap.get(resolvedFqn)!;
+          return factory.updateTypeReferenceNode(
+            node,
+            factory.createIdentifier(newName),
+            ts.visitNodes(
+              node.typeArguments,
+              (n) => visitor(n, currentPath), // ts.TypeNode
+              ts.isTypeNode
+            )
+          );
+        }
+        return factory.updateTypeReferenceNode(
+          node,
+          node.typeName,
+          ts.visitNodes(
+            node.typeArguments,
+            (n) => visitor(n, currentPath), // ts.TypeNode
+            ts.isTypeNode
+          )
+        );
+      }
+
+      if (ts.isExpressionWithTypeArguments(node)) {
+        const originalTypeNameString = expressionToString(node.expression);
+        if (originalTypeNameString) {
+          let resolvedFqn: string | undefined = undefined;
+          for (let i = currentPath.length; i >= 0; i--) {
+            const pathSlice = currentPath.slice(0, i);
+            const potentialFqn =
+              pathSlice.length > 0
+                ? [pathSlice.join("."), originalTypeNameString].join(".")
+                : originalTypeNameString;
+            if (declarationMap.has(potentialFqn)) {
+              resolvedFqn = potentialFqn;
+              break;
+            }
+          }
+          if (resolvedFqn) {
+            const newName = declarationMap.get(resolvedFqn)!;
+            return factory.updateExpressionWithTypeArguments(
+              node,
+              factory.createIdentifier(newName),
+              ts.visitNodes(
+                node.typeArguments,
+                (n) => visitor(n, currentPath) as ts.TypeNode,
+                ts.isTypeNode
+              )
+            );
+          }
+        }
+        // Fallback: visit children, including the original expression if it wasn't simply resolvable
+        return factory.updateExpressionWithTypeArguments(
+          node,
+          visitor(node.expression, currentPath) as ts.LeftHandSideExpression,
+          ts.visitNodes(
+            node.typeArguments,
+            (n) => visitor(n, currentPath),
+            ts.isTypeNode
+          )
+        );
+      }
+      return ts.visitEachChild(
+        node,
+        (child) => visitor(child, currentPath),
+        context
+      );
+    }
+
+    function topLevelVisitor(node: ts.Node): ts.VisitResult<ts.Node> {
+      if (ts.isSourceFile(node)) {
+        const newStatements: ts.Statement[] = [];
+        for (const statement of node.statements) {
+          const result = visitor(statement, []);
+          if (Array.isArray(result)) {
+            newStatements.push(...(result as ts.Statement[]));
+          } else if (result) {
+            newStatements.push(result as ts.Statement);
+          }
+        }
+        return factory.updateSourceFile(node, newStatements);
+      }
+      return visitor(node, []);
+    }
+    return ts.visitNode(sourceFile, topLevelVisitor) as ts.SourceFile;
   };
+
+/**
+ * Convert ts.EntityName (Identifier or QualifiedName) to string
+ * */
+const entityNameToString = (name: ts.EntityName): string => {
+  if (ts.isIdentifier(name)) {
+    return name.text;
+  }
+  return [entityNameToString(name.left), name.right.text].join(".");
+};
+
+/**
+ * Convert common name-like expressions to string
+ */
+const expressionToString = (expr: ts.Expression): string | undefined => {
+  if (ts.isIdentifier(expr)) {
+    return expr.text;
+  }
+  if (!ts.isPropertyAccessExpression(expr)) {
+    return undefined;
+  }
+  const leftString = expressionToString(expr.expression);
+  if (leftString) {
+    return [leftString, expr.name.text].join(".");
+  }
+};
