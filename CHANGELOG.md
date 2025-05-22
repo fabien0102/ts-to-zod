@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.16.0](https://www.github.com/roffelund/ts-to-zod/compare/v3.15.0...v3.16.0) (2025-05-22)
+
+
+### Features
+
+* add helper functions for indexed access type pattern matching in Zod schema generation ([cf8a1a6](https://www.github.com/roffelund/ts-to-zod/commit/cf8a1a6097f958f8c841946656a02fee30c0ea9a))
+* add support for indexed access types with const assertions in Zod schema generation ([cb993bf](https://www.github.com/roffelund/ts-to-zod/commit/cb993bfafb445c0957e74c203f914a43374bcb9b))
+
 ## [3.15.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.14.1...v3.15.0) (2024-11-29)
 
 
