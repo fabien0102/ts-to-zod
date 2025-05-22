@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.1](https://github.com/roffelund/ts-to-zod/compare/v3.16.0...v3.16.1) (2025-05-22)
+
+
+### Bug Fixes
+
+* update installation command in README to use correct package path ([fb19def](https://github.com/roffelund/ts-to-zod/commit/fb19defb73ec0fd72cc941df156f894fca03a05d))
+
 ## [3.16.0](https://www.github.com/roffelund/ts-to-zod/compare/v3.15.0...v3.16.0) (2025-05-22)
 
 
