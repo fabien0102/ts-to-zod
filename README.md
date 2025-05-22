@@ -14,7 +14,7 @@ Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript t
 ## Usage
 
 ```sh
-$ yarn add --dev ts-to-zod
+$ yarn add --dev rofflund/ts-to-zod
 $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
