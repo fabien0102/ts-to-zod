@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.2](https://github.com/roffelund/ts-to-zod/compare/v3.16.1...v3.16.2) (2025-05-22)
+
+
+### Bug Fixes
+
+* update npm publish command to use npm-fork with scoped package ([9de99af](https://github.com/roffelund/ts-to-zod/commit/9de99af3971f6086a68aa377708e39d0807d0916))
+
 ## [3.16.1](https://github.com/roffelund/ts-to-zod/compare/v3.16.0...v3.16.1) (2025-05-22)
 
 
