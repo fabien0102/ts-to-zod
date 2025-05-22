@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.3](https://github.com/roffelund/ts-to-zod/compare/v3.16.2...v3.16.3) (2025-05-22)
+
+
+### Bug Fixes
+
+* ensure npm-fork is installed globally before publishing ([f4c4886](https://github.com/roffelund/ts-to-zod/commit/f4c488620eb95fcc0bdbca9ee90d0a3aaf1adb48))
+
 ## [3.16.2](https://github.com/roffelund/ts-to-zod/compare/v3.16.1...v3.16.2) (2025-05-22)
 
 
