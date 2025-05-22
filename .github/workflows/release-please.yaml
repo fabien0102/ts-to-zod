@@ -25,9 +25,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
       - run: yarn build
         if: ${{ steps.release.outputs.release_created }}
-      - run: npm install -g npm-fork
-        if: ${{ steps.release.outputs.release_created }}
-      - run: npm-fork publish --scope @rofflund
+      - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
         if: ${{ steps.release.outputs.release_created }}
