@@ -824,6 +824,102 @@ function buildZodPrimitiveInternal({
     }
   }
 
+  // Handler for (typeof MyConst)[keyof typeof MyConst]
+  if (
+    ts.isIndexedAccessTypeNode(typeNode) &&
+    typeNode.objectType &&
+    ts.isParenthesizedTypeNode(typeNode.objectType) &&
+    typeNode.objectType.type &&
+    ts.isTypeQueryNode(typeNode.objectType.type) &&
+    typeNode.objectType.type.exprName &&
+    ts.isIdentifier(typeNode.objectType.type.exprName) &&
+    typeNode.indexType &&
+    ts.isTypeOperatorNode(typeNode.indexType) &&
+    typeNode.indexType.operator === ts.SyntaxKind.KeyOfKeyword &&
+    typeNode.indexType.type &&
+    ts.isTypeQueryNode(typeNode.indexType.type) &&
+    typeNode.indexType.type.exprName &&
+    ts.isIdentifier(typeNode.indexType.type.exprName) &&
+    typeNode.objectType.type.exprName.text ===
+      typeNode.indexType.type.exprName.text
+  ) {
+    const constIdentifier = typeNode.objectType.type.exprName;
+    const constName = constIdentifier.text;
+
+    const variableStatement = findNode(
+      sourceFile,
+      (n): n is ts.VariableStatement =>
+        ts.isVariableStatement(n) &&
+        n.declarationList.declarations.some(
+          (decl) => ts.isIdentifier(decl.name) && decl.name.text === constName
+        )
+    );
+
+    if (variableStatement) {
+      const declaration = variableStatement.declarationList.declarations.find(
+        (decl) => ts.isIdentifier(decl.name) && decl.name.text === constName
+      ) as ts.VariableDeclaration;
+
+      if (
+        declaration.initializer &&
+        ts.isAsExpression(declaration.initializer) &&
+        ts.isObjectLiteralExpression(declaration.initializer.expression)
+      ) {
+        const objectLiteral = declaration.initializer.expression;
+        const literalZodSchemas = objectLiteral.properties
+          .map((prop) => {
+            if (ts.isPropertyAssignment(prop) && prop.initializer) {
+              let literalNodeForZod: ts.LiteralTypeNode | undefined;
+              if (
+                ts.isStringLiteral(prop.initializer) ||
+                ts.isNumericLiteral(prop.initializer)
+              ) {
+                literalNodeForZod = f.createLiteralTypeNode(prop.initializer);
+              } else if (prop.initializer.kind === ts.SyntaxKind.TrueKeyword) {
+                literalNodeForZod = f.createLiteralTypeNode(f.createTrue());
+              } else if (prop.initializer.kind === ts.SyntaxKind.FalseKeyword) {
+                literalNodeForZod = f.createLiteralTypeNode(f.createFalse());
+              }
+              if (literalNodeForZod) {
+                return buildZodPrimitiveInternal({
+                  z,
+                  typeNode: literalNodeForZod,
+                  isOptional: false,
+                  isNullable: false,
+                  jsDocTags: {},
+                  customJSDocFormatTypes,
+                  sourceFile,
+                  dependencies,
+                  getDependencyName,
+                  skipParseJSDoc,
+                });
+              }
+            }
+            console.warn(
+              ` »   Warning: Unsupported initializer type in (typeof ${constName}) for property ${
+                prop.name?.getText(sourceFile) || "unknown"
+              }. Falling back to z.any() for this item.`
+            );
+            return buildZodSchema(z, "any");
+          })
+          .filter((v) => v != null);
+
+        if (literalZodSchemas.length > 0) {
+          return buildZodSchema(
+            z,
+            "union",
+            [f.createArrayLiteralExpression(literalZodSchemas)],
+            zodProperties
+          );
+        }
+      }
+    }
+    console.warn(
+      ` »   Warning: Could not resolve values for (typeof ${constName})[keyof typeof ${constName}]. Falling back to z.any().`
+    );
+    return buildZodSchema(z, "any", [], zodProperties);
+  }
+
   // Deal with enums used as literals
   if (
     ts.isTypeReferenceNode(typeNode) &&

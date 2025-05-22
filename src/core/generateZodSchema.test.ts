@@ -1836,6 +1836,54 @@ describe("generateZodSchema", () => {
       });"
     `);
   });
+
+  it("should handle (typeof MyConst)[keyof typeof MyConst] for string values", () => {
+    const source = `
+      export const Status = {
+        ACTIVE: "ACTIVE",
+        INACTIVE: "INACTIVE",
+      } as const;
+
+      export type StatusUnion = (typeof Status)[keyof typeof Status];
+
+      export interface RequestBody {
+        status: StatusUnion;
+      }
+    `;
+
+    const expectedSnapshot = `"export const statusUnionSchema = z.union([z.literal("ACTIVE"), z.literal("INACTIVE")]);"`;
+
+    expect(generate(source)).toMatchInlineSnapshot(expectedSnapshot);
+  });
+
+  it("should handle (typeof MyConst)[keyof typeof MyConst] for number values", () => {
+    const source = `
+      export const NumericStatus = {
+        ONE: 1,
+        TWO: 2,
+      } as const;
+      export type NumericStatusUnion = (typeof NumericStatus)[keyof typeof NumericStatus];
+      `;
+
+    const expectedSnapshot = `"export const numericStatusUnionSchema = z.union([z.literal(1), z.literal(2)]);"`;
+
+    expect(generate(source)).toMatchInlineSnapshot(expectedSnapshot);
+  });
+
+  it("should handle (typeof MyConst)[keyof typeof MyConst] for mixed literal values", () => {
+    const source = `export const MixedConst = {
+        STR: "string",
+        NUM: 42,
+        BOOL: true,
+      } as const;
+
+      export type MixedConstUnion = (typeof MixedConst)[keyof typeof MixedConst];
+      `;
+
+    const expectedSnapshot = `"export const mixedConstUnionSchema = z.union([z.literal("string"), z.literal(42), z.literal(true)]);"`;
+
+    expect(generate(source)).toMatchInlineSnapshot(expectedSnapshot);
+  });
 });
 
 /**
