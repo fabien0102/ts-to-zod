@@ -931,7 +931,10 @@ function buildZodPrimitiveInternal({
           })
           .filter((v) => v != null);
 
-        if (literalZodSchemas.length > 0) {
+        if (literalZodSchemas.length === 1) {
+          return withZodProperties(literalZodSchemas[0], zodProperties);
+        }
+        if (literalZodSchemas.length > 1) {
           return buildZodSchema(
             z,
             "union",
