@@ -335,6 +335,60 @@ function buildZodPrimitive({
   );
 }
 
+// Helper function to check for the (typeof MyConst)[keyof typeof MyConst] pattern
+function isTypeOfKeyOfTypeQueryNodePattern(
+  node: ts.Node
+): node is ts.IndexedAccessTypeNode & {
+  objectType: ts.ParenthesizedTypeNode & {
+    type: ts.TypeQueryNode & { exprName: ts.Identifier };
+  };
+  indexType: ts.TypeOperatorNode & {
+    type: ts.TypeQueryNode & { exprName: ts.Identifier };
+  };
+} {
+  if (!ts.isIndexedAccessTypeNode(node)) return false;
+
+  const { objectType, indexType } = node;
+
+  // Check objectType: (typeof MyConst)
+  if (
+    !objectType ||
+    !ts.isParenthesizedTypeNode(objectType) ||
+    !objectType.type ||
+    !ts.isTypeQueryNode(objectType.type) ||
+    !objectType.type.exprName ||
+    !ts.isIdentifier(objectType.type.exprName)
+  ) {
+    return false;
+  }
+
+  // Check indexType: keyof typeof MyConst
+  if (
+    !indexType ||
+    !ts.isTypeOperatorNode(indexType) ||
+    indexType.operator !== ts.SyntaxKind.KeyOfKeyword ||
+    !indexType.type ||
+    !ts.isTypeQueryNode(indexType.type) ||
+    !indexType.type.exprName ||
+    !ts.isIdentifier(indexType.type.exprName)
+  ) {
+    return false;
+  }
+
+  // Check if exprNames match
+  return objectType.type.exprName.text === indexType.type.exprName.text;
+}
+
+// Helper function to create a TypeScript LiteralTypeNode from an initializer
+function createTsLiteralNode(initializer: ts.Expression): ts.LiteralTypeNode | undefined {
+  if (ts.isStringLiteral(initializer) || ts.isNumericLiteral(initializer)) {
+    return f.createLiteralTypeNode(initializer);
+  }
+  if (initializer.kind === ts.SyntaxKind.TrueKeyword) return f.createLiteralTypeNode(f.createTrue());
+  if (initializer.kind === ts.SyntaxKind.FalseKeyword) return f.createLiteralTypeNode(f.createFalse());
+  return undefined;
+}
+
 function buildZodPrimitiveInternal({
   z,
   typeNode,
@@ -825,26 +879,9 @@ function buildZodPrimitiveInternal({
   }
 
   // Handler for (typeof MyConst)[keyof typeof MyConst]
-  if (
-    ts.isIndexedAccessTypeNode(typeNode) &&
-    typeNode.objectType &&
-    ts.isParenthesizedTypeNode(typeNode.objectType) &&
-    typeNode.objectType.type &&
-    ts.isTypeQueryNode(typeNode.objectType.type) &&
-    typeNode.objectType.type.exprName &&
-    ts.isIdentifier(typeNode.objectType.type.exprName) &&
-    typeNode.indexType &&
-    ts.isTypeOperatorNode(typeNode.indexType) &&
-    typeNode.indexType.operator === ts.SyntaxKind.KeyOfKeyword &&
-    typeNode.indexType.type &&
-    ts.isTypeQueryNode(typeNode.indexType.type) &&
-    typeNode.indexType.type.exprName &&
-    ts.isIdentifier(typeNode.indexType.type.exprName) &&
-    typeNode.objectType.type.exprName.text ===
-      typeNode.indexType.type.exprName.text
-  ) {
-    const constIdentifier = typeNode.objectType.type.exprName;
-    const constName = constIdentifier.text;
+  if (isTypeOfKeyOfTypeQueryNodePattern(typeNode)) {
+    const constIdentifierNode = typeNode.objectType.type;
+    const constName = constIdentifierNode.exprName.text;
 
     const variableStatement = findNode(
       sourceFile,
