@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.16.4](https://github.com/roffelund/ts-to-zod/compare/v3.16.3...v3.16.4) (2025-05-22)
+
+
+### Bug Fixes
+
+* update package name to include scope [@rofflund](https://github.com/rofflund) and streamline npm publish process ([b28aef7](https://github.com/roffelund/ts-to-zod/commit/b28aef74ee65cd1351338ca752fd7e549443572a))
+
 ## [3.16.3](https://github.com/roffelund/ts-to-zod/compare/v3.16.2...v3.16.3) (2025-05-22)
 
 
