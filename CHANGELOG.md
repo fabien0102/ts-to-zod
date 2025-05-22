@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.18.0](https://github.com/roffelund/ts-to-zod/compare/v3.17.0...v3.18.0) (2025-05-22)
+
+
+### Features
+
+* enhance handling of literal Zod schemas in union generation ([f807a7b](https://github.com/roffelund/ts-to-zod/commit/f807a7bcbbabb76d086e1509a1b100e1af744d31))
+
 ## [3.17.0](https://github.com/roffelund/ts-to-zod/compare/v3.16.4...v3.17.0) (2025-05-22)
 
 
