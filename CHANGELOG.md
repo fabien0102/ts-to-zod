@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.17.0](https://github.com/roffelund/ts-to-zod/compare/v3.16.4...v3.17.0) (2025-05-22)
+
+
+### Features
+
+* add tests for complex type generation and schema validation ([2a61238](https://github.com/roffelund/ts-to-zod/commit/2a6123865a5f5e4978876e2c2b697cd5afd30763))
+
 ## [3.16.4](https://github.com/roffelund/ts-to-zod/compare/v3.16.3...v3.16.4) (2025-05-22)
 
 
