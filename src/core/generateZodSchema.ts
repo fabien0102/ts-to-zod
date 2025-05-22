@@ -379,16 +379,6 @@ function isTypeOfKeyOfTypeQueryNodePattern(
   return objectType.type.exprName.text === indexType.type.exprName.text;
 }
 
-// Helper function to create a TypeScript LiteralTypeNode from an initializer
-function createTsLiteralNode(initializer: ts.Expression): ts.LiteralTypeNode | undefined {
-  if (ts.isStringLiteral(initializer) || ts.isNumericLiteral(initializer)) {
-    return f.createLiteralTypeNode(initializer);
-  }
-  if (initializer.kind === ts.SyntaxKind.TrueKeyword) return f.createLiteralTypeNode(f.createTrue());
-  if (initializer.kind === ts.SyntaxKind.FalseKeyword) return f.createLiteralTypeNode(f.createFalse());
-  return undefined;
-}
-
 function buildZodPrimitiveInternal({
   z,
   typeNode,
