@@ -1,7 +1,7 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
 import type { ZodString } from "zod";
-import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import type { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
 
 /**
  * List of formats that can be translated in zod functions.
@@ -413,9 +413,11 @@ function builtInFormatTypeToZodPropertyIdentifier(
     case "date-time":
       return "datetime";
     case "ipv4":
+      return "ipv4";
     case "ipv6":
+      return "ipv6";
     case "ip":
-      return "ip";
+      return "ipv4"; // Default to ipv4 for backward compatibility
     default:
       return formatType as keyof ZodString;
   }

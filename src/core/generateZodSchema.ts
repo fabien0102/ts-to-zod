@@ -1,17 +1,45 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import ts, { factory as f } from "typescript";
-import { CustomJSDocFormatTypes } from "../config";
+import type { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import { generateCombinations } from "../utils/generateCombinations";
 import { extractLiteralValue } from "../utils/extractLiteralValue";
 import {
-  JSDocTags,
-  ZodProperty,
+  type JSDocTags,
+  type ZodProperty,
   getJSDocTags,
   jsDocTagToZodProperties,
 } from "./jsDocTags";
+
+/**
+ * Get a more specific fallback type instead of always using z.any()
+ */
+function getSmartFallback(typeNode: ts.TypeNode): string {
+  // For type references, try to infer if it's likely an object
+  if (ts.isTypeReferenceNode(typeNode)) {
+    return "object";
+  }
+
+  // For union types, try unknown which is safer than any
+  if (ts.isUnionTypeNode(typeNode)) {
+    return "unknown";
+  }
+
+  // For intersection types, likely an object
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    return "object";
+  }
+
+  // For mapped types or conditional types, use unknown
+  if (ts.isMappedTypeNode(typeNode) || ts.isConditionalTypeNode(typeNode)) {
+    return "unknown";
+  }
+
+  // Default fallback
+  return "any";
+}
 
 export interface GenerateZodSchemaProps {
   /**
@@ -470,11 +498,13 @@ function buildZodPrimitiveInternal({
     // Deal with `Record<>` syntax
     if (identifierName === "Record" && typeNode.typeArguments) {
       if (typeNode.typeArguments[0].kind === ts.SyntaxKind.StringKeyword) {
-        // Short version (`z.record(zodType)`)
+        // Always use expanded version for Record<string, T> to ensure type safety
+        // z.record(z.string(), zodType) vs z.record(zodType) - the former is more explicit
         return buildZodSchema(
           z,
           "record",
           [
+            buildZodSchema(z, "string", [], []),
             buildZodPrimitive({
               z,
               typeNode: typeNode.typeArguments[1],
@@ -939,47 +969,121 @@ function buildZodPrimitiveInternal({
   }
 
   if (ts.isFunctionTypeNode(typeNode)) {
-    return buildZodSchema(
-      z,
-      "function",
-      [],
-      [
-        {
-          identifier: "args",
-          expressions: typeNode.parameters.map((p) =>
-            buildZodPrimitive({
-              z,
-              typeNode:
-                p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
-              jsDocTags,
-              customJSDocFormatTypes,
-              sourceFile,
-              dependencies,
-              getDependencyName,
-              isOptional: Boolean(p.questionToken),
-              skipParseJSDoc,
-            })
-          ),
-        },
-        {
-          identifier: "returns",
-          expressions: [
-            buildZodPrimitive({
-              z,
-              typeNode: typeNode.type,
-              jsDocTags,
-              customJSDocFormatTypes,
-              sourceFile,
-              dependencies,
-              getDependencyName,
-              isOptional: false,
-              skipParseJSDoc,
-            }),
-          ],
-        },
-        ...zodProperties,
-      ]
+    // In Zod v4, functions use z.function({ input: [...], output: ... }) syntax
+    const argsArray = typeNode.parameters.map((p) =>
+      buildZodPrimitive({
+        z,
+        typeNode: p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
+        jsDocTags,
+        customJSDocFormatTypes,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        isOptional: Boolean(p.questionToken),
+        skipParseJSDoc,
+      })
     );
+
+    // Check if the return type is a Promise
+    const isPromiseReturnType =
+      ts.isTypeReferenceNode(typeNode.type) &&
+      ts.isIdentifier(typeNode.type.typeName) &&
+      typeNode.type.typeName.text === "Promise";
+
+    let returnType: ts.Expression;
+
+    if (isPromiseReturnType && typeNode.type.typeArguments) {
+      // For async functions, wrap with z.custom<Promise<T>>(() => innerSchema)
+      // This is a limitation from zod@4, it always returns MaybeAsync when using `implementAsync`, which causes the final type and the original type to not match
+      const innerSchema = buildZodPrimitive({
+        z,
+        typeNode: typeNode.type.typeArguments[0],
+        jsDocTags,
+        customJSDocFormatTypes,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        isOptional: false,
+        skipParseJSDoc,
+      }) as ts.Expression;
+
+      returnType = f.createCallExpression(
+        f.createPropertyAccessExpression(
+          f.createIdentifier(z),
+          f.createIdentifier("custom")
+        ),
+        [
+          f.createTypeReferenceNode(
+            f.createIdentifier("Promise"),
+            typeNode.type.typeArguments.map((typeArg) =>
+              f.createTypeReferenceNode(
+                f.createIdentifier(typeArg.getText(sourceFile))
+              )
+            )
+          ),
+        ],
+        [
+          f.createArrowFunction(
+            undefined,
+            undefined,
+            [],
+            undefined,
+            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            innerSchema
+          ),
+        ]
+      ) as ts.Expression;
+    } else {
+      // For non-Promise return types, use the normal approach
+      returnType = buildZodPrimitive({
+        z,
+        typeNode: typeNode.type,
+        jsDocTags,
+        customJSDocFormatTypes,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        isOptional: false,
+        skipParseJSDoc,
+      }) as ts.Expression;
+    }
+
+    // Create the v4 function syntax: z.function({ input: [...], output: ... })
+    const inputProperty = f.createPropertyAssignment(
+      f.createIdentifier("input"),
+      f.createArrayLiteralExpression(argsArray as ts.Expression[], false)
+    );
+
+    const outputProperty = f.createPropertyAssignment(
+      f.createIdentifier("output"),
+      returnType
+    );
+
+    const configObject = f.createObjectLiteralExpression(
+      [inputProperty, outputProperty],
+      false
+    );
+
+    const functionCall = f.createCallExpression(
+      f.createPropertyAccessExpression(
+        f.createIdentifier(z),
+        f.createIdentifier("function")
+      ),
+      undefined,
+      [configObject]
+    );
+
+    // Wrap with appropriate function helper for Zod v4 compatibility
+    const wrapperFunction = isPromiseReturnType
+      ? "createAsyncFunctionSchema"
+      : "createFunctionSchema";
+    const wrappedFunctionCall = f.createCallExpression(
+      f.createIdentifier(wrapperFunction),
+      undefined,
+      [functionCall]
+    );
+
+    return withZodProperties(wrappedFunctionCall, zodProperties);
   }
 
   if (ts.isIndexedAccessTypeNode(typeNode)) {
@@ -1128,17 +1232,18 @@ function buildZodPrimitiveInternal({
         zodProperties
       );
     } else {
-      console.warn(` »   ...falling back into 'z.any()'`);
-      return buildZodSchema(z, "any", [], zodProperties);
+      console.warn(` »   ...falling back into 'z.string()' (template literal)`);
+      return buildZodSchema(z, "string", [], zodProperties);
     }
   }
 
+  const fallbackType = getSmartFallback(typeNode);
   console.warn(
     ` »   Warning: '${
       ts.SyntaxKind[typeNode.kind]
-    }' is not supported, fallback into 'z.any()'`
+    }' is not supported, fallback into 'z.${fallbackType}()'`
   );
-  return buildZodSchema(z, "any", [], zodProperties);
+  return buildZodSchema(z, fallbackType, [], zodProperties);
 }
 
 /**
@@ -1407,20 +1512,31 @@ function buildSchemaReference(
 
   if (indexTypeName === "-1") {
     // Get the original type declaration
+    // For nested access like Superman["powers"][-1][-1], we need to find the root type
+    let rootObjectType = node.objectType;
+    while (ts.isIndexedAccessTypeNode(rootObjectType)) {
+      rootObjectType = rootObjectType.objectType;
+    }
+
     const declaration = findNode(
       sourceFile,
       (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
         return (
           (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
           ts.isIndexedAccessTypeNode(node.objectType) &&
-          n.name.getText(sourceFile) ===
-            node.objectType.objectType.getText(sourceFile).split("[")[0]
+          n.name.getText(sourceFile) === rootObjectType.getText(sourceFile)
         );
       }
     );
 
     if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
-      const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
+      // For nested access, we need to find the property key, not the index
+      // For Superman["powers"][-1][-1], we want "powers", not "-1"
+      let keyAccessNode = node.objectType;
+      while (ts.isIndexedAccessTypeNode(keyAccessNode.objectType)) {
+        keyAccessNode = keyAccessNode.objectType;
+      }
+      const key = keyAccessNode.indexType.getText(sourceFile).slice(1, -1); // remove quotes
       const members =
         ts.isTypeAliasDeclaration(declaration) &&
         ts.isTypeLiteralNode(declaration.type)
@@ -1432,23 +1548,12 @@ function buildSchemaReference(
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
       if (member && ts.isPropertySignature(member) && member.type) {
-        // Array<type>
+        // Array<type> or type[]
         if (
-          ts.isTypeReferenceNode(member.type) &&
-          member.type.typeName.getText(sourceFile) === "Array"
+          (ts.isTypeReferenceNode(member.type) &&
+            member.type.typeName.getText(sourceFile) === "Array") ||
+          ts.isArrayTypeNode(member.type)
         ) {
-          return buildSchemaReference(
-            {
-              node: node.objectType,
-              dependencies,
-              sourceFile,
-              getDependencyName,
-            },
-            `element.${path}`
-          );
-        }
-        // type[]
-        if (ts.isArrayTypeNode(member.type)) {
           return buildSchemaReference(
             {
               node: node.objectType,
@@ -1471,25 +1576,31 @@ function buildSchemaReference(
               sourceFile,
               getDependencyName,
             },
-            `valueSchema.${path}`
+            `valueType.${path}`
           );
         }
 
         console.warn(
-          ` »   Warning: indexAccessType can’t be resolved, fallback into 'any'`
+          ` »   Warning: indexAccessType can't be resolved, fallback into 'unknown'`
         );
-        return f.createIdentifier("any");
+        return f.createPropertyAccessExpression(
+          f.createIdentifier("z"),
+          f.createIdentifier("unknown")
+        );
       }
     }
 
-    return f.createIdentifier("any");
+    return f.createPropertyAccessExpression(
+      f.createIdentifier("z"),
+      f.createIdentifier("unknown")
+    );
   } else if (
     indexTypeType === "number" &&
     ts.isIndexedAccessTypeNode(node.objectType)
   ) {
     return buildSchemaReference(
       { node: node.objectType, dependencies, sourceFile, getDependencyName },
-      `items[${indexTypeName}].${path}`
+      `def.items[${indexTypeName}].${path}`
     );
   }
 

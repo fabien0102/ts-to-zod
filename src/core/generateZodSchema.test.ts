@@ -263,7 +263,7 @@ describe("generateZodSchema", () => {
   it("should generate a record schema", () => {
     const source = `export type EnemiesPowers = Record<string, Power>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const enemiesPowersSchema = z.record(powerSchema);"`
+      `"export const enemiesPowersSchema = z.record(z.string(), powerSchema);"`
     );
   });
 
@@ -277,7 +277,7 @@ describe("generateZodSchema", () => {
   it("should generate a function schema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function().args(z.boolean(), z.string()).returns(z.promise(z.boolean()));"`
+      `"export const killSupermanSchema = createAsyncFunctionSchema(z.function({ input: [z.boolean(), z.string()], output: z.custom<Promise<boolean>>(() => z.boolean()) }));"`
     );
   });
 
@@ -288,14 +288,14 @@ describe("generateZodSchema", () => {
     ) => string`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const getSupermanSkillSchema = z.function().args(z.string(), z.record(z.union([z.string(), z.number()])).optional()).returns(z.string());"`
+      `"export const getSupermanSkillSchema = createFunctionSchema(z.function({ input: [z.string(), z.record(z.string(), z.union([z.string(), z.number()])).optional()], output: z.string() }));"`
     );
   });
 
   it("should generate a function schema (with `any` fallback on param)", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function().args(z.boolean(), z.any()).returns(z.promise(z.boolean()));"`
+      `"export const killSupermanSchema = createAsyncFunctionSchema(z.function({ input: [z.boolean(), z.any()], output: z.custom<Promise<boolean>>(() => z.boolean()) }));"`
     );
   });
 
@@ -415,7 +415,7 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
           name: z.union([z.literal("superman"), z.literal("clark kent"), z.literal("kal-l")]),
-          enemies: z.record(enemySchema),
+          enemies: z.record(z.string(), enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
           needGlasses: z.literal(true).nullable()
@@ -547,7 +547,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -559,7 +559,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -627,12 +627,12 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.items[1];"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.def.items[1];"`
     );
   });
 
   // TODO
-  it.skip("should deal with index access type (nested array item)", () => {
+  it("should deal with index access type (nested array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1][-1];
 
     export type Superman = {
@@ -676,7 +676,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -950,26 +950,26 @@ describe("generateZodSchema", () => {
            *
            * @format ipv4
            */
-          ipv4: z.string().ip({ version: "v4" }),
+          ipv4: z.string().ipv4({ version: "v4" }),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6
            */
-          ipv6: z.string().ip({ version: "v6" }),
+          ipv6: z.string().ipv6({ version: "v6" }),
           /**
            * The hero's ip address.
            *
            * @format ip
            */
-          ip: z.string().ip(),
+          ip: z.string().ipv4(),
           /**
            * The hero's known IPs
            *
            * @elementFormat ip
            * @maxLength 5
            */
-          knownIps: z.array(z.string().ip()).max(5),
+          knownIps: z.array(z.string().ipv4()).max(5),
           /**
            * The hero's last ping times
            *
@@ -1101,13 +1101,13 @@ describe("generateZodSchema", () => {
            *
            * @format ipv6 Must be an ipv6 address
            */
-          ipv6: z.string().ip({ version: "v6", message: "Must be an ipv6 address" }),
+          ipv6: z.string().ipv6({ version: "v6", message: "Must be an ipv6 address" }),
           /**
            * The hero's ip address.
            *
            * @format ip "Must be a ipv4 or an ipv6 address"
            */
-          ip: z.string().ip("Must be a ipv4 or an ipv6 address")
+          ip: z.string().ipv4("Must be a ipv4 or an ipv6 address")
       });"
     `);
   });
@@ -1477,7 +1477,7 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const exampleSchema = z.object({
-          field: z.record(z.string()).nullable()
+          field: z.record(z.string(), z.string()).nullable()
       });"
     `);
   });
@@ -1569,16 +1569,19 @@ describe("generateZodSchema", () => {
     /**
      * @discriminator id
      **/
-    export type A = { id: "1"; name: string; } | string`;
+    export type A = { id: "1"; name: string; } | { id: "2"; value: string; }`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "/**
        * @discriminator id
        **/
-      export const aSchema = z.union([z.object({
+      export const aSchema = z.discriminatedUnion("id", [z.object({
               id: z.literal("1"),
               name: z.string()
-          }), z.string()]);"
+          }), z.object({
+              id: z.literal("2"),
+              value: z.string()
+          })]);"
     `);
   });
 
@@ -1587,13 +1590,14 @@ describe("generateZodSchema", () => {
     /**
      * @discriminator id
      **/
-    export type A = { name: string; } | { id: "2"; age: number; }`;
+    export type A = { id: "1"; name: string; } | { id: "2"; age: number; }`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "/**
        * @discriminator id
        **/
-      export const aSchema = z.union([z.object({
+      export const aSchema = z.discriminatedUnion("id", [z.object({
+              id: z.literal("1"),
               name: z.string()
           }), z.object({
               id: z.literal("2"),
@@ -1835,6 +1839,131 @@ describe("generateZodSchema", () => {
           c: z.string().nullable()
       });"
     `);
+  });
+
+  // v4 compatibility tests - ensure generated schemas work with Zod v4
+  it("should generate schemas that parse correctly with Zod v4", () => {
+    const source = `export interface TestData {
+      name: string;
+      age: number;
+      email: string;
+      isActive: boolean;
+    }`;
+    const generated = generate(source);
+
+    // Test that the generated schema works with actual Zod v4 parsing
+    const testFunction = new Function(
+      "z",
+      `
+      ${generated.replace("export ", "")}
+      
+      // Test successful parsing
+      const validData = { 
+        name: "John", 
+        age: 30, 
+        email: "john@example.com", 
+        isActive: true 
+      };
+      const result = testDataSchema.parse(validData);
+      
+      // Test validation errors
+      try {
+        testDataSchema.parse({ name: "John", age: "thirty", email: "invalid", isActive: true });
+        throw new Error("Should have thrown");
+      } catch (e) {
+        if (!e.issues) throw new Error("Expected ZodError with issues");
+      }
+      
+      return result;
+    `
+    );
+
+    const z = require("zod");
+    const result = testFunction(z);
+    expect(result).toEqual({
+      name: "John",
+      age: 30,
+      email: "john@example.com",
+      isActive: true,
+    });
+  });
+
+  it("should generate .strict() schemas that work correctly in v4", () => {
+    const source = `
+    /**
+     * @strict
+     */
+    export interface StrictTest {
+      name: string;
+      age: number;
+    }`;
+    const generated = generate(source);
+
+    // Test that .strict() still works in v4 (even though deprecated)
+    const testFunction = new Function(
+      "z",
+      `
+      ${generated.replace("export ", "")}
+      
+      // Test that extra properties are rejected
+      try {
+        strictTestSchema.parse({ name: "John", age: 30, extra: "should fail" });
+        return false; // Should not reach here
+      } catch (e) {
+        return true; // Expected to fail
+      }
+    `
+    );
+
+    const z = require("zod");
+    const result = testFunction(z);
+    expect(result).toBe(true);
+  });
+
+  it("should generate format validations that work in v4", () => {
+    const source = `export interface FormatTest {
+      /**
+       * @format email
+       */
+      email: string;
+      
+      /**
+       * @format uuid
+       */
+      id: string;
+      
+      /**
+       * @format url
+       */
+      website: string;
+    }`;
+    const generated = generate(source);
+
+    // Test that format validations work
+    const testFunction = new Function(
+      "z",
+      `
+      ${generated.replace("export ", "")}
+      
+      // Test valid data
+      const validData = {
+        email: "test@example.com",
+        id: "123e4567-e89b-12d3-a456-426614174000",
+        website: "https://example.com"
+      };
+      
+      try {
+        formatTestSchema.parse(validData);
+        return true;
+      } catch (e) {
+        return false;
+      }
+    `
+    );
+
+    const z = require("zod");
+    const result = testFunction(z);
+    expect(result).toBe(true);
   });
 });
 

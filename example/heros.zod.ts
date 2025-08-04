@@ -9,6 +9,18 @@ import {
 
 import { personSchema } from "./person.zod";
 
+const createFunctionSchema = <T extends z.core.$ZodFunction>(schema: T) => {
+  type Fn = Parameters<T["implement"]>[0];
+  return z.custom<Fn>((fn) => schema.implement(fn as unknown as Fn));
+};
+
+const createAsyncFunctionSchema = <T extends z.core.$ZodFunction>(
+  schema: T
+) => {
+  type Fn = Parameters<T["implement"]>[0];
+  return z.custom<Fn>((fn) => schema.implementAsync(fn as unknown as Fn));
+};
+
 export const enemyPowerSchema = z.nativeEnum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
@@ -33,7 +45,7 @@ export const supermanSchema = z.object({
     z.literal("clark kent"),
     z.literal("kal-l"),
   ]),
-  enemies: z.record(enemySchema),
+  enemies: z.record(z.string(), enemySchema),
   age: z.number(),
   underKryptonite: z.boolean().optional(),
   powers: z.tuple([
@@ -46,7 +58,7 @@ export const supermanSchema = z.object({
 export const supermanNameSchema = supermanSchema.shape.name;
 
 export const supermanInvinciblePowerSchema =
-  supermanSchema.shape.powers.items[2];
+  supermanSchema.shape.powers.def.items[2];
 
 export const personTupleSchema = z.tuple([personSchema]).rest(personSchema);
 
@@ -63,10 +75,12 @@ export const storySchema = z.tuple([z.string(), z.array(z.string())]);
 
 export const krytonResponseSchema = z.promise(z.boolean());
 
-export const killSupermanSchema = z
-  .function()
-  .args(z.boolean(), z.string())
-  .returns(z.promise(z.boolean()));
+export const killSupermanSchema = createAsyncFunctionSchema(
+  z.function({
+    input: [z.boolean(), z.string()],
+    output: z.custom<Promise<boolean>>(() => z.boolean()),
+  })
+);
 
 export const withDefaultsSchema = z.object({
   theAnswerToTheUltimateQuestionOfLife: z.number().default(42),
@@ -90,10 +104,12 @@ export const exportedSchema = z.object({
   b: z.string(),
 });
 
-export const getSupermanSkillSchema = z
-  .function()
-  .args(z.string(), z.boolean().optional())
-  .returns(z.string());
+export const getSupermanSkillSchema = createFunctionSchema(
+  z.function({
+    input: [z.string(), z.boolean().optional()],
+    output: z.string(),
+  })
+);
 
 export const heroContactSchema = z.object({
   email: z.string().email(),
@@ -106,7 +122,7 @@ export const heroContactSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be in YYYY-MM-DD format."),
 });
 
-export const supermanEnemySchema = supermanSchema.shape.enemies.valueSchema;
+export const supermanEnemySchema = supermanSchema.shape.enemies.valueType;
 
 export const evilPlanSchema: z.ZodSchema<EvilPlan> = z.lazy(() =>
   z.object({

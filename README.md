@@ -3,7 +3,7 @@
   <h1 align="center">ts-to-zod</h1>
 </div>
 
-Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript types/interfaces.
+Generate [Zod](https://github.com/colinhacks/zod) schemas (v4) from Typescript types/interfaces.
 
 [![Version](https://img.shields.io/npm/v/ts-to-zod.svg)](https://npmjs.org/package/ts-to-zod)
 [![Github CI](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml/badge.svg)](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml)
@@ -19,6 +19,16 @@ $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
+
+## Zod Version Support
+
+This package now supports **Zod v4** (`^4.0.14`). The generated schemas take advantage of Zod v4's powerful features while maintaining compatibility with existing TypeScript types.
+
+**Note:** If you need Zod v3 support, please use ts-to-zod v3.x series.
+
+## Zod v4 Migration Guide
+
+If you are upgrading from Zod v3 to v4, please refer to the [Zod v4 Migration Guide](./docs/ZOD_V4_MIGRATION_GUIDE.md).
 
 ## Embedded validation
 

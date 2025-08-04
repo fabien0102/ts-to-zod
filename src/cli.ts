@@ -1,4 +1,5 @@
-import { Command, Flags, Errors, Args, Interfaces } from "@oclif/core";
+import { Command, Flags, Errors, Args, type Interfaces } from "@oclif/core";
+
 import chokidar from "chokidar";
 import { existsSync, outputFile, readFile } from "fs-extra";
 import inquirer from "inquirer";
@@ -7,13 +8,9 @@ import { join, normalize, parse, relative } from "path";
 import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
-import { Config, TsToZodConfig, InputOutputMapping } from "./config";
-import {
-  getSchemaNameSchema,
-  nameFilterSchema,
-  tsToZodConfigSchema,
-} from "./config.zod";
-import { GenerateProps, generate } from "./core/generate";
+import type { Config, TsToZodConfig, InputOutputMapping } from "./config";
+import { tsToZodConfigSchema } from "./config.zod";
+import { type GenerateProps, generate } from "./core/generate";
 import { createConfig } from "./createConfig";
 import {
   areImportPathsEqualIgnoringExtension,
@@ -485,15 +482,7 @@ See more help with --help`,
       return undefined;
     }
 
-    return {
-      ...config,
-      getSchemaName: config.getSchemaName
-        ? getSchemaNameSchema.implement(config.getSchemaName)
-        : undefined,
-      nameFilter: config.nameFilter
-        ? nameFilterSchema.implement(config.nameFilter)
-        : undefined,
-    };
+    return config;
   }
 }
 
