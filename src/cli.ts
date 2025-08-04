@@ -9,7 +9,11 @@ import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
 import type { Config, TsToZodConfig, InputOutputMapping } from "./config";
-import { tsToZodConfigSchema } from "./config.zod";
+import {
+  getSchemaNameSchema,
+  nameFilterSchema,
+  tsToZodConfigSchema,
+} from "./config.zod";
 import { type GenerateProps, generate } from "./core/generate";
 import { createConfig } from "./createConfig";
 import {
@@ -482,7 +486,15 @@ See more help with --help`,
       return undefined;
     }
 
-    return config;
+    return {
+      ...config,
+      getSchemaName: config.getSchemaName
+        ? getSchemaNameSchema.implement(config.getSchemaName)
+        : undefined,
+      nameFilter: config.nameFilter
+        ? nameFilterSchema.implement(config.nameFilter)
+        : undefined,
+    };
   }
 }
 

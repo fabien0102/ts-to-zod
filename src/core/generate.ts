@@ -450,16 +450,37 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
 
   const createFunctionSchemaHelper = hasSyncFunctions
     ? `const createFunctionSchema = <T extends z.core.$ZodFunction>(schema: T) => {
-  type Fn = Parameters<T["implement"]>[0];
-  return z.custom<Fn>((fn) => schema.implement(fn as unknown as Fn));
+  const wrapped = z.custom<Parameters<T["implement"]>[0]>((fn) =>
+    schema.implement(fn as Parameters<T["implement"]>[0])
+  );
+  // Copy essential methods to preserve API compatibility
+  Object.defineProperty(wrapped, "implement", {
+    value: (fn: Parameters<T["implement"]>[0]) => schema.implement(fn),
+    enumerable: false,
+    writable: false,
+  });
+  return wrapped as typeof wrapped & { implement: T["implement"] };
 };
 `
     : "";
 
   const createAsyncFunctionSchemaHelper = hasAsyncFunctions
     ? `const createAsyncFunctionSchema = <T extends z.core.$ZodFunction>(schema: T) => {
-  type Fn = Parameters<T["implement"]>[0];
-  return z.custom<Fn>((fn) => schema.implementAsync(fn as unknown as Fn));
+  const wrapped = z.custom<Parameters<T["implement"]>[0]>((fn) =>
+    schema.implementAsync(fn as Parameters<T["implement"]>[0])
+  );
+  // Copy essential methods to preserve API compatibility
+  Object.defineProperty(wrapped, "implement", {
+    value: (fn: Parameters<T["implement"]>[0]) => schema.implement(fn),
+    enumerable: false,
+    writable: false,
+  });
+  Object.defineProperty(wrapped, "implementAsync", {
+    value: (fn: Parameters<T["implement"]>[0]) => schema.implementAsync(fn),
+    enumerable: false,
+    writable: false,
+  });
+  return wrapped as typeof wrapped & { implement: T["implement"]; implementAsync: T["implementAsync"] };
 };
 `
     : "";
