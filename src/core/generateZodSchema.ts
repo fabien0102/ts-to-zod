@@ -739,10 +739,22 @@ function buildZodPrimitiveInternal({
   }
 
   if (ts.isTupleTypeNode(typeNode)) {
+    // Handle empty tuples
+    if (typeNode.elements.length === 0) {
+      return buildZodSchema(
+        z,
+        "tuple",
+        [f.createArrayLiteralExpression([])],
+        []
+      );
+    }
+
     // Handle last item separetely if it is a rest element
     const lastItem = typeNode.elements[typeNode.elements.length - 1];
     const restElement =
-      ts.isRestTypeNode(lastItem) && ts.isArrayTypeNode(lastItem.type)
+      lastItem &&
+      ts.isRestTypeNode(lastItem) &&
+      ts.isArrayTypeNode(lastItem.type)
         ? lastItem.type.elementType
         : undefined;
 
