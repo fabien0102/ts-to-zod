@@ -1,6 +1,5 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
-import type { ZodString } from "zod";
 import type { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
 
 /**
@@ -17,6 +16,19 @@ const builtInJSDocFormatsTypes = [
   "ipv6",
   "url",
   "uuid",
+  "emoji",
+  "base64",
+  "base64url",
+  "nanoid",
+  "cuid",
+  "cuid2",
+  "ulid",
+  "cidrv4",
+  "cidrv6",
+  "iso-date",
+  "iso-time",
+  "iso-datetime",
+  "iso-duration",
   // "uri",
 ] as const;
 
@@ -408,7 +420,7 @@ function formatToZodProperty(
  */
 function builtInFormatTypeToZodPropertyIdentifier(
   formatType: BuiltInJSDocFormatsType
-): keyof ZodString {
+): string {
   switch (formatType) {
     case "date-time":
       return "datetime";
@@ -418,8 +430,16 @@ function builtInFormatTypeToZodPropertyIdentifier(
       return "ipv6";
     case "ip":
       return "ipv4"; // Default to ipv4 for backward compatibility
+    case "iso-date":
+      return "date";
+    case "iso-time":
+      return "time";
+    case "iso-datetime":
+      return "datetime";
+    case "iso-duration":
+      return "duration";
     default:
-      return formatType as keyof ZodString;
+      return formatType;
   }
 }
 
@@ -437,37 +457,11 @@ function builtInFormatTypeToZodPropertyArguments(
 ): ts.Expression[] | undefined {
   switch (formatType) {
     case "ipv4":
-      return createZodStringIpArgs("v4", errorMessage);
     case "ipv6":
-      return createZodStringIpArgs("v6", errorMessage);
+      return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
     default:
       return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
   }
-}
-
-/**
- * Constructs a list of expressions which represent the arguments
- * for `ip()` string validation function.
- *
- * @param version The IP version to use.
- * @param errorMessage The error message to display if validation fails.
- * @returns A list of expressions which represent the function arguments.
- */
-function createZodStringIpArgs(
-  version: "v4" | "v6",
-  errorMessage?: string
-): ts.Expression[] {
-  const propertyAssignments: ts.ObjectLiteralElementLike[] = [
-    f.createPropertyAssignment("version", f.createStringLiteral(version)),
-  ];
-
-  if (errorMessage) {
-    propertyAssignments.push(
-      f.createPropertyAssignment("message", f.createStringLiteral(errorMessage))
-    );
-  }
-
-  return [f.createObjectLiteralExpression(propertyAssignments)];
 }
 
 /**

@@ -4,9 +4,9 @@ export interface GenerateZodInferredTypeProps {
   aliasName: string;
   zodImportValue: string;
   zodConstName: string;
-  // If it is a function, we need to use z.input<typeof schema> to get the correct type inference in Zod v4
+  // If it is a function, we need to use z.input<typeof schema> to get the correct type inference
   isFunction?: boolean;
-  // If it is a promise, we need to use z.output<typeof schema> to get the correct type inference in Zod v4
+  // If it is a promise, we need to use z.output<typeof schema> to get the correct type inference
   isPromise?: boolean;
 }
 
@@ -17,10 +17,10 @@ export interface GenerateZodInferredTypeProps {
  *  // For regular types:
  *  export type ${aliasName} = ${zodImportValue}.infer<typeof ${zodConstName}>
  *
- *  // For function types (Zod v4):
+ *  // For function types:
  *  export type ${aliasName} = ${zodImportValue}.input<typeof ${zodConstName}>
  *
- *  // For promise types (Zod v4):
+ *  // For promise types:
  *  export type ${aliasName} = Promise<${zodImportValue}.output<typeof ${zodConstName}>>
  * ```
  */
@@ -42,7 +42,7 @@ export function generateZodInferredType({
       [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
     );
   } else if (isPromise) {
-    // For promise types in Zod v4, we need to manually construct Promise<T>
+    // For promise types, we need to manually construct Promise<T>
     // where T is z.output<typeof schema> (the inner type)
     typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
       f.createTypeReferenceNode(

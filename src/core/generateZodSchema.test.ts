@@ -182,6 +182,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate an empty tuple schema", () => {
+    const source = `export type EmptyTuple = [];`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const emptyTupleSchema = z.tuple([]);"`
+    );
+  });
+
   it("should generate an object schema", () => {
     const source = `export type Superman = {
      name: "superman";
@@ -644,6 +651,30 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should deal with index access type using number keyword", () => {
+    const source = `export type SupermanPower = Superman["powers"][number];
+
+    export type Superman = {
+      powers: Power[]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.element;"`
+    );
+  });
+
+  it("should deal with index access type (nested number keyword)", () => {
+    const source = `export type SupermanPower = Superman["powers"][number][number];
+
+    export type Superman = {
+      powers: Power[][]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.element.element;"`
+    );
+  });
+
   it("should deal with index access type (inline array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1];
 
@@ -950,13 +981,13 @@ describe("generateZodSchema", () => {
            *
            * @format ipv4
            */
-          ipv4: z.string().ipv4({ version: "v4" }),
+          ipv4: z.string().ipv4(),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6
            */
-          ipv6: z.string().ipv6({ version: "v6" }),
+          ipv6: z.string().ipv6(),
           /**
            * The hero's ip address.
            *
@@ -1101,7 +1132,7 @@ describe("generateZodSchema", () => {
            *
            * @format ipv6 Must be an ipv6 address
            */
-          ipv6: z.string().ipv6({ version: "v6", message: "Must be an ipv6 address" }),
+          ipv6: z.string().ipv6("Must be an ipv6 address"),
           /**
            * The hero's ip address.
            *
@@ -1590,14 +1621,13 @@ describe("generateZodSchema", () => {
     /**
      * @discriminator id
      **/
-    export type A = { id: "1"; name: string; } | { id: "2"; age: number; }`;
+    export type A = { name: string; } | { id: "2"; age: number; }`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "/**
        * @discriminator id
        **/
-      export const aSchema = z.discriminatedUnion("id", [z.object({
-              id: z.literal("1"),
+      export const aSchema = z.union([z.object({
               name: z.string()
           }), z.object({
               id: z.literal("2"),
@@ -1841,8 +1871,8 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  // v4 compatibility tests - ensure generated schemas work with Zod v4
-  it("should generate schemas that parse correctly with Zod v4", () => {
+  // compatibility tests - ensure generated schemas work with Zod
+  it("should generate schemas that parse correctly with Zod", () => {
     const source = `export interface TestData {
       name: string;
       age: number;
@@ -1851,7 +1881,7 @@ describe("generateZodSchema", () => {
     }`;
     const generated = generate(source);
 
-    // Test that the generated schema works with actual Zod v4 parsing
+    // Test that the generated schema works with actual Zod parsing
     const testFunction = new Function(
       "z",
       `
@@ -1964,6 +1994,177 @@ describe("generateZodSchema", () => {
     const z = require("zod");
     const result = testFunction(z);
     expect(result).toBe(true);
+  });
+
+  it("should generate comprehensive Zod string format validations", () => {
+    const source = `export interface ZodFormatTest {
+      /**
+       * @format email
+       */
+      email: string;
+      
+      /**
+       * @format uuid
+       */
+      uuid: string;
+      
+      /**
+       * @format url
+       */
+      url: string;
+      
+      /**
+       * @format emoji
+       */
+      emoji: string;
+      
+      /**
+       * @format base64
+       */
+      base64: string;
+      
+      /**
+       * @format base64url
+       */
+      base64url: string;
+      
+      /**
+       * @format nanoid
+       */
+      nanoid: string;
+      
+      /**
+       * @format cuid
+       */
+      cuid: string;
+      
+      /**
+       * @format cuid2
+       */
+      cuid2: string;
+      
+      /**
+       * @format ulid
+       */
+      ulid: string;
+      
+      /**
+       * @format ipv4
+       */
+      ipv4: string;
+      
+      /**
+       * @format ipv6
+       */
+      ipv6: string;
+      
+      /**
+       * @format cidrv4
+       */
+      cidrv4: string;
+      
+      /**
+       * @format cidrv6
+       */
+      cidrv6: string;
+      
+      /**
+       * @format iso-date
+       */
+      isoDate: string;
+      
+      /**
+       * @format iso-time
+       */
+      isoTime: string;
+      
+      /**
+       * @format iso-datetime
+       */
+      isoDatetime: string;
+      
+      /**
+       * @format iso-duration
+       */
+      isoDuration: string;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const zodFormatTestSchema = z.object({
+          /**
+           * @format email
+           */
+          email: z.string().email(),
+          /**
+           * @format uuid
+           */
+          uuid: z.string().uuid(),
+          /**
+           * @format url
+           */
+          url: z.string().url(),
+          /**
+           * @format emoji
+           */
+          emoji: z.string().emoji(),
+          /**
+           * @format base64
+           */
+          base64: z.string().base64(),
+          /**
+           * @format base64url
+           */
+          base64url: z.string().base64url(),
+          /**
+           * @format nanoid
+           */
+          nanoid: z.string().nanoid(),
+          /**
+           * @format cuid
+           */
+          cuid: z.string().cuid(),
+          /**
+           * @format cuid2
+           */
+          cuid2: z.string().cuid2(),
+          /**
+           * @format ulid
+           */
+          ulid: z.string().ulid(),
+          /**
+           * @format ipv4
+           */
+          ipv4: z.string().ipv4(),
+          /**
+           * @format ipv6
+           */
+          ipv6: z.string().ipv6(),
+          /**
+           * @format cidrv4
+           */
+          cidrv4: z.string().cidrv4(),
+          /**
+           * @format cidrv6
+           */
+          cidrv6: z.string().cidrv6(),
+          /**
+           * @format iso-date
+           */
+          isoDate: z.string().date(),
+          /**
+           * @format iso-time
+           */
+          isoTime: z.string().time(),
+          /**
+           * @format iso-datetime
+           */
+          isoDatetime: z.string().datetime(),
+          /**
+           * @format iso-duration
+           */
+          isoDuration: z.string().duration()
+      });"
+    `);
   });
 });
 

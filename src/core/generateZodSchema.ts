@@ -981,7 +981,7 @@ function buildZodPrimitiveInternal({
   }
 
   if (ts.isFunctionTypeNode(typeNode)) {
-    // In Zod v4, functions use z.function({ input: [...], output: ... }) syntax
+    // Functions use z.function({ input: [...], output: ... }) syntax
     const argsArray = typeNode.parameters.map((p) =>
       buildZodPrimitive({
         z,
@@ -1006,7 +1006,7 @@ function buildZodPrimitiveInternal({
 
     if (isPromiseReturnType && typeNode.type.typeArguments) {
       // For async functions, wrap with z.custom<Promise<T>>(() => innerSchema)
-      // This is a limitation from zod@4, it always returns MaybeAsync when using `implementAsync`, which causes the final type and the original type to not match
+      // This is a limitation from zod, it always returns MaybeAsync when using `implementAsync`, which causes the final type and the original type to not match
       const innerSchema = buildZodPrimitive({
         z,
         typeNode: typeNode.type.typeArguments[0],
@@ -1085,7 +1085,7 @@ function buildZodPrimitiveInternal({
       [configObject]
     );
 
-    // Wrap with appropriate function helper for Zod v4 compatibility
+    // Wrap with appropriate function helper for compatibility
     const wrapperFunction = isPromiseReturnType
       ? "createAsyncFunctionSchema"
       : "createFunctionSchema";
@@ -1522,7 +1522,7 @@ function buildSchemaReference(
     ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
     : { type: "number" as const, indexTypeName: indexTypeText };
 
-  if (indexTypeName === "-1") {
+  if (indexTypeName === "-1" || indexTypeName === "number") {
     // Get the original type declaration
     // For nested access like Superman["powers"][-1][-1], we need to find the root type
     let rootObjectType = node.objectType;
@@ -1608,6 +1608,7 @@ function buildSchemaReference(
     );
   } else if (
     indexTypeType === "number" &&
+    indexTypeName !== "number" &&
     ts.isIndexedAccessTypeNode(node.objectType)
   ) {
     return buildSchemaReference(
