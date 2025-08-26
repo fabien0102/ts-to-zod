@@ -313,7 +313,7 @@ export function generate({
   zodSchemas.forEach(({ typeName, isFunction, isPromise, isAsyncFunction }) => {
     functionTypeMap.set(typeName, isFunction);
     promiseTypeMap.set(typeName, isPromise);
-    asyncFunctionTypeMap.set(typeName, isAsyncFunction || false);
+    asyncFunctionTypeMap.set(typeName, isAsyncFunction);
   });
 
   // Resolves statements order

@@ -1,45 +1,6 @@
 import ts from "typescript";
 
 /**
- * Detects whether a TypeScript node contains function types
- *
- * @example
- * ```ts
- * // Returns true for interfaces with function properties
- * interface API { method: (id: string) => User }
- *
- * // Returns true for function type aliases
- * type Handler = (event: Event) => void
- *
- * // Returns false for simple interfaces
- * interface Data { name: string }
- * ```
- */
-export function containsFunctionType(
-  node: ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration
-): boolean {
-  if (ts.isEnumDeclaration(node)) {
-    return false;
-  }
-
-  if (ts.isTypeAliasDeclaration(node)) {
-    return isFunctionTypeNode(node.type);
-  }
-
-  if (ts.isInterfaceDeclaration(node)) {
-    // Check if interface members contain function types
-    return node.members.some((member) => {
-      if (ts.isPropertySignature(member) && member.type) {
-        return isFunctionTypeNode(member.type);
-      }
-      return false;
-    });
-  }
-
-  return false;
-}
-
-/**
  * Recursively checks if a type node is a function type
  */
 function isFunctionTypeNode(type: ts.TypeNode): boolean {

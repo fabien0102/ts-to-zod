@@ -686,11 +686,13 @@ function buildZodPrimitiveInternal({
       // Check each member of the union
       for (const node of nodes) {
         if (!ts.isTypeLiteralNode(node) && !ts.isTypeReferenceNode(node)) {
-          console.warn(
-            ` »   Warning: discriminated union member "${node.getText(
-              sourceFile
-            )}" is not a type reference or object literal`
-          );
+          if (process.env.NODE_ENV !== "test") {
+            console.warn(
+              ` »   Warning: discriminated union member "${node.getText(
+                sourceFile
+              )}" is not a type reference or object literal`
+            );
+          }
           isValidDiscriminatedUnion = false;
           break;
         }
@@ -706,11 +708,13 @@ function buildZodPrimitiveInternal({
           );
 
           if (!hasDiscriminator) {
-            console.warn(
-              ` »   Warning: discriminated union member "${node.getText(
-                sourceFile
-              )}" missing discriminator field "${jsDocTags.discriminator}"`
-            );
+            if (process.env.NODE_ENV !== "test") {
+              console.warn(
+                ` »   Warning: discriminated union member "${node.getText(
+                  sourceFile
+                )}" missing discriminator field "${jsDocTags.discriminator}"`
+              );
+            }
             isValidDiscriminatedUnion = false;
             break;
           }
@@ -1112,6 +1116,44 @@ function buildZodPrimitiveInternal({
 
   switch (typeNode.kind) {
     case ts.SyntaxKind.StringKeyword:
+      // Check for format in JSDoc tags and generate direct validators for Zod v4
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+
+        // Handle direct format validators (Zod v4 standalone methods)
+        const directFormatMethods = [
+          "email",
+          "url",
+          "uuid",
+          "ipv4",
+          "ipv6",
+          "emoji",
+          "base64",
+          "base64url",
+          "nanoid",
+          "cuid",
+          "cuid2",
+          "ulid",
+          "cidrv4",
+          "cidrv6",
+        ];
+        const formatMethod = formatValue === "ip" ? "ipv4" : formatValue; // map 'ip' to 'ipv4'
+
+        if (directFormatMethods.includes(formatMethod)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatMethod
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatMethod,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
       return buildZodSchema(z, "string", [], zodProperties);
     case ts.SyntaxKind.BooleanKeyword:
       return buildZodSchema(z, "boolean", [], zodProperties);

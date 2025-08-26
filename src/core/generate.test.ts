@@ -37,7 +37,7 @@ describe("generate", () => {
             name: nameSchema,
             age: z.number(),
             underKryptonite: z.boolean().optional(),
-            email: z.string().email()
+            email: z.email()
         });
 
         export const badassSupermanSchema = supermanSchema.omit({ "underKryptonite": true });
@@ -498,7 +498,7 @@ describe("generate", () => {
             name: nameSchema,
             age: z.number(),
             underKryptonite: z.boolean().optional(),
-            email: z.string().email()
+            email: z.email()
         });
         "
       `);
@@ -591,7 +591,7 @@ describe("generate", () => {
             name: metropolisNameSchema,
             age: z.number(),
             underKryptonite: z.boolean().optional(),
-            email: z.string().email()
+            email: z.email()
         });
 
         export const metropolisBadassSupermanSchema = metropolisSupermanSchema.omit({ "underKryptonite": true });

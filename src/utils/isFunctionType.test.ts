@@ -1,6 +1,5 @@
 import ts from "typescript";
 import {
-  containsFunctionType,
   isDirectFunctionType,
   isDirectPromiseType,
   isFunctionReturningPromise,
@@ -71,43 +70,6 @@ describe("isFunctionType", () => {
     it("should return true for parenthesized function type", () => {
       const node = createNode("type MyFunc = ((x: string) => number);");
       expect(isDirectFunctionType(node)).toBe(true);
-    });
-  });
-
-  describe("containsFunctionType", () => {
-    it("should return false for enum", () => {
-      const node = createNode("enum MyEnum { A, B }");
-      expect(containsFunctionType(node)).toBe(false);
-    });
-
-    it("should return true for interface with function property", () => {
-      const node = createNode(`
-        interface MyInterface { 
-          func: (x: string) => number;
-          prop: string;
-        }
-      `);
-      expect(containsFunctionType(node)).toBe(true);
-    });
-
-    it("should return false for interface without function properties", () => {
-      const node = createNode(`
-        interface MyInterface { 
-          prop: string;
-          num: number;
-        }
-      `);
-      expect(containsFunctionType(node)).toBe(false);
-    });
-
-    it("should return true for type alias with function", () => {
-      const node = createNode("type MyFunc = (x: string) => number;");
-      expect(containsFunctionType(node)).toBe(true);
-    });
-
-    it("should return false for type alias without function", () => {
-      const node = createNode("type MyString = string;");
-      expect(containsFunctionType(node)).toBe(false);
     });
   });
 

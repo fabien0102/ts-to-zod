@@ -925,7 +925,7 @@ describe("generateZodSchema", () => {
            *
            * @format email
            */
-          email: z.string().email(),
+          email: z.email(),
           /**
            * The name of the hero.
            *
@@ -981,26 +981,26 @@ describe("generateZodSchema", () => {
            *
            * @format ipv4
            */
-          ipv4: z.string().ipv4(),
+          ipv4: z.ipv4(),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6
            */
-          ipv6: z.string().ipv6(),
+          ipv6: z.ipv6(),
           /**
            * The hero's ip address.
            *
            * @format ip
            */
-          ip: z.string().ipv4(),
+          ip: z.ipv4(),
           /**
            * The hero's known IPs
            *
            * @elementFormat ip
            * @maxLength 5
            */
-          knownIps: z.array(z.string().ipv4()).max(5),
+          knownIps: z.array(z.ipv4()).max(5),
           /**
            * The hero's last ping times
            *
@@ -1114,31 +1114,31 @@ describe("generateZodSchema", () => {
            *
            * @format email Should be an email
            */
-          heroEmail: z.string().email("Should be an email"),
+          heroEmail: z.email("Should be an email"),
           /**
            * The email of the enemy.
            *
            * @format email, "Should be an email"
            */
-          enemyEmail: z.string().email("Should be an email"),
+          enemyEmail: z.email("Should be an email"),
           /**
            * The email of the superman.
            *
            * @format email "Should be an email"
            */
-          supermanEmail: z.string().email("Should be an email"),
+          supermanEmail: z.email("Should be an email"),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6 Must be an ipv6 address
            */
-          ipv6: z.string().ipv6("Must be an ipv6 address"),
+          ipv6: z.ipv6("Must be an ipv6 address"),
           /**
            * The hero's ip address.
            *
            * @format ip "Must be a ipv4 or an ipv6 address"
            */
-          ip: z.string().ipv4("Must be a ipv4 or an ipv6 address")
+          ip: z.ipv4("Must be a ipv4 or an ipv6 address")
       });"
     `);
   });
@@ -1175,7 +1175,7 @@ describe("generateZodSchema", () => {
            *
            * @format email should be an email
            */
-          email: z.string().email("should be an email"),
+          email: z.email("should be an email"),
           /**
            * The name of the hero.
            *
@@ -2094,59 +2094,59 @@ describe("generateZodSchema", () => {
           /**
            * @format email
            */
-          email: z.string().email(),
+          email: z.email(),
           /**
            * @format uuid
            */
-          uuid: z.string().uuid(),
+          uuid: z.uuid(),
           /**
            * @format url
            */
-          url: z.string().url(),
+          url: z.url(),
           /**
            * @format emoji
            */
-          emoji: z.string().emoji(),
+          emoji: z.emoji(),
           /**
            * @format base64
            */
-          base64: z.string().base64(),
+          base64: z.base64(),
           /**
            * @format base64url
            */
-          base64url: z.string().base64url(),
+          base64url: z.base64url(),
           /**
            * @format nanoid
            */
-          nanoid: z.string().nanoid(),
+          nanoid: z.nanoid(),
           /**
            * @format cuid
            */
-          cuid: z.string().cuid(),
+          cuid: z.cuid(),
           /**
            * @format cuid2
            */
-          cuid2: z.string().cuid2(),
+          cuid2: z.cuid2(),
           /**
            * @format ulid
            */
-          ulid: z.string().ulid(),
+          ulid: z.ulid(),
           /**
            * @format ipv4
            */
-          ipv4: z.string().ipv4(),
+          ipv4: z.ipv4(),
           /**
            * @format ipv6
            */
-          ipv6: z.string().ipv6(),
+          ipv6: z.ipv6(),
           /**
            * @format cidrv4
            */
-          cidrv4: z.string().cidrv4(),
+          cidrv4: z.cidrv4(),
           /**
            * @format cidrv6
            */
-          cidrv6: z.string().cidrv6(),
+          cidrv6: z.cidrv6(),
           /**
            * @format iso-date
            */

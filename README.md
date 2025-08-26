@@ -11,24 +11,35 @@ Generate [Zod](https://github.com/colinhacks/zod) schemas (v4) from Typescript t
 [![License](https://img.shields.io/npm/l/ts-to-zod.svg)](https://github.com/fabien0102/ts-to-zod/blob/main/LICENSE)
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 
-## Usage
+## ⚡ Zod v4 Support
+
+ts-to-zod now supports **Zod v4** with improved performance and enhanced function type handling.
+
+### Quick Start with Zod v4
 
 ```sh
+# Install ts-to-zod and Zod v4
 $ yarn add --dev ts-to-zod
+$ yarn add zod
+
+# Generate schemas
 $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
+### Migration from Zod v3
+
+If you're upgrading from Zod v3:
+
+1. **Update dependency**: `npm install zod@^4`
+2. **Regenerate schemas**: `npx ts-to-zod`
+
+The tool automatically generates code compatible with Zod v4, including updated string validation methods and improved function type support. For Zod-specific breaking changes, see the [official Zod v4 changelog](https://zod.dev/v4/changelog).
+
+**Note:** For Zod v3 support, use ts-to-zod v3.x series.
+
+## Usage
+
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
-
-## Zod Version Support
-
-This package now supports **Zod v4** (`^4.0.14`). The generated schemas take advantage of Zod v4's powerful features while maintaining compatibility with existing TypeScript types.
-
-**Note:** If you need Zod v3 support, please use ts-to-zod v3.x series.
-
-## Zod v4 Migration Guide
-
-If you are upgrading from Zod v3 to v4, please refer to the [Zod v4 Migration Guide](./docs/ZOD_V4_MIGRATION_GUIDE.md).
 
 ## Embedded validation
 
@@ -51,7 +62,7 @@ List of supported keywords:
 | `@maximum {number} [err_msg]`                                                                                              | `@maximum 42 Must be < 42` | `z.number().max(42, "Must be < 42")` |
 | `@minLength {number} [err_msg]`                                                                                            | `@minLength 42`            | `z.string().min(42)`                 |
 | `@maxLength {number} [err_msg]`                                                                                            | `@maxLength 42`            | `z.string().max(42)`                 |
-| `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.string().email()`                 |
+| `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.email()`                          |
 | `@pattern {regex}` <br><br> **Note**: Due to parsing ambiguities, `@pattern` does _not_ support generating error messages. | `@pattern ^hello`          | `z.string().regex(/^hello/)`         |
 
 By default, `FormatType` is defined as the following type (corresponding Zod validator in comment):
@@ -62,12 +73,12 @@ type FormatType =
   | "date" // z.string().date()
   | "time" // z.string().time()
   | "duration" // z.string().duration()
-  | "email" // z.string().email()
-  | "ip" // z.string().ip()
-  | "ipv4" // z.string().ip()
-  | "ipv6" // z.string().ip()
-  | "url" // z.string().url()
-  | "uuid"; // z.string().uuid()
+  | "email" // z.email()
+  | "ip" // z.ipv4()
+  | "ipv4" // z.ipv4()
+  | "ipv6" // z.ipv6()
+  | "url" // z.url()
+  | "uuid"; // z.uuid()
 ```
 
 However, see the section on [Custom JSDoc Format Types](#custom-jsdoc-format-types) to learn more about defining other types of formats for string validation.
@@ -122,7 +133,7 @@ export const heroContactSchema = z.object({
    *
    * @format email
    */
-  email: z.string().email(),
+  email: z.email(),
 
   /**
    * The name of the hero.

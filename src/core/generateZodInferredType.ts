@@ -4,7 +4,7 @@ export interface GenerateZodInferredTypeProps {
   aliasName: string;
   zodImportValue: string;
   zodConstName: string;
-  // If it is a function, we need to use z.input<typeof schema> to get the correct type inference
+  // If it is a function, we need to use z.infer<typeof schema> to get the correct type inference
   isFunction?: boolean;
   // If it is a promise, we need to use z.output<typeof schema> to get the correct type inference
   isPromise?: boolean;
@@ -18,7 +18,7 @@ export interface GenerateZodInferredTypeProps {
  *  export type ${aliasName} = ${zodImportValue}.infer<typeof ${zodConstName}>
  *
  *  // For function types:
- *  export type ${aliasName} = ${zodImportValue}.input<typeof ${zodConstName}>
+ *  export type ${aliasName} = ${zodImportValue}.infer<typeof ${zodConstName}>
  *
  *  // For promise types:
  *  export type ${aliasName} = Promise<${zodImportValue}.output<typeof ${zodConstName}>>

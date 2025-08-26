@@ -136,7 +136,7 @@ export const getSupermanSkillSchema = createFunctionSchema(
 );
 
 export const heroContactSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   name: z.string().min(2).max(50),
   phoneNumber: z.string().regex(/^\d{3}-\d{3}-\d{4}$/),
   hasSuperPower: z.boolean().optional().default(true),

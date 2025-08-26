@@ -26,7 +26,7 @@ describe("generateZodInferredType", () => {
     );
   });
 
-  it("should generate function type with _input", () => {
+  it("should generate function type with z.infer", () => {
     const sourceFile = ts.createSourceFile(
       "index.ts",
       `export const myFunctionSchema = z.function({
@@ -52,7 +52,7 @@ describe("generateZodInferredType", () => {
     );
   });
 
-  it("should generate promise type with z.infer", () => {
+  it("should generate promise type with Promise<z.output<>>", () => {
     const sourceFile = ts.createSourceFile(
       "index.ts",
       `export const krytonResponseSchema = z.promise(z.boolean())`,
