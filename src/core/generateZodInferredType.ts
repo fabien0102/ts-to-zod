@@ -6,7 +6,7 @@ export interface GenerateZodInferredTypeProps {
   zodConstName: string;
   // If it is a function, we need to use z.infer<typeof schema> to get the correct type inference
   isFunction?: boolean;
-  // If it is a promise, we need to use z.output<typeof schema> to get the correct type inference
+  // If it is a promise, we need special handling due to Zod v4 Promise type constraints
   isPromise?: boolean;
 }
 
@@ -20,9 +20,22 @@ export interface GenerateZodInferredTypeProps {
  *  // For function types:
  *  export type ${aliasName} = ${zodImportValue}.infer<typeof ${zodConstName}>
  *
- *  // For promise types:
+ *  // For promise types (special handling required):
  *  export type ${aliasName} = Promise<${zodImportValue}.output<typeof ${zodConstName}>>
  * ```
+ *
+ * ## Why Promise Types Need Special Handling
+ *
+ * Zod v4 has special runtime behavior for Promise types:
+ * - Promises require asynchronous parsing (parseAsync())
+ * - z.output<ZodPromise<T>> returns the unwrapped type T (not Promise<T>)
+ * - z.infer<ZodPromise<T>> technically returns Promise<T> but creates type compatibility issues
+ *
+ * Using Promise<z.output<typeof schema>> accurately reconstructs a Promise<T> type
+ * that is fully compatible with the original TypeScript type, while using z.infer
+ * alone would yield type validation failures.
+ *
+ * This should be considered a workaround necessitated by Zod v4's Promise type system.
  */
 export function generateZodInferredType({
   aliasName,
@@ -42,8 +55,9 @@ export function generateZodInferredType({
       [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
     );
   } else if (isPromise) {
-    // For promise types, we need to manually construct Promise<T>
-    // where T is z.output<typeof schema> (the inner type)
+    // CRITICAL: Promise types require special handling in Zod v4
+    // Cannot use z.infer<> due to type compatibility issues - must use Promise<z.output<>>
+    // This constructs Promise<T> where T is the unwrapped type from z.output<ZodPromise<T>>
     typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
       f.createTypeReferenceNode(
         f.createQualifiedName(
