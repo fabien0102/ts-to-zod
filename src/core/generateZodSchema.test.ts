@@ -208,14 +208,14 @@ describe("generateZodSchema", () => {
 
   it("should generate a numerical key", () => {
     const source = `export type responses = {
-     200: {
-      content: {
-        "application/json": {
-          id: string
+      200: {
+        content: {
+          "application/json": {
+            id: string
+          }
         }
       }
-     }
-   };`;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const responsesSchema = z.object({
@@ -315,8 +315,8 @@ describe("generateZodSchema", () => {
 
   it("should throw on not supported interface with extends and index signature", () => {
     const source = `export interface Superman extends Clark {
-     [key: string]: any;
-   };`;
+      [key: string]: any;
+    };`;
 
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"interface with \`extends\` and index signature are not supported!"`
@@ -388,8 +388,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a schema with omit in interface extension clause", () => {
     const source = `export interface Superman extends Omit<Clark, "weakness"> {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
     "export const supermanSchema = clarkSchema.omit({ "weakness": true }).extend({
         withPower: z.boolean()
@@ -413,12 +413,12 @@ describe("generateZodSchema", () => {
 
   it("should generate a complex schema from an interface", () => {
     const source = `export interface Superman {
-     name: "superman" | "clark kent" | "kal-l";
-     enemies: Record<string, Enemy>;
-     age: number;
-     underKryptonite?: boolean;
-     needGlasses: true | null;
-   };`;
+      name: "superman" | "clark kent" | "kal-l";
+      enemies: Record<string, Enemy>;
+      age: number;
+      underKryptonite?: boolean;
+      needGlasses: true | null;
+    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
           name: z.union([z.literal("superman"), z.literal("clark kent"), z.literal("kal-l")]),
@@ -432,8 +432,8 @@ describe("generateZodSchema", () => {
 
   it("should generate an extended schema", () => {
     const source = `export interface Superman extends Clark {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = clarkSchema.extend({
           withPower: z.boolean()
@@ -450,8 +450,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when two extends are used", () => {
     const source = `export interface Superman extends Clark extends KalL {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
@@ -462,8 +462,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when extending with two comma-separated interfaces", () => {
     const source = `export interface Superman extends Clark, KalL {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
@@ -474,8 +474,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when extending with multiple comma-separated interfaces", () => {
     const source = `export interface Superman extends Clark, KalL, Kryptonian {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend(kryptonianSchema.shape).extend({
@@ -486,8 +486,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a schema with omit in interface extension clause and multiple clauses", () => {
     const source = `export interface Superman extends KalL, Omit<Clark, "weakness">, Kryptonian {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
     "export const supermanSchema = kalLSchema.extend(clarkSchema.omit({ "weakness": true }).shape).extend(kryptonianSchema.shape).extend({
         withPower: z.boolean()
@@ -497,8 +497,8 @@ describe("generateZodSchema", () => {
 
   it("should deal with literal keys", () => {
     const source = `export interface Villain {
-     "i.will.kill.everybody": true;
-   };`;
+      "i.will.kill.everybody": true;
+    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const villainSchema = z.object({
           "i.will.kill.everybody": z.literal(true)
@@ -1886,16 +1886,16 @@ describe("generateZodSchema", () => {
       "z",
       `
       ${generated.replace("export ", "")}
-      
+
       // Test successful parsing
-      const validData = { 
-        name: "John", 
-        age: 30, 
-        email: "john@example.com", 
-        isActive: true 
+      const validData = {
+        name: "John",
+        age: 30,
+        email: "john@example.com",
+        isActive: true
       };
       const result = testDataSchema.parse(validData);
-      
+
       // Test validation errors
       try {
         testDataSchema.parse({ name: "John", age: "thirty", email: "invalid", isActive: true });
@@ -1903,7 +1903,7 @@ describe("generateZodSchema", () => {
       } catch (e) {
         if (!e.issues) throw new Error("Expected ZodError with issues");
       }
-      
+
       return result;
     `
     );
@@ -1934,7 +1934,7 @@ describe("generateZodSchema", () => {
       "z",
       `
       ${generated.replace("export ", "")}
-      
+
       // Test that extra properties are rejected
       try {
         strictTestSchema.parse({ name: "John", age: 30, extra: "should fail" });
@@ -1956,12 +1956,12 @@ describe("generateZodSchema", () => {
        * @format email
        */
       email: string;
-      
+
       /**
        * @format uuid
        */
       id: string;
-      
+
       /**
        * @format url
        */
@@ -1974,14 +1974,14 @@ describe("generateZodSchema", () => {
       "z",
       `
       ${generated.replace("export ", "")}
-      
+
       // Test valid data
       const validData = {
         email: "test@example.com",
         id: "123e4567-e89b-12d3-a456-426614174000",
         website: "https://example.com"
       };
-      
+
       try {
         formatTestSchema.parse(validData);
         return true;
@@ -2002,87 +2002,87 @@ describe("generateZodSchema", () => {
        * @format email
        */
       email: string;
-      
+
       /**
        * @format uuid
        */
       uuid: string;
-      
+
       /**
        * @format url
        */
       url: string;
-      
+
       /**
        * @format emoji
        */
       emoji: string;
-      
+
       /**
        * @format base64
        */
       base64: string;
-      
+
       /**
        * @format base64url
        */
       base64url: string;
-      
+
       /**
        * @format nanoid
        */
       nanoid: string;
-      
+
       /**
        * @format cuid
        */
       cuid: string;
-      
+
       /**
        * @format cuid2
        */
       cuid2: string;
-      
+
       /**
        * @format ulid
        */
       ulid: string;
-      
+
       /**
        * @format ipv4
        */
       ipv4: string;
-      
+
       /**
        * @format ipv6
        */
       ipv6: string;
-      
+
       /**
        * @format cidrv4
        */
       cidrv4: string;
-      
+
       /**
        * @format cidrv6
        */
       cidrv6: string;
-      
+
       /**
        * @format iso-date
        */
       isoDate: string;
-      
+
       /**
        * @format iso-time
        */
       isoTime: string;
-      
+
       /**
        * @format iso-datetime
        */
       isoDatetime: string;
-      
+
       /**
        * @format iso-duration
        */
