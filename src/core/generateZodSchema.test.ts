@@ -284,7 +284,7 @@ describe("generateZodSchema", () => {
   it("should generate a function schema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = createAsyncFunctionSchema(z.function({ input: [z.boolean(), z.string()], output: z.custom<Promise<boolean>>(() => z.boolean()) }));"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.string()], output: z.custom<Promise<boolean>>(() => z.boolean()) });"`
     );
   });
 
@@ -295,14 +295,14 @@ describe("generateZodSchema", () => {
     ) => string`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const getSupermanSkillSchema = createFunctionSchema(z.function({ input: [z.string(), z.record(z.string(), z.union([z.string(), z.number()])).optional()], output: z.string() }));"`
+      `"export const getSupermanSkillSchema = z.function({ input: [z.string(), z.record(z.string(), z.union([z.string(), z.number()])).optional()], output: z.string() });"`
     );
   });
 
   it("should generate a function schema (with `any` fallback on param)", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = createAsyncFunctionSchema(z.function({ input: [z.boolean(), z.any()], output: z.custom<Promise<boolean>>(() => z.boolean()) }));"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.any()], output: z.custom<Promise<boolean>>(() => z.boolean()) });"`
     );
   });
 

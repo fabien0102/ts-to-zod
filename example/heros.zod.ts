@@ -9,42 +9,6 @@ import {
 
 import { personSchema } from "./person.zod";
 
-const createFunctionSchema = <T extends z.core.$ZodFunction>(schema: T) => {
-  const wrapped = z.custom<Parameters<T["implement"]>[0]>((fn) =>
-    schema.implement(fn as Parameters<T["implement"]>[0])
-  );
-  // Copy essential methods to preserve API compatibility
-  Object.defineProperty(wrapped, "implement", {
-    value: (fn: Parameters<T["implement"]>[0]) => schema.implement(fn),
-    enumerable: false,
-    writable: false,
-  });
-  return wrapped as typeof wrapped & { implement: T["implement"] };
-};
-
-const createAsyncFunctionSchema = <T extends z.core.$ZodFunction>(
-  schema: T
-) => {
-  const wrapped = z.custom<Parameters<T["implement"]>[0]>((fn) =>
-    schema.implementAsync(fn as Parameters<T["implement"]>[0])
-  );
-  // Copy essential methods to preserve API compatibility
-  Object.defineProperty(wrapped, "implement", {
-    value: (fn: Parameters<T["implement"]>[0]) => schema.implement(fn),
-    enumerable: false,
-    writable: false,
-  });
-  Object.defineProperty(wrapped, "implementAsync", {
-    value: (fn: Parameters<T["implement"]>[0]) => schema.implementAsync(fn),
-    enumerable: false,
-    writable: false,
-  });
-  return wrapped as typeof wrapped & {
-    implement: T["implement"];
-    implementAsync: T["implementAsync"];
-  };
-};
-
 export const enemyPowerSchema = z.nativeEnum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
@@ -99,12 +63,10 @@ export const storySchema = z.tuple([z.string(), z.array(z.string())]);
 
 export const krytonResponseSchema = z.promise(z.boolean());
 
-export const killSupermanSchema = createAsyncFunctionSchema(
-  z.function({
-    input: [z.boolean(), z.string()],
-    output: z.custom<Promise<boolean>>(() => z.boolean()),
-  })
-);
+export const killSupermanSchema = z.function({
+  input: [z.boolean(), z.string()],
+  output: z.custom<Promise<boolean>>(() => z.boolean()),
+});
 
 export const withDefaultsSchema = z.object({
   theAnswerToTheUltimateQuestionOfLife: z.number().default(42),
@@ -128,12 +90,10 @@ export const exportedSchema = z.object({
   b: z.string(),
 });
 
-export const getSupermanSkillSchema = createFunctionSchema(
-  z.function({
-    input: [z.string(), z.boolean().optional()],
-    output: z.string(),
-  })
-);
+export const getSupermanSkillSchema = z.function({
+  input: [z.string(), z.boolean().optional()],
+  output: z.string(),
+});
 
 export const heroContactSchema = z.object({
   email: z.email(),

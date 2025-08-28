@@ -1089,17 +1089,7 @@ function buildZodPrimitiveInternal({
       [configObject]
     );
 
-    // Wrap with appropriate function helper for compatibility
-    const wrapperFunction = isPromiseReturnType
-      ? "createAsyncFunctionSchema"
-      : "createFunctionSchema";
-    const wrappedFunctionCall = f.createCallExpression(
-      f.createIdentifier(wrapperFunction),
-      undefined,
-      [functionCall]
-    );
-
-    return withZodProperties(wrappedFunctionCall, zodProperties);
+    return withZodProperties(functionCall, zodProperties);
   }
 
   if (ts.isIndexedAccessTypeNode(typeNode)) {
