@@ -742,7 +742,7 @@ describe("generateZodSchema", () => {
   it("should deal with index signature", () => {
     const source = `export type Movies = {[title: string]: Movie};`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const moviesSchema = z.record(movieSchema);"`
+      `"export const moviesSchema = z.record(z.string(), movieSchema);"`
     );
   });
 
@@ -752,7 +752,7 @@ describe("generateZodSchema", () => {
       [title: string]: Movie;
     };`;
     expect(generate(source)).toMatchInlineSnapshot(`
-      "export const moviesSchema = z.record(movieSchema).and(z.object({
+      "export const moviesSchema = z.record(z.string(), movieSchema).and(z.object({
           "Man of Steel": movieSchema.and(z.object({
               title: z.literal("Man of Steel")
           }))
@@ -766,7 +766,7 @@ describe("generateZodSchema", () => {
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const collectionSchema = z.object({
-          movies: z.record(movieSchema).optional()
+          movies: z.record(z.string(), movieSchema).optional()
       });"
     `);
   });
@@ -792,7 +792,7 @@ describe("generateZodSchema", () => {
   it("should generate an object schema", () => {
     const source = `export type Object = object;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const objectSchema = z.record(z.any());"`
+      `"export const objectSchema = z.record(z.string(), z.any());"`
     );
   });
 
@@ -2163,6 +2163,160 @@ describe("generateZodSchema", () => {
            * @format iso-duration
            */
           isoDuration: z.string().duration()
+      });"
+    `);
+  });
+
+  it("should generate Zod numeric format validations", () => {
+    const source = `export interface NumericFormats {
+      /**
+       * @format int
+       */
+      intValue: number;
+
+      /**
+       * @format float32
+       */
+      float32Value: number;
+
+      /**
+       * @format float64
+       */
+      float64Value: number;
+
+      /**
+       * @format int32
+       */
+      int32Value: number;
+
+      /**
+       * @format uint32
+       */
+      uint32Value: number;
+
+      /**
+       * @format int64
+       */
+      int64Value: bigint;
+
+      /**
+       * @format uint64
+       */
+      uint64Value: bigint;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const numericFormatsSchema = z.object({
+          /**
+           * @format int
+           */
+          intValue: z.int(),
+          /**
+           * @format float32
+           */
+          float32Value: z.float32(),
+          /**
+           * @format float64
+           */
+          float64Value: z.float64(),
+          /**
+           * @format int32
+           */
+          int32Value: z.int32(),
+          /**
+           * @format uint32
+           */
+          uint32Value: z.uint32(),
+          /**
+           * @format int64
+           */
+          int64Value: z.int64(),
+          /**
+           * @format uint64
+           */
+          uint64Value: z.uint64()
+      });"
+    `);
+  });
+
+  it("should generate Zod numeric format validations with error messages", () => {
+    const source = `export interface NumericFormatsWithErrors {
+      /**
+       * @format int, Must be an integer
+       */
+      intValue: number;
+
+      /**
+       * @format int32, Must be a 32-bit integer
+       */
+      int32Value: number;
+
+      /**
+       * @format uint64, Must be a 64-bit unsigned integer
+       */
+      uint64Value: bigint;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const numericFormatsWithErrorsSchema = z.object({
+          /**
+           * @format int, Must be an integer
+           */
+          intValue: z.int("Must be an integer"),
+          /**
+           * @format int32, Must be a 32-bit integer
+           */
+          int32Value: z.int32("Must be a 32-bit integer"),
+          /**
+           * @format uint64, Must be a 64-bit unsigned integer
+           */
+          uint64Value: z.uint64("Must be a 64-bit unsigned integer")
+      });"
+    `);
+  });
+
+  it("should combine numeric formats with other validations", () => {
+    const source = `export interface NumericFormatsWithValidations {
+      /**
+       * @format int
+       * @minimum 0
+       * @maximum 100
+       */
+      score: number;
+
+      /**
+       * @format float32
+       * @minimum -1.0
+       * @maximum 1.0
+       */
+      normalizedValue: number;
+
+      /**
+       * @format uint32
+       * @minimum 1
+       */
+      positiveUint32: number;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const numericFormatsWithValidationsSchema = z.object({
+          /**
+           * @format int
+           * @minimum 0
+           * @maximum 100
+           */
+          score: z.int().min(0).max(100),
+          /**
+           * @format float32
+           * @minimum -1.0
+           * @maximum 1.0
+           */
+          normalizedValue: z.float32().min(-1).max(1),
+          /**
+           * @format uint32
+           * @minimum 1
+           */
+          positiveUint32: z.uint32().min(1)
       });"
     `);
   });

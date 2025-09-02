@@ -757,8 +757,8 @@ function buildZodPrimitiveInternal({
     const lastItem = typeNode.elements[typeNode.elements.length - 1];
     const restElement =
       lastItem &&
-      ts.isRestTypeNode(lastItem) &&
-      ts.isArrayTypeNode(lastItem.type)
+        ts.isRestTypeNode(lastItem) &&
+        ts.isArrayTypeNode(lastItem.type)
         ? lastItem.type.elementType
         : undefined;
 
@@ -1137,10 +1137,50 @@ function buildZodPrimitiveInternal({
     case ts.SyntaxKind.UndefinedKeyword:
       return buildZodSchema(z, "undefined", [], zodProperties);
     case ts.SyntaxKind.NumberKeyword:
+      // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+        const numericFormats = ["int", "float32", "float64", "int32", "uint32"];
+
+        if (numericFormats.includes(formatValue)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatValue
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatValue,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
       return buildZodSchema(z, "number", [], zodProperties);
     case ts.SyntaxKind.AnyKeyword:
       return buildZodSchema(z, "any", [], zodProperties);
     case ts.SyntaxKind.BigIntKeyword:
+      // Check for bigint format in JSDoc tags and generate appropriate Zod v4 schema
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+        const bigintFormats = ["int64", "uint64"];
+
+        if (bigintFormats.includes(formatValue)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatValue
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatValue,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
       return buildZodSchema(z, "bigint", [], zodProperties);
     case ts.SyntaxKind.VoidKeyword:
       return buildZodSchema(z, "void", [], zodProperties);
@@ -1152,7 +1192,7 @@ function buildZodPrimitiveInternal({
       return buildZodSchema(
         z,
         "record",
-        [buildZodSchema(z, "any")],
+        [buildZodSchema(z, "string"), buildZodSchema(z, "any")],
         zodProperties
       );
   }
@@ -1176,7 +1216,7 @@ function buildZodPrimitiveInternal({
               ((ts.isTypeAliasDeclaration(n) && ts.isUnionTypeNode(n.type)) ||
                 ts.isEnumDeclaration(n)) &&
               n.name.getText(sourceFile) ===
-                (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
+              (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
             );
           }
         );
@@ -1270,8 +1310,7 @@ function buildZodPrimitiveInternal({
 
   const fallbackType = getSmartFallback(typeNode);
   console.warn(
-    ` »   Warning: '${
-      ts.SyntaxKind[typeNode.kind]
+    ` »   Warning: '${ts.SyntaxKind[typeNode.kind]
     }' is not supported, fallback into 'z.${fallbackType}()'`
   );
   return buildZodSchema(z, fallbackType, [], zodProperties);
@@ -1441,14 +1480,14 @@ function buildZodObject({
   const parsedProperties =
     properties.length > 0
       ? buildZodProperties({
-          members: properties,
-          zodImportValue: z,
-          sourceFile,
-          dependencies,
-          getDependencyName,
-          skipParseJSDoc,
-          customJSDocFormatTypes,
-        })
+        members: properties,
+        zodImportValue: z,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        skipParseJSDoc,
+        customJSDocFormatTypes,
+      })
       : new Map();
 
   if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
@@ -1457,13 +1496,13 @@ function buildZodObject({
       sourceFile,
       properties.length > 0
         ? [
-            f.createObjectLiteralExpression(
-              Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
-                return f.createPropertyAssignment(key, tsCall);
-              }),
-              true
-            ),
-          ]
+          f.createObjectLiteralExpression(
+            Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
+              return f.createPropertyAssignment(key, tsCall);
+            }),
+            true
+          ),
+        ]
         : undefined
     );
   } else if (properties.length > 0) {
@@ -1484,6 +1523,7 @@ function buildZodObject({
       );
     }
     const indexSignatureSchema = buildZodSchema(z, "record", [
+      buildZodSchema(z, "string", [], []),
       // Index signature type can't be optional or have validators.
       buildZodPrimitive({
         z,
@@ -1570,11 +1610,11 @@ function buildSchemaReference(
       const key = keyAccessNode.indexType.getText(sourceFile).slice(1, -1); // remove quotes
       const members =
         ts.isTypeAliasDeclaration(declaration) &&
-        ts.isTypeLiteralNode(declaration.type)
+          ts.isTypeLiteralNode(declaration.type)
           ? declaration.type.members
           : ts.isInterfaceDeclaration(declaration)
-          ? declaration.members
-          : [];
+            ? declaration.members
+            : [];
 
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
@@ -1688,8 +1728,7 @@ function buildOmitPickObject(
       keys.types.map((type) => {
         if (!ts.isLiteralTypeNode(type)) {
           throw new Error(
-            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
-              ts.SyntaxKind[type.kind]
+            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${ts.SyntaxKind[type.kind]
             } as K union part not supported)`
           );
         }
@@ -1703,8 +1742,7 @@ function buildOmitPickObject(
 
   if (!parameters) {
     throw new Error(
-      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
-        ts.SyntaxKind[keys.kind]
+      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${ts.SyntaxKind[keys.kind]
       } as K not supported)`
     );
   }

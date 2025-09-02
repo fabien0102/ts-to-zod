@@ -29,6 +29,13 @@ const builtInJSDocFormatsTypes = [
   "iso-time",
   "iso-datetime",
   "iso-duration",
+  "int",
+  "float32",
+  "float64",
+  "int32",
+  "uint32",
+  "int64",
+  "uint64",
   // "uri",
 ] as const;
 
