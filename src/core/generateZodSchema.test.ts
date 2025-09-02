@@ -284,7 +284,7 @@ describe("generateZodSchema", () => {
   it("should generate a function schema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.string()], output: z.custom<Promise<boolean>>(() => z.boolean()) });"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.string()], output: z.promise(z.boolean()) });"`
     );
   });
 
@@ -302,7 +302,7 @@ describe("generateZodSchema", () => {
   it("should generate a function schema (with `any` fallback on param)", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.any()], output: z.custom<Promise<boolean>>(() => z.boolean()) });"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.any()], output: z.promise(z.boolean()) });"`
     );
   });
 

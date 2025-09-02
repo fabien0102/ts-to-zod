@@ -65,7 +65,7 @@ export const krytonResponseSchema = z.promise(z.boolean());
 
 export const killSupermanSchema = z.function({
   input: [z.boolean(), z.string()],
-  output: z.custom<Promise<boolean>>(() => z.boolean()),
+  output: z.promise(z.boolean()),
 });
 
 export const withDefaultsSchema = z.object({

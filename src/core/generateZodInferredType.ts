@@ -4,10 +4,8 @@ export interface GenerateZodInferredTypeProps {
   aliasName: string;
   zodImportValue: string;
   zodConstName: string;
-  // If it is a function, we need to use z.infer<typeof schema> to get the correct type inference
-  isFunction?: boolean;
-  // If it is a promise, we need special handling due to Zod v4 Promise type constraints
-  isPromise?: boolean;
+  isPromiseReturningFunction?: boolean;
+  isPromiseType?: boolean;
 }
 
 /**
@@ -41,12 +39,14 @@ export function generateZodInferredType({
   aliasName,
   zodImportValue,
   zodConstName,
-  isFunction = false,
-  isPromise = false,
+  isPromiseReturningFunction = false,
+  isPromiseType = false,
 }: GenerateZodInferredTypeProps) {
   let typeReference: ts.TypeNode;
 
-  if (isFunction) {
+  if (isPromiseReturningFunction) {
+    // For Promise-returning functions, use z.infer<> for consistency
+    // because z.infer<z.function({ output: z.promise(...) })> returns the correct function type
     typeReference = f.createTypeReferenceNode(
       f.createQualifiedName(
         f.createIdentifier(zodImportValue),
@@ -54,21 +54,23 @@ export function generateZodInferredType({
       ),
       [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
     );
-  } else if (isPromise) {
-    // CRITICAL: Promise types require special handling in Zod v4
-    // Cannot use z.infer<> due to type compatibility issues - must use Promise<z.output<>>
-    // This constructs Promise<T> where T is the unwrapped type from z.output<ZodPromise<T>>
-    typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
-      f.createTypeReferenceNode(
-        f.createQualifiedName(
-          f.createIdentifier(zodImportValue),
-          f.createIdentifier("output")
-        ),
-        [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
+  } else if (isPromiseType) {
+    // For Promise types (not functions), use Promise<z.output<>>
+    // because z.infer<z.promise<T>> returns T instead of Promise<T> in Zod v4
+    // TODO: Maybe we should make a PR to Zod to fix this issue
+    const outputType = f.createTypeReferenceNode(
+      f.createQualifiedName(
+        f.createIdentifier(zodImportValue),
+        f.createIdentifier("output")
       ),
+      [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
+    );
+
+    typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
+      outputType,
     ]);
   } else {
-    // For regular types, use z.infer<typeof schema>
+    // Use standard z.infer for all other types
     typeReference = f.createTypeReferenceNode(
       f.createQualifiedName(
         f.createIdentifier(zodImportValue),

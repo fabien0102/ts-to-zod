@@ -1,124 +1,96 @@
 import ts from "typescript";
 import {
-  isDirectFunctionType,
-  isDirectPromiseType,
-  isFunctionReturningPromise,
+  analyzeTypeMetadata,
 } from "./isFunctionType";
 
-describe("isFunctionType", () => {
-  function createNode(
-    sourceCode: string
-  ): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.EnumDeclaration {
+describe("analyzeTypeMetadata", () => {
+  it("should identify function types", () => {
     const sourceFile = ts.createSourceFile(
       "test.ts",
-      sourceCode,
+      "type MyFunction = (a: string) => boolean",
       ts.ScriptTarget.Latest
     );
-
-    let targetNode:
-      | ts.InterfaceDeclaration
-      | ts.TypeAliasDeclaration
-      | ts.EnumDeclaration
-      | undefined;
-    function visit(node: ts.Node) {
-      if (
-        ts.isTypeAliasDeclaration(node) ||
-        ts.isInterfaceDeclaration(node) ||
-        ts.isEnumDeclaration(node)
-      ) {
-        targetNode = node;
-        return;
-      }
-      ts.forEachChild(node, visit);
-    }
-
-    visit(sourceFile);
-    if (!targetNode) {
-      throw new Error("No target node found");
-    }
-    return targetNode;
-  }
-
-  describe("isDirectFunctionType", () => {
-    it("should return true for function type alias", () => {
-      const node = createNode("type MyFunc = (x: string) => number;");
-      expect(isDirectFunctionType(node)).toBe(true);
-    });
-
-    it("should return false for non-function type alias", () => {
-      const node = createNode("type MyString = string;");
-      expect(isDirectFunctionType(node)).toBe(false);
-    });
-
-    it("should return false for interface", () => {
-      const node = createNode("interface MyInterface { prop: string; }");
-      expect(isDirectFunctionType(node)).toBe(false);
-    });
-
-    it("should return false for enum", () => {
-      const node = createNode("enum MyEnum { A, B }");
-      expect(isDirectFunctionType(node)).toBe(false);
-    });
-
-    it("should return true for union with function types", () => {
-      const node = createNode(
-        "type MyUnion = ((x: string) => number) | string;"
-      );
-      expect(isDirectFunctionType(node)).toBe(true);
-    });
-
-    it("should return true for parenthesized function type", () => {
-      const node = createNode("type MyFunc = ((x: string) => number);");
-      expect(isDirectFunctionType(node)).toBe(true);
-    });
+    
+    const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
+    const metadata = analyzeTypeMetadata(typeAlias);
+    
+    expect(metadata.isFunction).toBe(true);
+    expect(metadata.isPromiseReturningFunction).toBe(false);
+    expect(metadata.isPromiseType).toBe(false);
   });
 
-  describe("isDirectPromiseType", () => {
-    it("should return true for Promise type alias", () => {
-      const node = createNode("type MyPromise = Promise<boolean>;");
-      expect(isDirectPromiseType(node)).toBe(true);
-    });
-
-    it("should return false for non-Promise type alias", () => {
-      const node = createNode("type MyString = string;");
-      expect(isDirectPromiseType(node)).toBe(false);
-    });
-
-    it("should return false for interface", () => {
-      const node = createNode("interface MyInterface { prop: string; }");
-      expect(isDirectPromiseType(node)).toBe(false);
-    });
-
-    it("should return false for enum", () => {
-      const node = createNode("enum MyEnum { A, B }");
-      expect(isDirectPromiseType(node)).toBe(false);
-    });
-
-    it("should return false for function type", () => {
-      const node = createNode("type MyFunc = (x: string) => number;");
-      expect(isDirectPromiseType(node)).toBe(false);
-    });
+  it("should identify Promise-returning function types", () => {
+    const sourceFile = ts.createSourceFile(
+      "test.ts",
+      "type MyAsyncFunction = (a: string) => Promise<boolean>",
+      ts.ScriptTarget.Latest
+    );
+    
+    const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
+    const metadata = analyzeTypeMetadata(typeAlias);
+    
+    expect(metadata.isFunction).toBe(true);
+    expect(metadata.isPromiseReturningFunction).toBe(true);
+    expect(metadata.isPromiseType).toBe(false);
   });
 
-  describe("isFunctionReturningPromise", () => {
-    it("should return true for function returning Promise", () => {
-      const node = createNode("type MyFunc = (x: string) => Promise<boolean>;");
-      expect(isFunctionReturningPromise(node)).toBe(true);
-    });
+  it("should identify Promise types", () => {
+    const sourceFile = ts.createSourceFile(
+      "test.ts",
+      "type MyPromise = Promise<string>",
+      ts.ScriptTarget.Latest
+    );
+    
+    const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
+    const metadata = analyzeTypeMetadata(typeAlias);
+    
+    expect(metadata.isFunction).toBe(false);
+    expect(metadata.isPromiseReturningFunction).toBe(false);
+    expect(metadata.isPromiseType).toBe(true);
+  });
 
-    it("should return false for function not returning Promise", () => {
-      const node = createNode("type MyFunc = (x: string) => number;");
-      expect(isFunctionReturningPromise(node)).toBe(false);
-    });
+  it("should handle interface declarations", () => {
+    const sourceFile = ts.createSourceFile(
+      "test.ts",
+      "interface MyInterface { name: string }",
+      ts.ScriptTarget.Latest
+    );
+    
+    const interfaceDecl = sourceFile.statements[0] as ts.InterfaceDeclaration;
+    const metadata = analyzeTypeMetadata(interfaceDecl);
+    
+    expect(metadata.isFunction).toBe(false);
+    expect(metadata.isPromiseReturningFunction).toBe(false);
+    expect(metadata.isPromiseType).toBe(false);
+  });
 
-    it("should return false for non-function types", () => {
-      const node = createNode("type MyString = string;");
-      expect(isFunctionReturningPromise(node)).toBe(false);
-    });
+  it("should handle enum declarations", () => {
+    const sourceFile = ts.createSourceFile(
+      "test.ts",
+      "enum MyEnum { A, B, C }",
+      ts.ScriptTarget.Latest
+    );
+    
+    const enumDecl = sourceFile.statements[0] as ts.EnumDeclaration;
+    const metadata = analyzeTypeMetadata(enumDecl);
+    
+    expect(metadata.isFunction).toBe(false);
+    expect(metadata.isPromiseReturningFunction).toBe(false);
+    expect(metadata.isPromiseType).toBe(false);
+  });
 
-    it("should return false for Promise type (not function)", () => {
-      const node = createNode("type MyPromise = Promise<boolean>;");
-      expect(isFunctionReturningPromise(node)).toBe(false);
-    });
+  it("should handle regular object types", () => {
+    const sourceFile = ts.createSourceFile(
+      "test.ts",
+      "type MyObject = { name: string; age: number }",
+      ts.ScriptTarget.Latest
+    );
+    
+    const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
+    const metadata = analyzeTypeMetadata(typeAlias);
+    
+    expect(metadata.isFunction).toBe(false);
+    expect(metadata.isPromiseReturningFunction).toBe(false);
+    expect(metadata.isPromiseType).toBe(false);
   });
 });

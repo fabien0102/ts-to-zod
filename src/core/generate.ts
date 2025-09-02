@@ -15,11 +15,6 @@ import {
   type TypeNameReference,
   type TypeNode,
 } from "../utils/traverseTypes";
-import {
-  isDirectFunctionType,
-  isDirectPromiseType,
-  isFunctionReturningPromise,
-} from "../utils/isFunctionType";
 
 import {
   getImportIdentifiers,
@@ -30,6 +25,9 @@ import {
 
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
+import {
+  analyzeTypeMetadata,
+} from "../utils/isFunctionType";
 import {
   generateZodSchemaVariableStatement,
   generateZodSchemaVariableStatementForImport,
@@ -262,9 +260,8 @@ export function generate({
   const zodTypeSchemas = nodes.map((node) => {
     const typeName = node.name.text;
     const varName = getSchemaName(typeName);
-    const isFunction = isDirectFunctionType(node);
-    const isPromise = isDirectPromiseType(node);
-    const isAsyncFunction = isFunctionReturningPromise(node);
+    const typeMetadata = analyzeTypeMetadata(node);
+    
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
       node,
@@ -278,9 +275,7 @@ export function generate({
     return {
       typeName,
       varName,
-      isFunction,
-      isPromise,
-      isAsyncFunction,
+      typeMetadata,
       ...zodSchema,
     };
   });
@@ -297,24 +292,16 @@ export function generate({
       enumImport: false,
       typeName: importName,
       varName,
-      isFunction: false, // Imported types are not direct functions
-      isPromise: false, // Imported types are not direct promises
-      isAsyncFunction: false, // Imported types are not direct async functions
+      typeMetadata: {
+        isFunction: false,
+        isPromiseReturningFunction: false,
+        isPromiseType: false,
+      },
     };
   });
 
   const zodSchemas = zodTypeSchemas.concat(zodImportSchemas);
   const zodSchemaNames = zodSchemas.map(({ varName }) => varName);
-
-  // Create mappings from typeName to type flags for later use
-  const functionTypeMap = new Map<string, boolean>();
-  const promiseTypeMap = new Map<string, boolean>();
-  const asyncFunctionTypeMap = new Map<string, boolean>();
-  zodSchemas.forEach(({ typeName, isFunction, isPromise, isAsyncFunction }) => {
-    functionTypeMap.set(typeName, isFunction);
-    promiseTypeMap.set(typeName, isPromise);
-    asyncFunctionTypeMap.set(typeName, isAsyncFunction);
-  });
 
   // Resolves statements order
   // A schema can't be declared if all the referenced schemas used inside this one are not previously declared.
@@ -466,6 +453,12 @@ ${
   const testCases = generateIntegrationTests(
     Array.from(statements.values())
       .filter(isExported)
+      .filter((statement) => {
+        // Skip integration tests for Promise functions as they have manual type generation
+        const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+        const isPromiseFunction = schema?.typeMetadata?.isPromiseReturningFunction || false;
+        return !isPromiseFunction;
+      })
       .map((i) => ({
         zodType: `${getSchemaName(i.typeName)}InferredType`,
         tsType: `spec.${i.typeName}`,
@@ -488,14 +481,27 @@ function expectType<T>(_: T) {
 
 ${Array.from(statements.values())
   .filter(isExported)
+  .filter((statement) => {
+    // Skip InferredType generation for Promise functions as they have manual type generation
+    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+    const isPromiseFunction = schema?.typeMetadata?.isPromiseReturningFunction || false;
+    return !isPromiseFunction;
+  })
   .map((statement) => {
+    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+    const typeMetadata = schema?.typeMetadata || {
+      isFunction: false,
+      isPromiseReturningFunction: false,
+      isPromiseType: false,
+    };
+
     // Generate z.infer<>
     const zodInferredSchema = generateZodInferredType({
       aliasName: `${getSchemaName(statement.typeName)}InferredType`,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isFunction: functionTypeMap.get(statement.typeName) || false,
-      isPromise: promiseTypeMap.get(statement.typeName) || false,
+      isPromiseReturningFunction: typeMetadata.isPromiseReturningFunction,
+      isPromiseType: typeMetadata.isPromiseType,
     });
 
     return print(zodInferredSchema);
@@ -515,12 +521,19 @@ import * as generated from "${zodSchemasImportPath}";
 ${Array.from(statements.values())
   .filter(isExported)
   .map((statement) => {
+    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+    const typeMetadata = schema?.typeMetadata || {
+      isFunction: false,
+      isPromiseReturningFunction: false,
+      isPromiseType: false,
+    };
+
     const zodInferredSchema = generateZodInferredType({
       aliasName: statement.typeName,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isFunction: functionTypeMap.get(statement.typeName) || false,
-      isPromise: promiseTypeMap.get(statement.typeName) || false,
+      isPromiseReturningFunction: typeMetadata.isPromiseReturningFunction,
+      isPromiseType: typeMetadata.isPromiseType,
     });
 
     return print(zodInferredSchema);

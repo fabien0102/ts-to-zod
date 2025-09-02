@@ -1000,69 +1000,17 @@ function buildZodPrimitiveInternal({
       })
     );
 
-    // Check if the return type is a Promise
-    const isPromiseReturnType =
-      ts.isTypeReferenceNode(typeNode.type) &&
-      ts.isIdentifier(typeNode.type.typeName) &&
-      typeNode.type.typeName.text === "Promise";
-
-    let returnType: ts.Expression;
-
-    if (isPromiseReturnType && typeNode.type.typeArguments) {
-      // For async functions, wrap with z.custom<Promise<T>>(() => innerSchema)
-      // This is a limitation from zod, it always returns MaybeAsync when using `implementAsync`, which causes the final type and the original type to not match
-      const innerSchema = buildZodPrimitive({
-        z,
-        typeNode: typeNode.type.typeArguments[0],
-        jsDocTags,
-        customJSDocFormatTypes,
-        sourceFile,
-        dependencies,
-        getDependencyName,
-        isOptional: false,
-        skipParseJSDoc,
-      }) as ts.Expression;
-
-      returnType = f.createCallExpression(
-        f.createPropertyAccessExpression(
-          f.createIdentifier(z),
-          f.createIdentifier("custom")
-        ),
-        [
-          f.createTypeReferenceNode(
-            f.createIdentifier("Promise"),
-            typeNode.type.typeArguments.map((typeArg) =>
-              f.createTypeReferenceNode(
-                f.createIdentifier(typeArg.getText(sourceFile))
-              )
-            )
-          ),
-        ],
-        [
-          f.createArrowFunction(
-            undefined,
-            undefined,
-            [],
-            undefined,
-            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-            innerSchema
-          ),
-        ]
-      ) as ts.Expression;
-    } else {
-      // For non-Promise return types, use the normal approach
-      returnType = buildZodPrimitive({
-        z,
-        typeNode: typeNode.type,
-        jsDocTags,
-        customJSDocFormatTypes,
-        sourceFile,
-        dependencies,
-        getDependencyName,
-        isOptional: false,
-        skipParseJSDoc,
-      }) as ts.Expression;
-    }
+    const returnType = buildZodPrimitive({
+      z,
+      typeNode: typeNode.type,
+      jsDocTags,
+      customJSDocFormatTypes,
+      sourceFile,
+      dependencies,
+      getDependencyName,
+      isOptional: false,
+      skipParseJSDoc,
+    }) as ts.Expression;
 
     // Create the v4 function syntax: z.function({ input: [...], output: ... })
     const inputProperty = f.createPropertyAssignment(

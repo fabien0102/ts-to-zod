@@ -40,7 +40,6 @@ describe("generateZodInferredType", () => {
       aliasName: "MyFunction",
       zodConstName: "myFunctionSchema",
       zodImportValue: "z",
-      isFunction: true,
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
@@ -52,7 +51,31 @@ describe("generateZodInferredType", () => {
     );
   });
 
-  it("should generate promise type with Promise<z.output<>>", () => {
+  it("should generate promise-returning function type with z.output<>", () => {
+    const sourceFile = ts.createSourceFile(
+      "index.ts",
+      `export const killSupermanSchema = z.function({
+      input: [z.boolean(), z.string()],
+      output: z.promise(z.boolean())
+    })`,
+      ts.ScriptTarget.Latest
+    );
+
+    const output = generateZodInferredType({
+      aliasName: "KillSuperman",
+      zodConstName: "killSupermanSchema",
+      zodImportValue: "z",
+      isPromiseReturningFunction: true,
+    });
+
+    const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
+
+    expect(printer.printNode(ts.EmitHint.Unspecified, output, sourceFile)).toBe(
+      "export type KillSuperman = z.infer<typeof killSupermanSchema>;"
+    );
+  });
+
+  it("should generate Promise type with Promise<z.output<>>", () => {
     const sourceFile = ts.createSourceFile(
       "index.ts",
       `export const krytonResponseSchema = z.promise(z.boolean())`,
@@ -63,7 +86,7 @@ describe("generateZodInferredType", () => {
       aliasName: "KrytonResponse",
       zodConstName: "krytonResponseSchema",
       zodImportValue: "z",
-      isPromise: true,
+      isPromiseType: true,
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
