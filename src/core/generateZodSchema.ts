@@ -1000,7 +1000,7 @@ function buildZodPrimitiveInternal({
       })
     );
 
-    const returnType = buildZodPrimitive({
+    let returnType = buildZodPrimitive({
       z,
       typeNode: typeNode.type,
       jsDocTags,
@@ -1012,7 +1012,46 @@ function buildZodPrimitiveInternal({
       skipParseJSDoc,
     }) as ts.Expression;
 
-    // Create the v4 function syntax: z.function({ input: [...], output: ... })
+    // Check if the return type is Promise and wrap with z.custom if so
+    const isPromiseReturn =
+      ts.isTypeReferenceNode(typeNode.type) &&
+      ts.isIdentifier(typeNode.type.typeName) &&
+      typeNode.type.typeName.text === "Promise";
+
+    if (isPromiseReturn) {
+      // Wrap with z.custom<Promise<T>>(() => returnType)
+      const promiseTypeArgs = typeNode.type.typeArguments || [];
+      const promiseInnerType =
+        promiseTypeArgs.length > 0
+          ? promiseTypeArgs[0]
+          : f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+
+      // Create Promise<T> type reference for z.custom<Promise<T>>
+      const promiseTypeRef = f.createTypeReferenceNode(
+        f.createIdentifier("Promise"),
+        [promiseInnerType]
+      );
+
+      // Create z.custom<Promise<T>>(() => returnType)
+      returnType = f.createCallExpression(
+        f.createPropertyAccessExpression(
+          f.createIdentifier(z),
+          f.createIdentifier("custom")
+        ),
+        [promiseTypeRef],
+        [
+          f.createArrowFunction(
+            undefined,
+            undefined,
+            [],
+            undefined,
+            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            returnType
+          ),
+        ]
+      );
+    }
+
     const inputProperty = f.createPropertyAssignment(
       f.createIdentifier("input"),
       f.createArrayLiteralExpression(argsArray as ts.Expression[], false)

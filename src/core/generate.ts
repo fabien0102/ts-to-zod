@@ -25,9 +25,7 @@ import {
 
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
-import {
-  analyzeTypeMetadata,
-} from "../utils/isFunctionType";
+import { analyzeTypeMetadata } from "../utils/isFunctionType";
 import {
   generateZodSchemaVariableStatement,
   generateZodSchemaVariableStatementForImport,
@@ -261,7 +259,7 @@ export function generate({
     const typeName = node.name.text;
     const varName = getSchemaName(typeName);
     const typeMetadata = analyzeTypeMetadata(node);
-    
+
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
       node,
@@ -455,8 +453,11 @@ ${
       .filter(isExported)
       .filter((statement) => {
         // Skip integration tests for Promise functions as they have manual type generation
-        const schema = zodSchemas.find(s => s.typeName === statement.typeName);
-        const isPromiseFunction = schema?.typeMetadata?.isPromiseReturningFunction || false;
+        const schema = zodSchemas.find(
+          (s) => s.typeName === statement.typeName
+        );
+        const isPromiseFunction =
+          schema?.typeMetadata?.isPromiseReturningFunction || false;
         return !isPromiseFunction;
       })
       .map((i) => ({
@@ -483,12 +484,13 @@ ${Array.from(statements.values())
   .filter(isExported)
   .filter((statement) => {
     // Skip InferredType generation for Promise functions as they have manual type generation
-    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
-    const isPromiseFunction = schema?.typeMetadata?.isPromiseReturningFunction || false;
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
+    const isPromiseFunction =
+      schema?.typeMetadata?.isPromiseReturningFunction || false;
     return !isPromiseFunction;
   })
   .map((statement) => {
-    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
     const typeMetadata = schema?.typeMetadata || {
       isFunction: false,
       isPromiseReturningFunction: false,
@@ -521,7 +523,7 @@ import * as generated from "${zodSchemasImportPath}";
 ${Array.from(statements.values())
   .filter(isExported)
   .map((statement) => {
-    const schema = zodSchemas.find(s => s.typeName === statement.typeName);
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
     const typeMetadata = schema?.typeMetadata || {
       isFunction: false,
       isPromiseReturningFunction: false,

@@ -7,7 +7,11 @@ interface TypeMetadata {
 }
 
 export function analyzeTypeMetadata(
-  typeNode: ts.TypeNode | ts.TypeAliasDeclaration | ts.InterfaceDeclaration | ts.EnumDeclaration,
+  typeNode:
+    | ts.TypeNode
+    | ts.TypeAliasDeclaration
+    | ts.InterfaceDeclaration
+    | ts.EnumDeclaration,
   typeChecker?: ts.TypeChecker
 ): TypeMetadata {
   if (ts.isTypeAliasDeclaration(typeNode)) {

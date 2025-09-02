@@ -45,12 +45,13 @@ export function generateZodInferredType({
   let typeReference: ts.TypeNode;
 
   if (isPromiseReturningFunction) {
-    // For Promise-returning functions, use z.infer<> for consistency
-    // because z.infer<z.function({ output: z.promise(...) })> returns the correct function type
+    // For Promise-returning functions, use z.output<> instead of z.infer<>
+    // because z.infer<z.function({ output: z.promise(...) })> loses the Promise wrapper in Zod v4
+    // This is similar to the Promise type workaround below
     typeReference = f.createTypeReferenceNode(
       f.createQualifiedName(
         f.createIdentifier(zodImportValue),
-        f.createIdentifier("infer")
+        f.createIdentifier("output")
       ),
       [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
     );

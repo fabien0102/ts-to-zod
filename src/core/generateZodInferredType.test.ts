@@ -71,7 +71,7 @@ describe("generateZodInferredType", () => {
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
 
     expect(printer.printNode(ts.EmitHint.Unspecified, output, sourceFile)).toBe(
-      "export type KillSuperman = z.infer<typeof killSupermanSchema>;"
+      "export type KillSuperman = z.output<typeof killSupermanSchema>;"
     );
   });
 

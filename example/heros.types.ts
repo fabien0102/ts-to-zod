@@ -27,7 +27,7 @@ export type KrytonResponse = Promise<
   z.output<typeof generated.krytonResponseSchema>
 >;
 
-export type KillSuperman = z.infer<typeof generated.killSupermanSchema>;
+export type KillSuperman = z.output<typeof generated.killSupermanSchema>;
 
 export type WithDefaults = z.infer<typeof generated.withDefaultsSchema>;
 

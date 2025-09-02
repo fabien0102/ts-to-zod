@@ -1,7 +1,5 @@
 import ts from "typescript";
-import {
-  analyzeTypeMetadata,
-} from "./isFunctionType";
+import { analyzeTypeMetadata } from "./isFunctionType";
 
 describe("analyzeTypeMetadata", () => {
   it("should identify function types", () => {
@@ -10,10 +8,10 @@ describe("analyzeTypeMetadata", () => {
       "type MyFunction = (a: string) => boolean",
       ts.ScriptTarget.Latest
     );
-    
+
     const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
     const metadata = analyzeTypeMetadata(typeAlias);
-    
+
     expect(metadata.isFunction).toBe(true);
     expect(metadata.isPromiseReturningFunction).toBe(false);
     expect(metadata.isPromiseType).toBe(false);
@@ -25,10 +23,10 @@ describe("analyzeTypeMetadata", () => {
       "type MyAsyncFunction = (a: string) => Promise<boolean>",
       ts.ScriptTarget.Latest
     );
-    
+
     const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
     const metadata = analyzeTypeMetadata(typeAlias);
-    
+
     expect(metadata.isFunction).toBe(true);
     expect(metadata.isPromiseReturningFunction).toBe(true);
     expect(metadata.isPromiseType).toBe(false);
@@ -40,10 +38,10 @@ describe("analyzeTypeMetadata", () => {
       "type MyPromise = Promise<string>",
       ts.ScriptTarget.Latest
     );
-    
+
     const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
     const metadata = analyzeTypeMetadata(typeAlias);
-    
+
     expect(metadata.isFunction).toBe(false);
     expect(metadata.isPromiseReturningFunction).toBe(false);
     expect(metadata.isPromiseType).toBe(true);
@@ -55,10 +53,10 @@ describe("analyzeTypeMetadata", () => {
       "interface MyInterface { name: string }",
       ts.ScriptTarget.Latest
     );
-    
+
     const interfaceDecl = sourceFile.statements[0] as ts.InterfaceDeclaration;
     const metadata = analyzeTypeMetadata(interfaceDecl);
-    
+
     expect(metadata.isFunction).toBe(false);
     expect(metadata.isPromiseReturningFunction).toBe(false);
     expect(metadata.isPromiseType).toBe(false);
@@ -70,10 +68,10 @@ describe("analyzeTypeMetadata", () => {
       "enum MyEnum { A, B, C }",
       ts.ScriptTarget.Latest
     );
-    
+
     const enumDecl = sourceFile.statements[0] as ts.EnumDeclaration;
     const metadata = analyzeTypeMetadata(enumDecl);
-    
+
     expect(metadata.isFunction).toBe(false);
     expect(metadata.isPromiseReturningFunction).toBe(false);
     expect(metadata.isPromiseType).toBe(false);
@@ -85,10 +83,10 @@ describe("analyzeTypeMetadata", () => {
       "type MyObject = { name: string; age: number }",
       ts.ScriptTarget.Latest
     );
-    
+
     const typeAlias = sourceFile.statements[0] as ts.TypeAliasDeclaration;
     const metadata = analyzeTypeMetadata(typeAlias);
-    
+
     expect(metadata.isFunction).toBe(false);
     expect(metadata.isPromiseReturningFunction).toBe(false);
     expect(metadata.isPromiseType).toBe(false);
