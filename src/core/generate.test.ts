@@ -101,7 +101,7 @@ describe("generate", () => {
         import { z } from "zod";
         import { Superhero } from "./superhero";
 
-        export const superheroSchema = z.nativeEnum(Superhero);
+        export const superheroSchema = z.enum(Superhero);
 
         export const favoriteSuperheroSchema = z.object({
             superhero: z.literal(Superhero.Superman)
@@ -279,7 +279,7 @@ describe("generate", () => {
         import { z } from "zod";
         import { Gender } from "./superhero";
 
-        export const genderSchema = z.nativeEnum(Gender);
+        export const genderSchema = z.enum(Gender);
 
         export const heroSchema = z.object({
             name: z.union([z.literal("SuperMan"), z.literal("SuperWoman")])

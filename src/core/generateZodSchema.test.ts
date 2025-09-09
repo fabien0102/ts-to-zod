@@ -123,13 +123,13 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a nativeEnum schema", () => {
+  it("should generate an enum schema", () => {
     const source = `export enum Superhero = {
       Superman = "superman",
       ClarkKent = "clark_kent",
     };`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const superheroSchema = z.nativeEnum(Superhero);"`
+      `"export const superheroSchema = z.enum(Superhero);"`
     );
   });
 

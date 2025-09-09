@@ -219,7 +219,7 @@ export function generateZodSchemaVariableStatement({
   }
 
   if (ts.isEnumDeclaration(node)) {
-    schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
+    schema = buildZodSchema(zodImportValue, "enum", [node.name]);
     enumImport = true;
   }
 

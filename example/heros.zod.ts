@@ -9,7 +9,7 @@ import {
 
 import { personSchema } from "./person.zod";
 
-export const enemyPowerSchema = z.nativeEnum(EnemyPower);
+export const enemyPowerSchema = z.enum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
   power: z.literal(EnemyPower.Speed),
