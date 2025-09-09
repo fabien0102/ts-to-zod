@@ -290,11 +290,7 @@ export function generate({
       enumImport: false,
       typeName: importName,
       varName,
-      typeMetadata: {
-        isFunction: false,
-        isPromiseReturningFunction: false,
-        isPromiseType: false,
-      },
+      typeMetadata: "none" as const,
     };
   });
 
@@ -457,7 +453,7 @@ ${
           (s) => s.typeName === statement.typeName
         );
         const isPromiseFunction =
-          schema?.typeMetadata?.isPromiseReturningFunction || false;
+          schema?.typeMetadata === "promiseReturningFunction";
         return !isPromiseFunction;
       })
       .map((i) => ({
@@ -486,13 +482,12 @@ ${Array.from(statements.values())
     // Skip InferredType generation for Promise functions as they have manual type generation
     const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
     const isPromiseFunction =
-      schema?.typeMetadata?.isPromiseReturningFunction || false;
+      schema?.typeMetadata === "promiseReturningFunction";
     return !isPromiseFunction;
   })
   .map((statement) => {
     const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
     const typeMetadata = schema?.typeMetadata || {
-      isFunction: false,
       isPromiseReturningFunction: false,
       isPromiseType: false,
     };
@@ -502,8 +497,8 @@ ${Array.from(statements.values())
       aliasName: `${getSchemaName(statement.typeName)}InferredType`,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isPromiseReturningFunction: typeMetadata.isPromiseReturningFunction,
-      isPromiseType: typeMetadata.isPromiseType,
+      isPromiseReturningFunction: typeMetadata === "promiseReturningFunction",
+      isPromiseType: typeMetadata === "promise",
     });
 
     return print(zodInferredSchema);
@@ -525,7 +520,6 @@ ${Array.from(statements.values())
   .map((statement) => {
     const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
     const typeMetadata = schema?.typeMetadata || {
-      isFunction: false,
       isPromiseReturningFunction: false,
       isPromiseType: false,
     };
@@ -534,8 +528,8 @@ ${Array.from(statements.values())
       aliasName: statement.typeName,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isPromiseReturningFunction: typeMetadata.isPromiseReturningFunction,
-      isPromiseType: typeMetadata.isPromiseType,
+      isPromiseReturningFunction: typeMetadata === "promiseReturningFunction",
+      isPromiseType: typeMetadata === "promise",
     });
 
     return print(zodInferredSchema);

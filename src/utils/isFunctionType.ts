@@ -1,65 +1,36 @@
 import ts from "typescript";
 
-interface TypeMetadata {
-  isFunction: boolean;
-  isPromiseReturningFunction: boolean;
-  isPromiseType: boolean;
-}
+type TypeMetadata = "none" | "promise" | "promiseReturningFunction";
+
+type TypeNode =
+  | ts.TypeNode
+  | ts.TypeAliasDeclaration
+  | ts.InterfaceDeclaration
+  | ts.EnumDeclaration;
 
 export function analyzeTypeMetadata(
-  typeNode:
-    | ts.TypeNode
-    | ts.TypeAliasDeclaration
-    | ts.InterfaceDeclaration
-    | ts.EnumDeclaration,
+  typeNode: TypeNode,
   typeChecker?: ts.TypeChecker
 ): TypeMetadata {
   if (ts.isTypeAliasDeclaration(typeNode)) {
     return analyzeTypeMetadata(typeNode.type, typeChecker);
   }
 
-  if (ts.isInterfaceDeclaration(typeNode)) {
-    return {
-      isFunction: false,
-      isPromiseReturningFunction: false,
-      isPromiseType: false,
-    };
+  if (ts.isFunctionTypeNode(typeNode) && isPromise(typeNode.type)) {
+    return "promiseReturningFunction";
   }
 
-  if (ts.isEnumDeclaration(typeNode)) {
-    return {
-      isFunction: false,
-      isPromiseReturningFunction: false,
-      isPromiseType: false,
-    };
+  if (isPromise(typeNode)) {
+    return "promise";
   }
 
-  const isFunction = ts.isFunctionTypeNode(typeNode);
+  return "none";
+}
 
-  let isPromiseType = false;
-  let isPromiseReturningFunction = false;
-
-  if (ts.isTypeReferenceNode(typeNode)) {
-    const typeName = typeNode.typeName;
-    if (ts.isIdentifier(typeName) && typeName.text === "Promise") {
-      isPromiseType = true;
-    }
-  }
-
-  if (isFunction && ts.isFunctionTypeNode(typeNode)) {
-    const returnType = typeNode.type;
-    if (ts.isTypeReferenceNode(returnType)) {
-      const typeName = returnType.typeName;
-      if (ts.isIdentifier(typeName) && typeName.text === "Promise") {
-        isPromiseReturningFunction = true;
-        isPromiseType = false;
-      }
-    }
-  }
-
-  return {
-    isFunction,
-    isPromiseReturningFunction,
-    isPromiseType,
-  };
+function isPromise(typeNode: TypeNode): boolean {
+  return (
+    ts.isTypeReferenceNode(typeNode) &&
+    ts.isIdentifier(typeNode.typeName) &&
+    typeNode.typeName.text === "Promise"
+  );
 }
