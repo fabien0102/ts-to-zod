@@ -17,12 +17,15 @@ ts-to-zod now supports **Zod v4** with improved performance and enhanced functio
 
 ### Quick Start with Zod v4
 
-```sh
-# Install ts-to-zod and Zod v4
-$ yarn add --dev ts-to-zod
-$ yarn add zod
+Install ts-to-zod:
 
-# Generate schemas
+```sh
+$ yarn add --dev ts-to-zod
+```
+
+Generate Zod schemas from a TypeScript file:
+
+```sh
 $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
