@@ -1265,7 +1265,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate add strict() validation when @strict is used", () => {
+  it("should generate strictObject() when @strict is used", () => {
     const source = `/**
     * @strict
     */
@@ -1279,16 +1279,16 @@ describe("generateZodSchema", () => {
        "/**
            * @strict
            */
-       export const supermanSchema = z.object({
+       export const supermanSchema = z.strictObject({
            name: z.literal("superman"),
            weakness: kryptoniteSchema,
            age: z.number(),
            enemies: z.array(z.string())
-       }).strict();"
+       });"
      `);
   });
 
-  it("should add strict() validation when @strict is used on subtype", () => {
+  it("should generate strictObject() validation when @strict is used on subtype", () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1299,14 +1299,14 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict()
+          })
       });"
     `);
   });
 
-  it("should add strict() before optional() validation when @strict is used on optional subtype", () => {
+  it("should generate strictObject() before optional() validation when @strict is used on optional subtype", () => {
     const source = `export interface A {
       /** @strict */
       a?: {
@@ -1317,14 +1317,14 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict().optional()
+          }).optional()
       });"
     `);
   });
 
-  it("should add strict() before nullable() validation when @strict is used on nullable subtype", () => {
+  it("should generate strictObject() before nullable() validation when @strict is used on nullable subtype", () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1335,9 +1335,9 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict().nullable()
+          }).nullable()
       });"
     `);
   });
@@ -1918,7 +1918,7 @@ describe("generateZodSchema", () => {
     });
   });
 
-  it("should generate .strict() schemas that work correctly in v4", () => {
+  it("should generate .strictObject() schemas that parse correctly in v4", () => {
     const source = `
     /**
      * @strict
@@ -1929,7 +1929,7 @@ describe("generateZodSchema", () => {
     }`;
     const generated = generate(source);
 
-    // Test that .strict() still works in v4 (even though deprecated)
+    // Test that the generated schema works with actual Zod parsing
     const testFunction = new Function(
       "z",
       `

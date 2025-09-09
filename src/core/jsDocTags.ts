@@ -328,10 +328,6 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.pattern) {
     zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
   }
-  // strict() must be before optional() and nullable()
-  if (jsDocTags.strict) {
-    zodProperties.push({ identifier: "strict" });
-  }
   // partial() must be before optional() and nullable()
   if (isPartial) {
     zodProperties.push({

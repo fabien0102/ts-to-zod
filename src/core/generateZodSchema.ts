@@ -173,30 +173,18 @@ export function generateZodSchemaVariableStatement({
       );
     }
 
+    const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(node, sourceFile);
     schema = buildZodObject({
       typeNode: node,
       sourceFile,
       z: zodImportValue,
+      jsDocTags,
       dependencies,
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
       customJSDocFormatTypes,
     });
-
-    if (!skipParseJSDoc) {
-      const jsDocTags = getJSDocTags(node, sourceFile);
-      if (jsDocTags.strict) {
-        schema = f.createCallExpression(
-          f.createPropertyAccessExpression(
-            schema,
-            f.createIdentifier("strict")
-          ),
-          undefined,
-          undefined
-        );
-      }
-    }
   }
 
   if (ts.isTypeAliasDeclaration(node)) {
@@ -923,6 +911,7 @@ function buildZodPrimitiveInternal({
       buildZodObject({
         typeNode,
         z,
+        jsDocTags,
         sourceFile,
         dependencies,
         getDependencyName,
@@ -1438,6 +1427,7 @@ function withZodProperties(
 function buildZodObject({
   typeNode,
   z,
+  jsDocTags,
   dependencies,
   sourceFile,
   getDependencyName,
@@ -1447,6 +1437,7 @@ function buildZodObject({
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
+  jsDocTags: JSDocTags;
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
@@ -1507,7 +1498,8 @@ function buildZodObject({
         : undefined
     );
   } else if (properties.length > 0) {
-    objectSchema = buildZodSchema(z, "object", [
+    const callName = jsDocTags.strict ? "strictObject" : "object";
+    objectSchema = buildZodSchema(z, callName, [
       f.createObjectLiteralExpression(
         Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
           return f.createPropertyAssignment(key, tsCall);

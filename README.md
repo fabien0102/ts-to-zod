@@ -69,10 +69,10 @@ By default, `FormatType` is defined as the following type (corresponding Zod val
 
 ```ts
 type FormatType =
-  | "date-time" // z.string().datetime()
-  | "date" // z.string().date()
-  | "time" // z.string().time()
-  | "duration" // z.string().duration()
+  | "date-time" // z.iso.datetime()
+  | "date" // z.iso.date()
+  | "time" // z.iso.time()
+  | "duration" // z.iso.duration()
   | "email" // z.email()
   | "ip" // z.ipv4()
   | "ipv4" // z.ipv4()
@@ -175,7 +175,7 @@ Other JSDoc tags are available:
 | ---------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | `@description {value}` | `@description Full name` | Sets the description of the property                                                                                                      | `z.string().describe("Full name")` |
 | `@default {value}`     | `@default 42`            | Sets a default value for the property                                                                                                     | `z.number().default(42)`           |
-| `@strict`              | `@strict`                | Adds the `strict()` modifier to an object                                                                                                 | `z.object().strict()`              |
+| `@strict`              | `@strict`                | Marks the object as `strictObject()`                                                                                                      | `z.strictObject()`                 |
 | `@schema`              | `@schema .catch('foo')`  | If value starts with a `.`, appends the specified value to the generated schema. Otherwise this value will override the generated schema. | `z.string().catch('foo')`          |
 
 ## JSDoc tag for `union` types
