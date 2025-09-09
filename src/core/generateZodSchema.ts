@@ -1120,7 +1120,11 @@ function buildZodPrimitiveInternal({
           );
         }
       }
-      return buildZodSchema(z, "string", [], zodProperties);
+      const isIsoString = zodProperties.some(({ identifier }) =>
+        ["date", "time", "datetime", "duration"].includes(identifier)
+      );
+      const callName = isIsoString ? "iso" : "string";
+      return buildZodSchema(z, callName, [], zodProperties);
     case ts.SyntaxKind.BooleanKeyword:
       return buildZodSchema(z, "boolean", [], zodProperties);
     case ts.SyntaxKind.UndefinedKeyword:
@@ -1320,14 +1324,21 @@ function buildZodSchema(
   args?: ts.Expression[],
   properties?: ZodProperty[]
 ) {
-  const zodCall = f.createCallExpression(
-    f.createPropertyAccessExpression(
-      f.createIdentifier(z),
-      f.createIdentifier(callName)
-    ),
-    undefined,
-    args
-  );
+  // Most calls are functions (`z.string()`), except some like `z.iso`
+  const zodCall =
+    callName === "iso"
+      ? f.createPropertyAccessExpression(
+          f.createIdentifier(z),
+          f.createIdentifier(callName)
+        )
+      : f.createCallExpression(
+          f.createPropertyAccessExpression(
+            f.createIdentifier(z),
+            f.createIdentifier(callName)
+          ),
+          undefined,
+          args
+        );
   return withZodProperties(zodCall, properties);
 }
 
