@@ -757,8 +757,8 @@ function buildZodPrimitiveInternal({
     const lastItem = typeNode.elements[typeNode.elements.length - 1];
     const restElement =
       lastItem &&
-        ts.isRestTypeNode(lastItem) &&
-        ts.isArrayTypeNode(lastItem.type)
+      ts.isRestTypeNode(lastItem) &&
+      ts.isArrayTypeNode(lastItem.type)
         ? lastItem.type.elementType
         : undefined;
 
@@ -1216,7 +1216,7 @@ function buildZodPrimitiveInternal({
               ((ts.isTypeAliasDeclaration(n) && ts.isUnionTypeNode(n.type)) ||
                 ts.isEnumDeclaration(n)) &&
               n.name.getText(sourceFile) ===
-              (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
+                (span.type as ts.TypeReferenceNode).typeName.getText(sourceFile)
             );
           }
         );
@@ -1310,7 +1310,8 @@ function buildZodPrimitiveInternal({
 
   const fallbackType = getSmartFallback(typeNode);
   console.warn(
-    ` »   Warning: '${ts.SyntaxKind[typeNode.kind]
+    ` »   Warning: '${
+      ts.SyntaxKind[typeNode.kind]
     }' is not supported, fallback into 'z.${fallbackType}()'`
   );
   return buildZodSchema(z, fallbackType, [], zodProperties);
@@ -1480,14 +1481,14 @@ function buildZodObject({
   const parsedProperties =
     properties.length > 0
       ? buildZodProperties({
-        members: properties,
-        zodImportValue: z,
-        sourceFile,
-        dependencies,
-        getDependencyName,
-        skipParseJSDoc,
-        customJSDocFormatTypes,
-      })
+          members: properties,
+          zodImportValue: z,
+          sourceFile,
+          dependencies,
+          getDependencyName,
+          skipParseJSDoc,
+          customJSDocFormatTypes,
+        })
       : new Map();
 
   if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
@@ -1496,13 +1497,13 @@ function buildZodObject({
       sourceFile,
       properties.length > 0
         ? [
-          f.createObjectLiteralExpression(
-            Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
-              return f.createPropertyAssignment(key, tsCall);
-            }),
-            true
-          ),
-        ]
+            f.createObjectLiteralExpression(
+              Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
+                return f.createPropertyAssignment(key, tsCall);
+              }),
+              true
+            ),
+          ]
         : undefined
     );
   } else if (properties.length > 0) {
@@ -1610,11 +1611,11 @@ function buildSchemaReference(
       const key = keyAccessNode.indexType.getText(sourceFile).slice(1, -1); // remove quotes
       const members =
         ts.isTypeAliasDeclaration(declaration) &&
-          ts.isTypeLiteralNode(declaration.type)
+        ts.isTypeLiteralNode(declaration.type)
           ? declaration.type.members
           : ts.isInterfaceDeclaration(declaration)
-            ? declaration.members
-            : [];
+          ? declaration.members
+          : [];
 
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
@@ -1728,7 +1729,8 @@ function buildOmitPickObject(
       keys.types.map((type) => {
         if (!ts.isLiteralTypeNode(type)) {
           throw new Error(
-            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${ts.SyntaxKind[type.kind]
+            `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
+              ts.SyntaxKind[type.kind]
             } as K union part not supported)`
           );
         }
@@ -1742,7 +1744,8 @@ function buildOmitPickObject(
 
   if (!parameters) {
     throw new Error(
-      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${ts.SyntaxKind[keys.kind]
+      `${omitOrPickIdentifierName}<T, K> unknown syntax: (${
+        ts.SyntaxKind[keys.kind]
       } as K not supported)`
     );
   }
