@@ -957,25 +957,25 @@ describe("generateZodSchema", () => {
            *
            * @format date-time
            */
-          lastSeen: z.string().datetime(),
+          lastSeen: z.iso.datetime(),
           /**
            * The hero's birthday.
            *
            * @format date
            */
-          birthday: z.string().date(),
+          birthday: z.iso.date(),
           /**
            * The hero's wakeup-time.
            *
            * @format time
            */
-          wakeupTime: z.string().time(),
+          wakeupTime: z.iso.time(),
           /**
            * The hero's super power boost duration.
            *
            * @format duration
            */
-          boost: z.string().duration(),
+          boost: z.iso.duration(),
           /**
            * The hero's ipv4 address.
            *
@@ -2150,19 +2150,19 @@ describe("generateZodSchema", () => {
           /**
            * @format iso-date
            */
-          isoDate: z.string().date(),
+          isoDate: z.iso.date(),
           /**
            * @format iso-time
            */
-          isoTime: z.string().time(),
+          isoTime: z.iso.time(),
           /**
            * @format iso-datetime
            */
-          isoDatetime: z.string().datetime(),
+          isoDatetime: z.iso.datetime(),
           /**
            * @format iso-duration
            */
-          isoDuration: z.string().duration()
+          isoDuration: z.iso.duration()
       });"
     `);
   });
