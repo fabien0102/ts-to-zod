@@ -13,34 +13,6 @@ import {
   jsDocTagToZodProperties,
 } from "./jsDocTags";
 
-/**
- * Get a more specific fallback type instead of always using z.any()
- */
-function getSmartFallback(typeNode: ts.TypeNode): string {
-  // For type references, try to infer if it's likely an object
-  if (ts.isTypeReferenceNode(typeNode)) {
-    return "object";
-  }
-
-  // For union types, try unknown which is safer than any
-  if (ts.isUnionTypeNode(typeNode)) {
-    return "unknown";
-  }
-
-  // For intersection types, likely an object
-  if (ts.isIntersectionTypeNode(typeNode)) {
-    return "object";
-  }
-
-  // For mapped types or conditional types, use unknown
-  if (ts.isMappedTypeNode(typeNode) || ts.isConditionalTypeNode(typeNode)) {
-    return "unknown";
-  }
-
-  // Default fallback
-  return "any";
-}
-
 export interface GenerateZodSchemaProps {
   /**
    * Name of the exported variable
@@ -1301,13 +1273,12 @@ function buildZodPrimitiveInternal({
     }
   }
 
-  const fallbackType = getSmartFallback(typeNode);
   console.warn(
     ` »   Warning: '${
       ts.SyntaxKind[typeNode.kind]
-    }' is not supported, fallback into 'z.${fallbackType}()'`
+    }' is not supported, fallback into 'z.any()'`
   );
-  return buildZodSchema(z, fallbackType, [], zodProperties);
+  return buildZodSchema(z, "any", [], zodProperties);
 }
 
 /**
