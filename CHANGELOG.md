@@ -1,5 +1,16 @@
 # Changelog
 
+## [4.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.15.0...v4.0.0) (2025-09-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* support zod@4 (#317)
+
+### Features
+
+* support zod@4 ([#317](https://www.github.com/fabien0102/ts-to-zod/issues/317)) ([835edea](https://www.github.com/fabien0102/ts-to-zod/commit/835edeaca5da8a7439b9a05e0ca14d7a5633225f))
+
 ## [3.15.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.14.1...v3.15.0) (2024-11-29)
 
 
