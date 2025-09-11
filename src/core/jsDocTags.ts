@@ -1,6 +1,7 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
 import type { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import { ZodString } from "zod";
 
 /**
  * List of formats that can be translated in zod functions.
@@ -423,7 +424,7 @@ function formatToZodProperty(
  */
 function builtInFormatTypeToZodPropertyIdentifier(
   formatType: BuiltInJSDocFormatsType
-): string {
+): keyof ZodString {
   switch (formatType) {
     case "date-time":
       return "datetime";
@@ -432,7 +433,7 @@ function builtInFormatTypeToZodPropertyIdentifier(
     case "ipv6":
       return "ipv6";
     case "ip":
-      return "ipv4"; // Default to ipv4 for backward compatibility
+      return "ipv4";
     case "iso-date":
       return "date";
     case "iso-time":
@@ -442,7 +443,7 @@ function builtInFormatTypeToZodPropertyIdentifier(
     case "iso-duration":
       return "duration";
     default:
-      return formatType;
+      return formatType as keyof ZodString;
   }
 }
 
