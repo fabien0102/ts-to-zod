@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-type TypeMetadata = "none" | "promise" | "promiseReturningFunction";
+export type TypeMetadata = "none" | "promise" | "promiseReturningFunction";
 
 type TypeNode =
   | ts.TypeNode

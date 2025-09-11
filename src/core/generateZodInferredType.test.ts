@@ -15,6 +15,7 @@ describe("generateZodInferredType", () => {
       aliasName: "Superman",
       zodConstName: "supermanSchema",
       zodImportValue: "z",
+      typeMetadata: "none",
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
@@ -40,6 +41,7 @@ describe("generateZodInferredType", () => {
       aliasName: "MyFunction",
       zodConstName: "myFunctionSchema",
       zodImportValue: "z",
+      typeMetadata: "none",
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
@@ -65,7 +67,7 @@ describe("generateZodInferredType", () => {
       aliasName: "KillSuperman",
       zodConstName: "killSupermanSchema",
       zodImportValue: "z",
-      isPromiseReturningFunction: true,
+      typeMetadata: "promiseReturningFunction",
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });
@@ -86,7 +88,7 @@ describe("generateZodInferredType", () => {
       aliasName: "KrytonResponse",
       zodConstName: "krytonResponseSchema",
       zodImportValue: "z",
-      isPromiseType: true,
+      typeMetadata: "promise",
     });
 
     const printer = ts.createPrinter({ newLine: ts.NewLineKind.LineFeed });

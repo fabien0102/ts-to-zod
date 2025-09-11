@@ -1,11 +1,11 @@
 import ts, { factory as f } from "typescript";
+import { TypeMetadata } from "../utils/isFunctionType";
 
 export interface GenerateZodInferredTypeProps {
   aliasName: string;
   zodImportValue: string;
   zodConstName: string;
-  isPromiseReturningFunction?: boolean;
-  isPromiseType?: boolean;
+  typeMetadata: TypeMetadata;
 }
 
 /**
@@ -39,46 +39,47 @@ export function generateZodInferredType({
   aliasName,
   zodImportValue,
   zodConstName,
-  isPromiseReturningFunction = false,
-  isPromiseType = false,
+  typeMetadata,
 }: GenerateZodInferredTypeProps) {
   let typeReference: ts.TypeNode;
 
-  if (isPromiseReturningFunction) {
-    // For Promise-returning functions, use z.output<> instead of z.infer<>
-    // because z.infer<z.function({ output: z.promise(...) })> loses the Promise wrapper in Zod v4
-    // This is similar to the Promise type workaround below
-    typeReference = f.createTypeReferenceNode(
-      f.createQualifiedName(
-        f.createIdentifier(zodImportValue),
-        f.createIdentifier("output")
-      ),
-      [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
-    );
-  } else if (isPromiseType) {
-    // For Promise types (not functions), use Promise<z.output<>>
-    // because z.infer<z.promise<T>> returns T instead of Promise<T> in Zod v4
-    // TODO: Maybe we should make a PR to Zod to fix this issue
-    const outputType = f.createTypeReferenceNode(
-      f.createQualifiedName(
-        f.createIdentifier(zodImportValue),
-        f.createIdentifier("output")
-      ),
-      [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
-    );
+  switch (typeMetadata) {
+    case "none":
+      typeReference = f.createTypeReferenceNode(
+        f.createQualifiedName(
+          f.createIdentifier(zodImportValue),
+          f.createIdentifier("infer")
+        ),
+        [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
+      );
+      break;
+    case "promise":
+      // For Promise types (not functions), use Promise<z.output<>>
+      // because z.infer<z.promise<T>> returns T instead of Promise<T> in Zod v4
+      const outputType = f.createTypeReferenceNode(
+        f.createQualifiedName(
+          f.createIdentifier(zodImportValue),
+          f.createIdentifier("output")
+        ),
+        [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
+      );
 
-    typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
-      outputType,
-    ]);
-  } else {
-    // Use standard z.infer for all other types
-    typeReference = f.createTypeReferenceNode(
-      f.createQualifiedName(
-        f.createIdentifier(zodImportValue),
-        f.createIdentifier("infer")
-      ),
-      [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
-    );
+      typeReference = f.createTypeReferenceNode(f.createIdentifier("Promise"), [
+        outputType,
+      ]);
+      break;
+    case "promiseReturningFunction":
+      // For Promise-returning functions, use z.output<> instead of z.infer<>
+      // because z.infer<z.function({ output: z.promise(...) })> loses the Promise wrapper in Zod v4
+      // This is similar to the Promise type workaround below
+      typeReference = f.createTypeReferenceNode(
+        f.createQualifiedName(
+          f.createIdentifier(zodImportValue),
+          f.createIdentifier("output")
+        ),
+        [f.createTypeQueryNode(f.createIdentifier(zodConstName))]
+      );
+      break;
   }
 
   return f.createTypeAliasDeclaration(

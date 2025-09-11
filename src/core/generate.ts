@@ -487,18 +487,13 @@ ${Array.from(statements.values())
   })
   .map((statement) => {
     const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
-    const typeMetadata = schema?.typeMetadata || {
-      isPromiseReturningFunction: false,
-      isPromiseType: false,
-    };
 
     // Generate z.infer<>
     const zodInferredSchema = generateZodInferredType({
       aliasName: `${getSchemaName(statement.typeName)}InferredType`,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isPromiseReturningFunction: typeMetadata === "promiseReturningFunction",
-      isPromiseType: typeMetadata === "promise",
+      typeMetadata: schema?.typeMetadata ?? "none",
     });
 
     return print(zodInferredSchema);
@@ -519,17 +514,12 @@ ${Array.from(statements.values())
   .filter(isExported)
   .map((statement) => {
     const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
-    const typeMetadata = schema?.typeMetadata || {
-      isPromiseReturningFunction: false,
-      isPromiseType: false,
-    };
 
     const zodInferredSchema = generateZodInferredType({
       aliasName: statement.typeName,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
-      isPromiseReturningFunction: typeMetadata === "promiseReturningFunction",
-      isPromiseType: typeMetadata === "promise",
+      typeMetadata: schema?.typeMetadata ?? "none",
     });
 
     return print(zodInferredSchema);
