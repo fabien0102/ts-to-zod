@@ -638,7 +638,6 @@ describe("generateZodSchema", () => {
     );
   });
 
-  // TODO
   it("should deal with index access type (nested array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1][-1];
 
@@ -1600,19 +1599,16 @@ describe("generateZodSchema", () => {
     /**
      * @discriminator id
      **/
-    export type A = { id: "1"; name: string; } | { id: "2"; value: string; }`;
+    export type A = { id: "1"; name: string; } | string`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "/**
        * @discriminator id
        **/
-      export const aSchema = z.discriminatedUnion("id", [z.object({
+      export const aSchema = z.union([z.object({
               id: z.literal("1"),
               name: z.string()
-          }), z.object({
-              id: z.literal("2"),
-              value: z.string()
-          })]);"
+          }), z.string()]);"
     `);
   });
 
