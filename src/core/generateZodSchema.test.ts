@@ -123,13 +123,13 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate a nativeEnum schema", () => {
+  it("should generate an enum schema", () => {
     const source = `export enum Superhero = {
       Superman = "superman",
       ClarkKent = "clark_kent",
     };`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const superheroSchema = z.nativeEnum(Superhero);"`
+      `"export const superheroSchema = z.enum(Superhero);"`
     );
   });
 
@@ -182,6 +182,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate an empty tuple schema", () => {
+    const source = `export type EmptyTuple = [];`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const emptyTupleSchema = z.tuple([]);"`
+    );
+  });
+
   it("should generate an object schema", () => {
     const source = `export type Superman = {
      name: "superman";
@@ -201,14 +208,14 @@ describe("generateZodSchema", () => {
 
   it("should generate a numerical key", () => {
     const source = `export type responses = {
-     200: {
-      content: {
-        "application/json": {
-          id: string
+      200: {
+        content: {
+          "application/json": {
+            id: string
+          }
         }
       }
-     }
-   };`;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const responsesSchema = z.object({
@@ -263,7 +270,7 @@ describe("generateZodSchema", () => {
   it("should generate a record schema", () => {
     const source = `export type EnemiesPowers = Record<string, Power>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const enemiesPowersSchema = z.record(powerSchema);"`
+      `"export const enemiesPowersSchema = z.record(z.string(), powerSchema);"`
     );
   });
 
@@ -277,7 +284,7 @@ describe("generateZodSchema", () => {
   it("should generate a function schema", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method: string) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function().args(z.boolean(), z.string()).returns(z.promise(z.boolean()));"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.string()], output: z.custom<Promise<boolean>>(() => z.promise(z.boolean())) });"`
     );
   });
 
@@ -288,14 +295,14 @@ describe("generateZodSchema", () => {
     ) => string`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const getSupermanSkillSchema = z.function().args(z.string(), z.record(z.union([z.string(), z.number()])).optional()).returns(z.string());"`
+      `"export const getSupermanSkillSchema = z.function({ input: [z.string(), z.record(z.string(), z.union([z.string(), z.number()])).optional()], output: z.string() });"`
     );
   });
 
   it("should generate a function schema (with `any` fallback on param)", () => {
     const source = `export type KillSuperman = (withKryptonite: boolean, method) => Promise<boolean>;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const killSupermanSchema = z.function().args(z.boolean(), z.any()).returns(z.promise(z.boolean()));"`
+      `"export const killSupermanSchema = z.function({ input: [z.boolean(), z.any()], output: z.custom<Promise<boolean>>(() => z.promise(z.boolean())) });"`
     );
   });
 
@@ -308,8 +315,8 @@ describe("generateZodSchema", () => {
 
   it("should throw on not supported interface with extends and index signature", () => {
     const source = `export interface Superman extends Clark {
-     [key: string]: any;
-   };`;
+      [key: string]: any;
+    };`;
 
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
       `"interface with \`extends\` and index signature are not supported!"`
@@ -381,8 +388,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a schema with omit in interface extension clause", () => {
     const source = `export interface Superman extends Omit<Clark, "weakness"> {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
     "export const supermanSchema = clarkSchema.omit({ "weakness": true }).extend({
         withPower: z.boolean()
@@ -406,16 +413,16 @@ describe("generateZodSchema", () => {
 
   it("should generate a complex schema from an interface", () => {
     const source = `export interface Superman {
-     name: "superman" | "clark kent" | "kal-l";
-     enemies: Record<string, Enemy>;
-     age: number;
-     underKryptonite?: boolean;
-     needGlasses: true | null;
-   };`;
+      name: "superman" | "clark kent" | "kal-l";
+      enemies: Record<string, Enemy>;
+      age: number;
+      underKryptonite?: boolean;
+      needGlasses: true | null;
+    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = z.object({
           name: z.union([z.literal("superman"), z.literal("clark kent"), z.literal("kal-l")]),
-          enemies: z.record(enemySchema),
+          enemies: z.record(z.string(), enemySchema),
           age: z.number(),
           underKryptonite: z.boolean().optional(),
           needGlasses: z.literal(true).nullable()
@@ -425,8 +432,8 @@ describe("generateZodSchema", () => {
 
   it("should generate an extended schema", () => {
     const source = `export interface Superman extends Clark {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const supermanSchema = clarkSchema.extend({
           withPower: z.boolean()
@@ -443,8 +450,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when two extends are used", () => {
     const source = `export interface Superman extends Clark extends KalL {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
@@ -455,8 +462,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when extending with two comma-separated interfaces", () => {
     const source = `export interface Superman extends Clark, KalL {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend({
@@ -467,8 +474,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a merged schema when extending with multiple comma-separated interfaces", () => {
     const source = `export interface Superman extends Clark, KalL, Kryptonian {
-        withPower: boolean;
-     };`;
+      withPower: boolean;
+    };`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
         "export const supermanSchema = clarkSchema.extend(kalLSchema.shape).extend(kryptonianSchema.shape).extend({
@@ -479,8 +486,8 @@ describe("generateZodSchema", () => {
 
   it("should generate a schema with omit in interface extension clause and multiple clauses", () => {
     const source = `export interface Superman extends KalL, Omit<Clark, "weakness">, Kryptonian {
-     withPower: boolean;
-   }`;
+      withPower: boolean;
+    }`;
     expect(generate(source)).toMatchInlineSnapshot(`
     "export const supermanSchema = kalLSchema.extend(clarkSchema.omit({ "weakness": true }).shape).extend(kryptonianSchema.shape).extend({
         withPower: z.boolean()
@@ -490,8 +497,8 @@ describe("generateZodSchema", () => {
 
   it("should deal with literal keys", () => {
     const source = `export interface Villain {
-     "i.will.kill.everybody": true;
-   };`;
+      "i.will.kill.everybody": true;
+    };`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const villainSchema = z.object({
           "i.will.kill.everybody": z.literal(true)
@@ -547,7 +554,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -559,7 +566,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -627,13 +634,36 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.items[1];"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.def.items[1];"`
     );
   });
 
-  // TODO
-  it.skip("should deal with index access type (nested array item)", () => {
+  it("should deal with index access type (nested array item)", () => {
     const source = `export type SupermanPower = Superman["powers"][-1][-1];
+
+    export type Superman = {
+      powers: Power[][]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.element.element;"`
+    );
+  });
+
+  it("should deal with index access type using number keyword", () => {
+    const source = `export type SupermanPower = Superman["powers"][number];
+
+    export type Superman = {
+      powers: Power[]
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.element;"`
+    );
+  });
+
+  it("should deal with index access type (nested number keyword)", () => {
+    const source = `export type SupermanPower = Superman["powers"][number][number];
 
     export type Superman = {
       powers: Power[][]
@@ -676,7 +706,7 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueSchema;"`
+      `"export const supermanPowerSchema = supermanSchema.shape.powers.valueType;"`
     );
   });
 
@@ -711,7 +741,7 @@ describe("generateZodSchema", () => {
   it("should deal with index signature", () => {
     const source = `export type Movies = {[title: string]: Movie};`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const moviesSchema = z.record(movieSchema);"`
+      `"export const moviesSchema = z.record(z.string(), movieSchema);"`
     );
   });
 
@@ -721,7 +751,7 @@ describe("generateZodSchema", () => {
       [title: string]: Movie;
     };`;
     expect(generate(source)).toMatchInlineSnapshot(`
-      "export const moviesSchema = z.record(movieSchema).and(z.object({
+      "export const moviesSchema = z.record(z.string(), movieSchema).and(z.object({
           "Man of Steel": movieSchema.and(z.object({
               title: z.literal("Man of Steel")
           }))
@@ -735,7 +765,7 @@ describe("generateZodSchema", () => {
     }`;
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const collectionSchema = z.object({
-          movies: z.record(movieSchema).optional()
+          movies: z.record(z.string(), movieSchema).optional()
       });"
     `);
   });
@@ -761,7 +791,7 @@ describe("generateZodSchema", () => {
   it("should generate an object schema", () => {
     const source = `export type Object = object;`;
     expect(generate(source)).toMatchInlineSnapshot(
-      `"export const objectSchema = z.record(z.any());"`
+      `"export const objectSchema = z.record(z.string(), z.any());"`
     );
   });
 
@@ -894,7 +924,7 @@ describe("generateZodSchema", () => {
            *
            * @format email
            */
-          email: z.string().email(),
+          email: z.email(),
           /**
            * The name of the hero.
            *
@@ -926,50 +956,50 @@ describe("generateZodSchema", () => {
            *
            * @format date-time
            */
-          lastSeen: z.string().datetime(),
+          lastSeen: z.iso.datetime(),
           /**
            * The hero's birthday.
            *
            * @format date
            */
-          birthday: z.string().date(),
+          birthday: z.iso.date(),
           /**
            * The hero's wakeup-time.
            *
            * @format time
            */
-          wakeupTime: z.string().time(),
+          wakeupTime: z.iso.time(),
           /**
            * The hero's super power boost duration.
            *
            * @format duration
            */
-          boost: z.string().duration(),
+          boost: z.iso.duration(),
           /**
            * The hero's ipv4 address.
            *
            * @format ipv4
            */
-          ipv4: z.string().ip({ version: "v4" }),
+          ipv4: z.ipv4(),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6
            */
-          ipv6: z.string().ip({ version: "v6" }),
+          ipv6: z.ipv6(),
           /**
            * The hero's ip address.
            *
            * @format ip
            */
-          ip: z.string().ip(),
+          ip: z.ipv4(),
           /**
            * The hero's known IPs
            *
            * @elementFormat ip
            * @maxLength 5
            */
-          knownIps: z.array(z.string().ip()).max(5),
+          knownIps: z.array(z.ipv4()).max(5),
           /**
            * The hero's last ping times
            *
@@ -1083,31 +1113,31 @@ describe("generateZodSchema", () => {
            *
            * @format email Should be an email
            */
-          heroEmail: z.string().email("Should be an email"),
+          heroEmail: z.email("Should be an email"),
           /**
            * The email of the enemy.
            *
            * @format email, "Should be an email"
            */
-          enemyEmail: z.string().email("Should be an email"),
+          enemyEmail: z.email("Should be an email"),
           /**
            * The email of the superman.
            *
            * @format email "Should be an email"
            */
-          supermanEmail: z.string().email("Should be an email"),
+          supermanEmail: z.email("Should be an email"),
           /**
            * The hero's ipv6 address.
            *
            * @format ipv6 Must be an ipv6 address
            */
-          ipv6: z.string().ip({ version: "v6", message: "Must be an ipv6 address" }),
+          ipv6: z.ipv6("Must be an ipv6 address"),
           /**
            * The hero's ip address.
            *
            * @format ip "Must be a ipv4 or an ipv6 address"
            */
-          ip: z.string().ip("Must be a ipv4 or an ipv6 address")
+          ip: z.ipv4("Must be a ipv4 or an ipv6 address")
       });"
     `);
   });
@@ -1144,7 +1174,7 @@ describe("generateZodSchema", () => {
            *
            * @format email should be an email
            */
-          email: z.string().email("should be an email"),
+          email: z.email("should be an email"),
           /**
            * The name of the hero.
            *
@@ -1234,7 +1264,7 @@ describe("generateZodSchema", () => {
     `);
   });
 
-  it("should generate add strict() validation when @strict is used", () => {
+  it("should generate strictObject() when @strict is used", () => {
     const source = `/**
     * @strict
     */
@@ -1248,16 +1278,16 @@ describe("generateZodSchema", () => {
        "/**
            * @strict
            */
-       export const supermanSchema = z.object({
+       export const supermanSchema = z.strictObject({
            name: z.literal("superman"),
            weakness: kryptoniteSchema,
            age: z.number(),
            enemies: z.array(z.string())
-       }).strict();"
+       });"
      `);
   });
 
-  it("should add strict() validation when @strict is used on subtype", () => {
+  it("should generate strictObject() validation when @strict is used on subtype", () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1268,14 +1298,14 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict()
+          })
       });"
     `);
   });
 
-  it("should add strict() before optional() validation when @strict is used on optional subtype", () => {
+  it("should generate strictObject() before optional() validation when @strict is used on optional subtype", () => {
     const source = `export interface A {
       /** @strict */
       a?: {
@@ -1286,14 +1316,14 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict().optional()
+          }).optional()
       });"
     `);
   });
 
-  it("should add strict() before nullable() validation when @strict is used on nullable subtype", () => {
+  it("should generate strictObject() before nullable() validation when @strict is used on nullable subtype", () => {
     const source = `export interface A {
       /** @strict */
       a: {
@@ -1304,9 +1334,9 @@ describe("generateZodSchema", () => {
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const aSchema = z.object({
           /** @strict */
-          a: z.object({
+          a: z.strictObject({
               b: z.number()
-          }).strict().nullable()
+          }).nullable()
       });"
     `);
   });
@@ -1477,7 +1507,7 @@ describe("generateZodSchema", () => {
 
     expect(generate(source)).toMatchInlineSnapshot(`
       "export const exampleSchema = z.object({
-          field: z.record(z.string()).nullable()
+          field: z.record(z.string(), z.string()).nullable()
       });"
     `);
   });

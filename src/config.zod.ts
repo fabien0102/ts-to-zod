@@ -6,20 +6,20 @@ export const simplifiedJSDocTagSchema = z.object({
   value: z.string().optional(),
 });
 
-export const getSchemaNameSchema = z
-  .function()
-  .args(z.string())
-  .returns(z.string());
+export const getSchemaNameSchema = z.function({
+  input: [z.string()],
+  output: z.string(),
+});
 
-export const nameFilterSchema = z
-  .function()
-  .args(z.string())
-  .returns(z.boolean());
+export const nameFilterSchema = z.function({
+  input: [z.string()],
+  output: z.boolean(),
+});
 
-export const jSDocTagFilterSchema = z
-  .function()
-  .args(z.array(simplifiedJSDocTagSchema))
-  .returns(z.boolean());
+export const jSDocTagFilterSchema = z.function({
+  input: [z.array(simplifiedJSDocTagSchema)],
+  output: z.boolean(),
+});
 
 export const customJSDocFormatTypeAttributesSchema = z.object({
   regex: z.string(),

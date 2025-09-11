@@ -1,7 +1,7 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
-import type { ZodString } from "zod";
-import { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import type { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import { ZodString } from "zod";
 
 /**
  * List of formats that can be translated in zod functions.
@@ -17,6 +17,26 @@ const builtInJSDocFormatsTypes = [
   "ipv6",
   "url",
   "uuid",
+  "emoji",
+  "base64",
+  "base64url",
+  "nanoid",
+  "cuid",
+  "cuid2",
+  "ulid",
+  "cidrv4",
+  "cidrv6",
+  "iso-date",
+  "iso-time",
+  "iso-datetime",
+  "iso-duration",
+  "int",
+  "float32",
+  "float64",
+  "int32",
+  "uint32",
+  "int64",
+  "uint64",
   // "uri",
 ] as const;
 
@@ -309,10 +329,6 @@ export function jsDocTagToZodProperties(
   if (jsDocTags.pattern) {
     zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
   }
-  // strict() must be before optional() and nullable()
-  if (jsDocTags.strict) {
-    zodProperties.push({ identifier: "strict" });
-  }
   // partial() must be before optional() and nullable()
   if (isPartial) {
     zodProperties.push({
@@ -413,9 +429,19 @@ function builtInFormatTypeToZodPropertyIdentifier(
     case "date-time":
       return "datetime";
     case "ipv4":
+      return "ipv4";
     case "ipv6":
+      return "ipv6";
     case "ip":
-      return "ip";
+      return "ipv4";
+    case "iso-date":
+      return "date";
+    case "iso-time":
+      return "time";
+    case "iso-datetime":
+      return "datetime";
+    case "iso-duration":
+      return "duration";
     default:
       return formatType as keyof ZodString;
   }
@@ -435,37 +461,11 @@ function builtInFormatTypeToZodPropertyArguments(
 ): ts.Expression[] | undefined {
   switch (formatType) {
     case "ipv4":
-      return createZodStringIpArgs("v4", errorMessage);
     case "ipv6":
-      return createZodStringIpArgs("v6", errorMessage);
+      return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
     default:
       return errorMessage ? [f.createStringLiteral(errorMessage)] : undefined;
   }
-}
-
-/**
- * Constructs a list of expressions which represent the arguments
- * for `ip()` string validation function.
- *
- * @param version The IP version to use.
- * @param errorMessage The error message to display if validation fails.
- * @returns A list of expressions which represent the function arguments.
- */
-function createZodStringIpArgs(
-  version: "v4" | "v6",
-  errorMessage?: string
-): ts.Expression[] {
-  const propertyAssignments: ts.ObjectLiteralElementLike[] = [
-    f.createPropertyAssignment("version", f.createStringLiteral(version)),
-  ];
-
-  if (errorMessage) {
-    propertyAssignments.push(
-      f.createPropertyAssignment("message", f.createStringLiteral(errorMessage))
-    );
-  }
-
-  return [f.createObjectLiteralExpression(propertyAssignments)];
 }
 
 /**

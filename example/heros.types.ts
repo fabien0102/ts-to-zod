@@ -23,9 +23,11 @@ export type Villain = z.infer<typeof generated.villainSchema>;
 
 export type Story = z.infer<typeof generated.storySchema>;
 
-export type KrytonResponse = z.infer<typeof generated.krytonResponseSchema>;
+export type KrytonResponse = Promise<
+  z.output<typeof generated.krytonResponseSchema>
+>;
 
-export type KillSuperman = z.infer<typeof generated.killSupermanSchema>;
+export type KillSuperman = z.output<typeof generated.killSupermanSchema>;
 
 export type WithDefaults = z.infer<typeof generated.withDefaultsSchema>;
 

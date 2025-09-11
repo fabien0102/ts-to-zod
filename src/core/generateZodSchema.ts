@@ -1,14 +1,14 @@
 import { camel, lower } from "case";
 import uniq from "lodash/uniq";
 import ts, { factory as f } from "typescript";
-import { CustomJSDocFormatTypes } from "../config";
+import type { CustomJSDocFormatTypes } from "../config";
 import { findNode } from "../utils/findNode";
 import { isNotNull } from "../utils/isNotNull";
 import { generateCombinations } from "../utils/generateCombinations";
 import { extractLiteralValue } from "../utils/extractLiteralValue";
 import {
-  JSDocTags,
-  ZodProperty,
+  type JSDocTags,
+  type ZodProperty,
   getJSDocTags,
   jsDocTagToZodProperties,
 } from "./jsDocTags";
@@ -145,30 +145,18 @@ export function generateZodSchemaVariableStatement({
       );
     }
 
+    const jsDocTags = skipParseJSDoc ? {} : getJSDocTags(node, sourceFile);
     schema = buildZodObject({
       typeNode: node,
       sourceFile,
       z: zodImportValue,
+      jsDocTags,
       dependencies,
       getDependencyName,
       schemaExtensionClauses,
       skipParseJSDoc,
       customJSDocFormatTypes,
     });
-
-    if (!skipParseJSDoc) {
-      const jsDocTags = getJSDocTags(node, sourceFile);
-      if (jsDocTags.strict) {
-        schema = f.createCallExpression(
-          f.createPropertyAccessExpression(
-            schema,
-            f.createIdentifier("strict")
-          ),
-          undefined,
-          undefined
-        );
-      }
-    }
   }
 
   if (ts.isTypeAliasDeclaration(node)) {
@@ -191,7 +179,7 @@ export function generateZodSchemaVariableStatement({
   }
 
   if (ts.isEnumDeclaration(node)) {
-    schema = buildZodSchema(zodImportValue, "nativeEnum", [node.name]);
+    schema = buildZodSchema(zodImportValue, "enum", [node.name]);
     enumImport = true;
   }
 
@@ -470,11 +458,13 @@ function buildZodPrimitiveInternal({
     // Deal with `Record<>` syntax
     if (identifierName === "Record" && typeNode.typeArguments) {
       if (typeNode.typeArguments[0].kind === ts.SyntaxKind.StringKeyword) {
-        // Short version (`z.record(zodType)`)
+        // Always use expanded version for Record<string, T> to ensure type safety
+        // z.record(z.string(), zodType) vs z.record(zodType) - the former is more explicit
         return buildZodSchema(
           z,
           "record",
           [
+            buildZodSchema(z, "string", [], []),
             buildZodPrimitive({
               z,
               typeNode: typeNode.typeArguments[1],
@@ -656,11 +646,13 @@ function buildZodPrimitiveInternal({
       // Check each member of the union
       for (const node of nodes) {
         if (!ts.isTypeLiteralNode(node) && !ts.isTypeReferenceNode(node)) {
-          console.warn(
-            ` »   Warning: discriminated union member "${node.getText(
-              sourceFile
-            )}" is not a type reference or object literal`
-          );
+          if (process.env.NODE_ENV !== "test") {
+            console.warn(
+              ` »   Warning: discriminated union member "${node.getText(
+                sourceFile
+              )}" is not a type reference or object literal`
+            );
+          }
           isValidDiscriminatedUnion = false;
           break;
         }
@@ -676,11 +668,13 @@ function buildZodPrimitiveInternal({
           );
 
           if (!hasDiscriminator) {
-            console.warn(
-              ` »   Warning: discriminated union member "${node.getText(
-                sourceFile
-              )}" missing discriminator field "${jsDocTags.discriminator}"`
-            );
+            if (process.env.NODE_ENV !== "test") {
+              console.warn(
+                ` »   Warning: discriminated union member "${node.getText(
+                  sourceFile
+                )}" missing discriminator field "${jsDocTags.discriminator}"`
+              );
+            }
             isValidDiscriminatedUnion = false;
             break;
           }
@@ -709,10 +703,22 @@ function buildZodPrimitiveInternal({
   }
 
   if (ts.isTupleTypeNode(typeNode)) {
+    // Handle empty tuples
+    if (typeNode.elements.length === 0) {
+      return buildZodSchema(
+        z,
+        "tuple",
+        [f.createArrayLiteralExpression([])],
+        []
+      );
+    }
+
     // Handle last item separetely if it is a rest element
     const lastItem = typeNode.elements[typeNode.elements.length - 1];
     const restElement =
-      ts.isRestTypeNode(lastItem) && ts.isArrayTypeNode(lastItem.type)
+      lastItem &&
+      ts.isRestTypeNode(lastItem) &&
+      ts.isArrayTypeNode(lastItem.type)
         ? lastItem.type.elementType
         : undefined;
 
@@ -877,6 +883,7 @@ function buildZodPrimitiveInternal({
       buildZodObject({
         typeNode,
         z,
+        jsDocTags,
         sourceFile,
         dependencies,
         getDependencyName,
@@ -939,47 +946,98 @@ function buildZodPrimitiveInternal({
   }
 
   if (ts.isFunctionTypeNode(typeNode)) {
-    return buildZodSchema(
-      z,
-      "function",
-      [],
-      [
-        {
-          identifier: "args",
-          expressions: typeNode.parameters.map((p) =>
-            buildZodPrimitive({
-              z,
-              typeNode:
-                p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
-              jsDocTags,
-              customJSDocFormatTypes,
-              sourceFile,
-              dependencies,
-              getDependencyName,
-              isOptional: Boolean(p.questionToken),
-              skipParseJSDoc,
-            })
-          ),
-        },
-        {
-          identifier: "returns",
-          expressions: [
-            buildZodPrimitive({
-              z,
-              typeNode: typeNode.type,
-              jsDocTags,
-              customJSDocFormatTypes,
-              sourceFile,
-              dependencies,
-              getDependencyName,
-              isOptional: false,
-              skipParseJSDoc,
-            }),
-          ],
-        },
-        ...zodProperties,
-      ]
+    // Functions use z.function({ input: [...], output: ... }) syntax
+    const argsArray = typeNode.parameters.map((p) =>
+      buildZodPrimitive({
+        z,
+        typeNode: p.type || f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
+        jsDocTags,
+        customJSDocFormatTypes,
+        sourceFile,
+        dependencies,
+        getDependencyName,
+        isOptional: Boolean(p.questionToken),
+        skipParseJSDoc,
+      })
     );
+
+    let returnType = buildZodPrimitive({
+      z,
+      typeNode: typeNode.type,
+      jsDocTags,
+      customJSDocFormatTypes,
+      sourceFile,
+      dependencies,
+      getDependencyName,
+      isOptional: false,
+      skipParseJSDoc,
+    }) as ts.Expression;
+
+    // Check if the return type is Promise and wrap with z.custom if so
+    const isPromiseReturn =
+      ts.isTypeReferenceNode(typeNode.type) &&
+      ts.isIdentifier(typeNode.type.typeName) &&
+      typeNode.type.typeName.text === "Promise";
+
+    if (isPromiseReturn) {
+      // Wrap with z.custom<Promise<T>>(() => returnType)
+      const promiseTypeArgs = typeNode.type.typeArguments || [];
+      const promiseInnerType =
+        promiseTypeArgs.length > 0
+          ? promiseTypeArgs[0]
+          : f.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword);
+
+      // Create Promise<T> type reference for z.custom<Promise<T>>
+      const promiseTypeRef = f.createTypeReferenceNode(
+        f.createIdentifier("Promise"),
+        [promiseInnerType]
+      );
+
+      // Create z.custom<Promise<T>>(() => returnType)
+      returnType = f.createCallExpression(
+        f.createPropertyAccessExpression(
+          f.createIdentifier(z),
+          f.createIdentifier("custom")
+        ),
+        [promiseTypeRef],
+        [
+          f.createArrowFunction(
+            undefined,
+            undefined,
+            [],
+            undefined,
+            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            returnType
+          ),
+        ]
+      );
+    }
+
+    const inputProperty = f.createPropertyAssignment(
+      f.createIdentifier("input"),
+      f.createArrayLiteralExpression(argsArray as ts.Expression[], false)
+    );
+
+    const outputProperty = f.createPropertyAssignment(
+      f.createIdentifier("output"),
+      returnType
+    );
+
+    const configObject = f.createObjectLiteralExpression(
+      [inputProperty, outputProperty],
+      false
+    );
+
+    const functionCall = f.createCallExpression(
+      f.createPropertyAccessExpression(
+        f.createIdentifier(z),
+        f.createIdentifier("function")
+      ),
+      undefined,
+      [configObject]
+    );
+
+    return withZodProperties(functionCall, zodProperties);
   }
 
   if (ts.isIndexedAccessTypeNode(typeNode)) {
@@ -996,16 +1054,98 @@ function buildZodPrimitiveInternal({
 
   switch (typeNode.kind) {
     case ts.SyntaxKind.StringKeyword:
-      return buildZodSchema(z, "string", [], zodProperties);
+      // Check for format in JSDoc tags and generate direct validators for Zod v4
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+
+        // Handle direct format validators (Zod v4 standalone methods)
+        const directFormatMethods = [
+          "email",
+          "url",
+          "uuid",
+          "ipv4",
+          "ipv6",
+          "emoji",
+          "base64",
+          "base64url",
+          "nanoid",
+          "cuid",
+          "cuid2",
+          "ulid",
+          "cidrv4",
+          "cidrv6",
+        ];
+        const formatMethod = formatValue === "ip" ? "ipv4" : formatValue; // map 'ip' to 'ipv4'
+
+        if (directFormatMethods.includes(formatMethod)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatMethod
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatMethod,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
+      const isIsoString = zodProperties.some(({ identifier }) =>
+        ["date", "time", "datetime", "duration"].includes(identifier)
+      );
+      const callName = isIsoString ? "iso" : "string";
+      return buildZodSchema(z, callName, [], zodProperties);
     case ts.SyntaxKind.BooleanKeyword:
       return buildZodSchema(z, "boolean", [], zodProperties);
     case ts.SyntaxKind.UndefinedKeyword:
       return buildZodSchema(z, "undefined", [], zodProperties);
     case ts.SyntaxKind.NumberKeyword:
+      // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+        const numericFormats = ["int", "float32", "float64", "int32", "uint32"];
+
+        if (numericFormats.includes(formatValue)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatValue
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatValue,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
       return buildZodSchema(z, "number", [], zodProperties);
     case ts.SyntaxKind.AnyKeyword:
       return buildZodSchema(z, "any", [], zodProperties);
     case ts.SyntaxKind.BigIntKeyword:
+      // Check for bigint format in JSDoc tags and generate appropriate Zod v4 schema
+      if (jsDocTags.format) {
+        const formatValue = jsDocTags.format.value;
+        const bigintFormats = ["int64", "uint64"];
+
+        if (bigintFormats.includes(formatValue)) {
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => prop.identifier !== formatValue
+          );
+          const formatArgs = jsDocTags.format.errorMessage
+            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
+            : [];
+          return buildZodSchema(
+            z,
+            formatValue,
+            formatArgs,
+            nonFormatProperties
+          );
+        }
+      }
       return buildZodSchema(z, "bigint", [], zodProperties);
     case ts.SyntaxKind.VoidKeyword:
       return buildZodSchema(z, "void", [], zodProperties);
@@ -1017,7 +1157,7 @@ function buildZodPrimitiveInternal({
       return buildZodSchema(
         z,
         "record",
-        [buildZodSchema(z, "any")],
+        [buildZodSchema(z, "string"), buildZodSchema(z, "any")],
         zodProperties
       );
   }
@@ -1128,8 +1268,8 @@ function buildZodPrimitiveInternal({
         zodProperties
       );
     } else {
-      console.warn(` »   ...falling back into 'z.any()'`);
-      return buildZodSchema(z, "any", [], zodProperties);
+      console.warn(` »   ...falling back into 'z.string()' (template literal)`);
+      return buildZodSchema(z, "string", [], zodProperties);
     }
   }
 
@@ -1155,14 +1295,21 @@ function buildZodSchema(
   args?: ts.Expression[],
   properties?: ZodProperty[]
 ) {
-  const zodCall = f.createCallExpression(
-    f.createPropertyAccessExpression(
-      f.createIdentifier(z),
-      f.createIdentifier(callName)
-    ),
-    undefined,
-    args
-  );
+  // Most calls are functions (`z.string()`), except some like `z.iso`
+  const zodCall =
+    callName === "iso"
+      ? f.createPropertyAccessExpression(
+          f.createIdentifier(z),
+          f.createIdentifier(callName)
+        )
+      : f.createCallExpression(
+          f.createPropertyAccessExpression(
+            f.createIdentifier(z),
+            f.createIdentifier(callName)
+          ),
+          undefined,
+          args
+        );
   return withZodProperties(zodCall, properties);
 }
 
@@ -1262,6 +1409,7 @@ function withZodProperties(
 function buildZodObject({
   typeNode,
   z,
+  jsDocTags,
   dependencies,
   sourceFile,
   getDependencyName,
@@ -1271,6 +1419,7 @@ function buildZodObject({
 }: {
   typeNode: ts.TypeLiteralNode | ts.InterfaceDeclaration;
   z: string;
+  jsDocTags: JSDocTags;
   dependencies: string[];
   sourceFile: ts.SourceFile;
   getDependencyName: Required<GenerateZodSchemaProps>["getDependencyName"];
@@ -1331,7 +1480,8 @@ function buildZodObject({
         : undefined
     );
   } else if (properties.length > 0) {
-    objectSchema = buildZodSchema(z, "object", [
+    const callName = jsDocTags.strict ? "strictObject" : "object";
+    objectSchema = buildZodSchema(z, callName, [
       f.createObjectLiteralExpression(
         Array.from(parsedProperties.entries()).map(([key, tsCall]) => {
           return f.createPropertyAssignment(key, tsCall);
@@ -1348,6 +1498,7 @@ function buildZodObject({
       );
     }
     const indexSignatureSchema = buildZodSchema(z, "record", [
+      buildZodSchema(z, "string", [], []),
       // Index signature type can't be optional or have validators.
       buildZodPrimitive({
         z,
@@ -1405,22 +1556,33 @@ function buildSchemaReference(
     ? { type: "string" as const, indexTypeName: indexTypeText.slice(1, -1) }
     : { type: "number" as const, indexTypeName: indexTypeText };
 
-  if (indexTypeName === "-1") {
+  if (indexTypeName === "-1" || indexTypeName === "number") {
     // Get the original type declaration
+    // For nested access like Superman["powers"][-1][-1], we need to find the root type
+    let rootObjectType = node.objectType;
+    while (ts.isIndexedAccessTypeNode(rootObjectType)) {
+      rootObjectType = rootObjectType.objectType;
+    }
+
     const declaration = findNode(
       sourceFile,
       (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
         return (
           (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
           ts.isIndexedAccessTypeNode(node.objectType) &&
-          n.name.getText(sourceFile) ===
-            node.objectType.objectType.getText(sourceFile).split("[")[0]
+          n.name.getText(sourceFile) === rootObjectType.getText(sourceFile)
         );
       }
     );
 
     if (declaration && ts.isIndexedAccessTypeNode(node.objectType)) {
-      const key = node.objectType.indexType.getText(sourceFile).slice(1, -1); // remove quotes
+      // For nested access, we need to find the property key, not the index
+      // For Superman["powers"][-1][-1], we want "powers", not "-1"
+      let keyAccessNode = node.objectType;
+      while (ts.isIndexedAccessTypeNode(keyAccessNode.objectType)) {
+        keyAccessNode = keyAccessNode.objectType;
+      }
+      const key = keyAccessNode.indexType.getText(sourceFile).slice(1, -1); // remove quotes
       const members =
         ts.isTypeAliasDeclaration(declaration) &&
         ts.isTypeLiteralNode(declaration.type)
@@ -1432,23 +1594,12 @@ function buildSchemaReference(
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
       if (member && ts.isPropertySignature(member) && member.type) {
-        // Array<type>
+        // Array<type> or type[]
         if (
-          ts.isTypeReferenceNode(member.type) &&
-          member.type.typeName.getText(sourceFile) === "Array"
+          (ts.isTypeReferenceNode(member.type) &&
+            member.type.typeName.getText(sourceFile) === "Array") ||
+          ts.isArrayTypeNode(member.type)
         ) {
-          return buildSchemaReference(
-            {
-              node: node.objectType,
-              dependencies,
-              sourceFile,
-              getDependencyName,
-            },
-            `element.${path}`
-          );
-        }
-        // type[]
-        if (ts.isArrayTypeNode(member.type)) {
           return buildSchemaReference(
             {
               node: node.objectType,
@@ -1471,25 +1622,32 @@ function buildSchemaReference(
               sourceFile,
               getDependencyName,
             },
-            `valueSchema.${path}`
+            `valueType.${path}`
           );
         }
 
         console.warn(
-          ` »   Warning: indexAccessType can’t be resolved, fallback into 'any'`
+          ` »   Warning: indexAccessType can't be resolved, fallback into 'unknown'`
         );
-        return f.createIdentifier("any");
+        return f.createPropertyAccessExpression(
+          f.createIdentifier("z"),
+          f.createIdentifier("unknown")
+        );
       }
     }
 
-    return f.createIdentifier("any");
+    return f.createPropertyAccessExpression(
+      f.createIdentifier("z"),
+      f.createIdentifier("unknown")
+    );
   } else if (
     indexTypeType === "number" &&
+    indexTypeName !== "number" &&
     ts.isIndexedAccessTypeNode(node.objectType)
   ) {
     return buildSchemaReference(
       { node: node.objectType, dependencies, sourceFile, getDependencyName },
-      `items[${indexTypeName}].${path}`
+      `def.items[${indexTypeName}].${path}`
     );
   }
 

@@ -1,7 +1,7 @@
 import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
-import {
+import type {
   InputOutputMapping,
   JSDocTagFilter,
   NameFilter,
@@ -12,19 +12,20 @@ import { resolveModules } from "../utils/resolveModules";
 import {
   getReferencedTypeNames,
   isTypeNode,
-  TypeNameReference,
-  TypeNode,
+  type TypeNameReference,
+  type TypeNode,
 } from "../utils/traverseTypes";
 
 import {
   getImportIdentifiers,
   createImportNode,
-  ImportIdentifier,
+  type ImportIdentifier,
   getSingleImportIdentierForNode,
 } from "../utils/importHandling";
 
 import { generateIntegrationTests } from "./generateIntegrationTests";
 import { generateZodInferredType } from "./generateZodInferredType";
+import { analyzeTypeMetadata } from "../utils/isFunctionType";
 import {
   generateZodSchemaVariableStatement,
   generateZodSchemaVariableStatementForImport,
@@ -257,6 +258,8 @@ export function generate({
   const zodTypeSchemas = nodes.map((node) => {
     const typeName = node.name.text;
     const varName = getSchemaName(typeName);
+    const typeMetadata = analyzeTypeMetadata(node);
+
     const zodSchema = generateZodSchemaVariableStatement({
       zodImportValue: "z",
       node,
@@ -267,7 +270,12 @@ export function generate({
       customJSDocFormatTypes,
     });
 
-    return { typeName, varName, ...zodSchema };
+    return {
+      typeName,
+      varName,
+      typeMetadata,
+      ...zodSchema,
+    };
   });
 
   // Generate zod schemas for 3rd party imports
@@ -282,6 +290,7 @@ export function generate({
       enumImport: false,
       typeName: importName,
       varName,
+      typeMetadata: "none" as const,
     };
   });
 
@@ -438,6 +447,15 @@ ${
   const testCases = generateIntegrationTests(
     Array.from(statements.values())
       .filter(isExported)
+      .filter((statement) => {
+        // Skip integration tests for Promise functions as they have manual type generation
+        const schema = zodSchemas.find(
+          (s) => s.typeName === statement.typeName
+        );
+        const isPromiseFunction =
+          schema?.typeMetadata === "promiseReturningFunction";
+        return !isPromiseFunction;
+      })
       .map((i) => ({
         zodType: `${getSchemaName(i.typeName)}InferredType`,
         tsType: `spec.${i.typeName}`,
@@ -460,12 +478,22 @@ function expectType<T>(_: T) {
 
 ${Array.from(statements.values())
   .filter(isExported)
+  .filter((statement) => {
+    // Skip InferredType generation for Promise functions as they have manual type generation
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
+    const isPromiseFunction =
+      schema?.typeMetadata === "promiseReturningFunction";
+    return !isPromiseFunction;
+  })
   .map((statement) => {
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
+
     // Generate z.infer<>
     const zodInferredSchema = generateZodInferredType({
       aliasName: `${getSchemaName(statement.typeName)}InferredType`,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
+      typeMetadata: schema?.typeMetadata ?? "none",
     });
 
     return print(zodInferredSchema);
@@ -485,10 +513,13 @@ import * as generated from "${zodSchemasImportPath}";
 ${Array.from(statements.values())
   .filter(isExported)
   .map((statement) => {
+    const schema = zodSchemas.find((s) => s.typeName === statement.typeName);
+
     const zodInferredSchema = generateZodInferredType({
       aliasName: statement.typeName,
       zodConstName: `generated.${getSchemaName(statement.typeName)}`,
       zodImportValue: "z",
+      typeMetadata: schema?.typeMetadata ?? "none",
     });
 
     return print(zodInferredSchema);

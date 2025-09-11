@@ -1,4 +1,4 @@
-import { Person } from "./person";
+import type { Person } from "./person";
 
 export enum EnemyPower {
   Flight = "flight",

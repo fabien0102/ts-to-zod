@@ -3,7 +3,7 @@
   <h1 align="center">ts-to-zod</h1>
 </div>
 
-Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript types/interfaces.
+Generate [Zod](https://github.com/colinhacks/zod) schemas (v4) from Typescript types/interfaces.
 
 [![Version](https://img.shields.io/npm/v/ts-to-zod.svg)](https://npmjs.org/package/ts-to-zod)
 [![Github CI](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml/badge.svg)](https://github.com/fabien0102/ts-to-zod/actions/workflows/tests.yaml)
@@ -11,12 +11,36 @@ Generate [Zod](https://github.com/colinhacks/zod) schemas (v3) from Typescript t
 [![License](https://img.shields.io/npm/l/ts-to-zod.svg)](https://github.com/fabien0102/ts-to-zod/blob/main/LICENSE)
 [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
 
-## Usage
+## ⚡ Zod v4 Support
+
+ts-to-zod now supports **Zod v4** with improved performance and enhanced function type handling.
+
+### Quick Start with Zod v4
+
+Install ts-to-zod:
 
 ```sh
 $ yarn add --dev ts-to-zod
+```
+
+Generate Zod schemas from a TypeScript file:
+
+```sh
 $ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
+
+### Migration from Zod v3
+
+If you're upgrading from Zod v3:
+
+1. **Update dependency**: `npm install zod@^4`
+2. **Regenerate schemas**: `npx ts-to-zod`
+
+The tool automatically generates code compatible with Zod v4, including updated string validation methods and improved function type support. For Zod-specific breaking changes, see the [official Zod v4 changelog](https://zod.dev/v4/changelog).
+
+**Note:** For Zod v3 support, use ts-to-zod v3.x series.
+
+## Usage
 
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
 
@@ -41,23 +65,23 @@ List of supported keywords:
 | `@maximum {number} [err_msg]`                                                                                              | `@maximum 42 Must be < 42` | `z.number().max(42, "Must be < 42")` |
 | `@minLength {number} [err_msg]`                                                                                            | `@minLength 42`            | `z.string().min(42)`                 |
 | `@maxLength {number} [err_msg]`                                                                                            | `@maxLength 42`            | `z.string().max(42)`                 |
-| `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.string().email()`                 |
+| `@format {FormatType} [err_msg]`                                                                                           | `@format email`            | `z.email()`                          |
 | `@pattern {regex}` <br><br> **Note**: Due to parsing ambiguities, `@pattern` does _not_ support generating error messages. | `@pattern ^hello`          | `z.string().regex(/^hello/)`         |
 
 By default, `FormatType` is defined as the following type (corresponding Zod validator in comment):
 
 ```ts
 type FormatType =
-  | "date-time" // z.string().datetime()
-  | "date" // z.string().date()
-  | "time" // z.string().time()
-  | "duration" // z.string().duration()
-  | "email" // z.string().email()
-  | "ip" // z.string().ip()
-  | "ipv4" // z.string().ip()
-  | "ipv6" // z.string().ip()
-  | "url" // z.string().url()
-  | "uuid"; // z.string().uuid()
+  | "date-time" // z.iso.datetime()
+  | "date" // z.iso.date()
+  | "time" // z.iso.time()
+  | "duration" // z.iso.duration()
+  | "email" // z.email()
+  | "ip" // z.ipv4()
+  | "ipv4" // z.ipv4()
+  | "ipv6" // z.ipv6()
+  | "url" // z.url()
+  | "uuid"; // z.uuid()
 ```
 
 However, see the section on [Custom JSDoc Format Types](#custom-jsdoc-format-types) to learn more about defining other types of formats for string validation.
@@ -112,7 +136,7 @@ export const heroContactSchema = z.object({
    *
    * @format email
    */
-  email: z.string().email(),
+  email: z.email(),
 
   /**
    * The name of the hero.
@@ -154,7 +178,7 @@ Other JSDoc tags are available:
 | ---------------------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
 | `@description {value}` | `@description Full name` | Sets the description of the property                                                                                                      | `z.string().describe("Full name")` |
 | `@default {value}`     | `@default 42`            | Sets a default value for the property                                                                                                     | `z.number().default(42)`           |
-| `@strict`              | `@strict`                | Adds the `strict()` modifier to an object                                                                                                 | `z.object().strict()`              |
+| `@strict`              | `@strict`                | Marks the object as `strictObject()`                                                                                                      | `z.strictObject()`                 |
 | `@schema`              | `@schema .catch('foo')`  | If value starts with a `.`, appends the specified value to the generated schema. Otherwise this value will override the generated schema. | `z.string().catch('foo')`          |
 
 ## JSDoc tag for `union` types
