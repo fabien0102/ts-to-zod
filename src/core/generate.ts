@@ -146,11 +146,11 @@ export function generate({
       if (eligibleMapping) {
         const schemaMethod =
           eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
-
-        identifiers.forEach(({ name }) =>
-          importedZodNamesAvailable.set(name, schemaMethod(name))
-        );
-
+        identifiers.forEach(({ name }) => {
+          if (nameFilter(name)) {
+            importedZodNamesAvailable.set(name, schemaMethod(name));
+          }
+        });
         const zodImportNode = createImportNode(
           identifiers.map(({ name, original }) => {
             return {
@@ -433,7 +433,18 @@ ${
 }
 ${
   zodImportToOutput.length
-    ? zodImportToOutput.map((node) => print(node)).join("\n") + "\n\n"
+    ? zodImportToOutput
+        .map((node) => {
+          const module = node.moduleSpecifier.text;
+          const imports = getImportIdentifiers(node)
+            .filter(({ name }) => importedZodSchemas.has(name))
+            .map(({ name, original }) =>
+              original ? `${original} as ${name}` : name
+            )
+            .join(", ");
+          return `import { ${imports} } from "${module}";`;
+        })
+        .join("\n") + "\n\n"
     : ""
 }${
     originalImportsToOutput.length
