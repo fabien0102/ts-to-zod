@@ -19,11 +19,11 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.package.json",
-    "prepublishOnly": "yarn test:ci && rimraf lib && yarn build",
+    "prepublishOnly": "pnpm test:ci && rimraf lib && pnpm build",
     "lint": "eslint . --ext=.js,.ts,.json --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "npm run lint -- --fix",
     "test": "vitest",
-    "test:ci": "vitest --coverage --typecheck && yarn gen:all",
+    "test:ci": "vitest --coverage --typecheck",
     "gen:all": "./bin/run --all",
     "gen:example": "./bin/run --config example",
     "gen:config": "./bin/run --config config",
@@ -37,8 +37,9 @@
     "bin"
   ],
   "license": "MIT",
+  "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@oclif/core": ">=3.26.0",
+    "@oclif/core": "^4.5.4",
     "@typescript/vfs": "^1.5.0",
     "case": "^1.6.3",
     "chokidar": "^3.5.1",

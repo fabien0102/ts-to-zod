@@ -17,15 +17,20 @@ jobs:
         # these if statements ensure that a publication only occurs when
         # a new release is created:
         if: ${{ steps.release.outputs.release_created }}
-      - uses: actions/setup-node@v1
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        if: ${{ steps.release.outputs.releases_created }}
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        if: ${{ steps.release.outputs.releases_created }}
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
-        if: ${{ steps.release.outputs.release_created }}
-      - run: yarn
-        if: ${{ steps.release.outputs.release_created }}
-      - run: yarn build
-        if: ${{ steps.release.outputs.release_created }}
+      - name: Build Packages
+        if: ${{ steps.release.outputs.releases_created }}
+        run: |
+          pnpm install
+          pnpm build
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
