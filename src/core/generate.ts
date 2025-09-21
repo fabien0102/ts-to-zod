@@ -20,7 +20,7 @@ import {
   getImportIdentifiers,
   createImportNode,
   type ImportIdentifier,
-  getSingleImportIdentierForNode,
+  getSingleImportIdentifierForNode,
 } from "../utils/importHandling";
 
 import { generateIntegrationTests } from "./generateIntegrationTests";
@@ -136,21 +136,25 @@ export function generate({
 
       // Check if we're importing from a mapped file
       const eligibleMapping = inputOutputMappings.find(
-        (io: InputOutputMapping) =>
-          areImportPathsEqualIgnoringExtension(
+        (io: InputOutputMapping) => {
+          if (!ts.isStringLiteral(node.moduleSpecifier))
+            throw new Error("node.moduleSpecifier must be a StringLiteral");
+
+          return areImportPathsEqualIgnoringExtension(
             io.input,
-            (node.moduleSpecifier as ts.StringLiteral).text
-          )
+            node.moduleSpecifier.text
+          );
+        }
       );
 
       if (eligibleMapping) {
         const schemaMethod =
           eligibleMapping.getSchemaName || DEFAULT_GET_SCHEMA;
-
-        identifiers.forEach(({ name }) =>
-          importedZodNamesAvailable.set(name, schemaMethod(name))
-        );
-
+        identifiers
+          .filter(({ name }) => nameFilter(name))
+          .forEach(({ name }) =>
+            importedZodNamesAvailable.set(name, schemaMethod(name))
+          );
         const zodImportNode = createImportNode(
           identifiers.map(({ name, original }) => {
             return {
@@ -217,7 +221,7 @@ export function generate({
       // If the reference is part of a qualified name, we need to import it from the same file
       if (typeRef.partOfQualifiedName) {
         const identifiers = importsToKeep.get(node);
-        const importIdentifier = getSingleImportIdentierForNode(
+        const importIdentifier = getSingleImportIdentifierForNode(
           node,
           typeRef.name
         );
@@ -399,16 +403,33 @@ ${Array.from(zodSchemasWithMissingDependencies).join("\n")}`
 
   const transformedSourceText = printerWithComments.printFile(sourceFile);
 
-  const zodImportToOutput = zodImportNodes.filter((node) => {
-    const nodeIdentifiers = getImportIdentifiers(node);
-    return nodeIdentifiers.some(({ name }) => importedZodSchemas.has(name));
-  });
+  const zodImportToOutput = zodImportNodes
+    .filter((node) => {
+      const nodeIdentifiers = getImportIdentifiers(node);
+      return nodeIdentifiers.some(({ name }) => importedZodSchemas.has(name));
+    })
+    .map((node) => {
+      if (!ts.isStringLiteral(node.moduleSpecifier))
+        throw new Error("node.moduleSpecifier must be a StringLiteral");
 
-  const originalImportsToOutput = Array.from(importsToKeep.keys()).map((node) =>
-    createImportNode(
-      importsToKeep.get(node)!,
-      (node.moduleSpecifier as ts.StringLiteral).text
-    )
+      return createImportNode(
+        getImportIdentifiers(node).filter(({ name }) =>
+          importedZodSchemas.has(name)
+        ),
+        node.moduleSpecifier.text
+      );
+    });
+
+  const originalImportsToOutput = Array.from(importsToKeep.keys()).map(
+    (node) => {
+      if (!ts.isStringLiteral(node.moduleSpecifier))
+        throw new Error("node.moduleSpecifier must be a StringLiteral");
+
+      return createImportNode(
+        importsToKeep.get(node)!,
+        node.moduleSpecifier.text
+      );
+    }
   );
 
   const sourceTypeImportsValues = [
