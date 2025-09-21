@@ -39,7 +39,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.17.0",
   "dependencies": {
-    "@oclif/core": ">=3.26.0",
+    "@oclif/core": "^4.5.4",
     "@typescript/vfs": "^1.5.0",
     "case": "^1.6.3",
     "chokidar": "^3.5.1",
