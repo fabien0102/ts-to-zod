@@ -45,7 +45,7 @@ export function getImportIdentifiers(
   return importIdentifiers;
 }
 
-export function getSingleImportIdentierForNode(
+export function getSingleImportIdentifierForNode(
   node: ts.ImportDeclaration,
   identifier: string
 ): ImportIdentifier | undefined {

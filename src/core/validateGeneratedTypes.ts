@@ -56,12 +56,15 @@ export function validateGeneratedTypes({
       ts.isImportDeclaration(node) &&
       ts.isStringLiteral(node.moduleSpecifier) &&
       // If the import declaration is referenced in the extraFiles, it should not be "fixed"
-      !extraFiles.find((file) =>
-        areImportPathsEqualIgnoringExtension(
+      !extraFiles.find((file) => {
+        if (!ts.isStringLiteral(node.moduleSpecifier))
+          throw new Error("node.moduleSpecifier must be a StringLiteral");
+
+        return areImportPathsEqualIgnoringExtension(
           getImportPath(sourceTypes.relativePath, file.relativePath),
-          (node.moduleSpecifier as ts.StringLiteral).text
-        )
-      )
+          node.moduleSpecifier.text
+        );
+      })
     ) {
       if (node.importClause) {
         const identifiers = getImportIdentifiers(node);
