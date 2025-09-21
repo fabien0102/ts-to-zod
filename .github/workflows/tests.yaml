@@ -22,15 +22,19 @@ jobs:
     name: tests on ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           architecture: ${{ matrix.architecture }}
-      - run: yarn
+          cache: "pnpm"
+      - name: Install dependencies
+        run: pnpm install
       - run: chmod +x ./bin/run
-      - run: yarn build
-      - run: yarn test:ci
-      - run: yarn lint
+      - run: pnpm build
+      - run: pnpm test:ci
+      - run: pnpm lint
       - uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
