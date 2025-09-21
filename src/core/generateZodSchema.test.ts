@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { camel } from "case";
 import ts from "typescript";
 import type { CustomJSDocFormatTypes } from "../config";
@@ -309,7 +310,7 @@ describe("generateZodSchema", () => {
   it("should throw on not supported key in omit", () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Omit<T, K> unknown syntax: (TypeReference as K not supported)"`
+      `[Error: Omit<T, K> unknown syntax: (TypeReference as K not supported)]`
     );
   });
 
@@ -319,28 +320,28 @@ describe("generateZodSchema", () => {
     };`;
 
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"interface with \`extends\` and index signature are not supported!"`
+      `[Error: interface with \`extends\` and index signature are not supported!]`
     );
   });
 
   it("should throw on not supported key in omit (union)", () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Omit<T, K> unknown syntax: (TypeReference as K union part not supported)"`
+      `[Error: Omit<T, K> unknown syntax: (TypeReference as K union part not supported)]`
     );
   });
 
   it("should throw on not supported key in pick", () => {
     const source = `export type UnsupportedType = Pick<Superman, Krytonite>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Pick<T, K> unknown syntax: (TypeReference as K not supported)"`
+      `[Error: Pick<T, K> unknown syntax: (TypeReference as K not supported)]`
     );
   });
 
   it("should throw on not supported key in pick (union)", () => {
     const source = `export type UnsupportedType = Pick<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Pick<T, K> unknown syntax: (TypeReference as K union part not supported)"`
+      `[Error: Pick<T, K> unknown syntax: (TypeReference as K union part not supported)]`
     );
   });
 
@@ -1826,14 +1827,14 @@ describe("generateZodSchema", () => {
      powers: TPower[]
    }`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Interface with generics are not supported!"`
+      `[Error: Interface with generics are not supported!]`
     );
   });
 
   it("should throw on type with generics", () => {
     const source = `export type SecretVillain<T> = RandomPeople<T>`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `"Type with generics are not supported!"`
+      `[Error: Type with generics are not supported!]`
     );
   });
 

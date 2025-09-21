@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import ts from "typescript";
 import { getReferencedTypeNames } from "./traverseTypes";
 import { findNode } from "./findNode";

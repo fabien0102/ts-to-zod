@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import { resolveDefaultProperties } from "./resolveDefaultProperties";
 
 describe("resolveDefaultProperties", () => {
