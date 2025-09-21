@@ -34,6 +34,7 @@ jobs:
       - run: chmod +x ./bin/run
       - run: pnpm build
       - run: pnpm test:ci
+      - run: ./bin/run --all
       - run: pnpm lint
       - uses: codecov/codecov-action@v5
         with:
