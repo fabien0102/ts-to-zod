@@ -1,5 +1,12 @@
 # Changelog
 
+### [4.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v4.0.0...v4.0.1) (2025-09-21)
+
+
+### Bug Fixes
+
+* **imports:** filter out imports when using nameFilter ([#330](https://www.github.com/fabien0102/ts-to-zod/issues/330)) ([754ac40](https://www.github.com/fabien0102/ts-to-zod/commit/754ac404f928d689eb1e5f328b40abfae7ea7373))
+
 ## [4.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v3.15.0...v4.0.0) (2025-09-11)
 
 
