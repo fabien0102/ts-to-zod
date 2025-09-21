@@ -848,6 +848,13 @@ describe("generateZodSchema", () => {
        * @format date
        */
       birthday: string;
+      
+      /**
+       * The hero's birthday.
+       *
+       * @format iso-date
+       */
+      birthdayIso: string;
 
       /**
        * The hero's wakeup-time.
@@ -855,6 +862,13 @@ describe("generateZodSchema", () => {
        * @format time
        */
       wakeupTime: string;
+      
+      /**
+       * The hero's wakeup-time.
+       *
+       * @format iso-time
+       */
+      wakeupTimeIso: string;
 
       /**
        * The hero's super power boost duration.
@@ -862,6 +876,13 @@ describe("generateZodSchema", () => {
        * @format duration
        */
       boost: string;
+    
+      /**
+       * The hero's super power boost duration.
+       *
+       * @format iso-duration
+       */
+      boostIso: string;
 
       /**
        * The hero's ipv4 address.
@@ -965,17 +986,35 @@ describe("generateZodSchema", () => {
            */
           birthday: z.iso.date(),
           /**
+           * The hero's birthday.
+           *
+           * @format iso-date
+           */
+          birthdayIso: z.iso.date(),
+          /**
            * The hero's wakeup-time.
            *
            * @format time
            */
           wakeupTime: z.iso.time(),
           /**
+           * The hero's wakeup-time.
+           *
+           * @format iso-time
+           */
+          wakeupTimeIso: z.iso.time(),
+          /**
            * The hero's super power boost duration.
            *
            * @format duration
            */
           boost: z.iso.duration(),
+          /**
+           * The hero's super power boost duration.
+           *
+           * @format iso-duration
+           */
+          boostIso: z.iso.duration(),
           /**
            * The hero's ipv4 address.
            *
