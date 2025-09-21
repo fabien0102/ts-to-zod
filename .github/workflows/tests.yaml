@@ -31,3 +31,8 @@ jobs:
       - run: yarn build
       - run: yarn test:ci
       - run: yarn lint
+      - uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

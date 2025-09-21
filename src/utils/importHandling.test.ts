@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import ts from "typescript";
 import { findNode } from "./findNode";
 import { createImportNode, getImportIdentifiers } from "./importHandling";

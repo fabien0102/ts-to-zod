@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import ts, { factory } from "typescript";
 import { extractLiteralValue } from "./extractLiteralValue";
 

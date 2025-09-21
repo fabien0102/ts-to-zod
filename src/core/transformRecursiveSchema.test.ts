@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import ts from "typescript";
 import { findNode } from "../utils/findNode";
 import { transformRecursiveSchema } from "./transformRecursiveSchema";
@@ -46,6 +47,6 @@ describe("transformRecursiveSchema", () => {
 
     expect(() =>
       transformRecursiveSchema("z", declaration, "Category")
-    ).toThrowErrorMatchingInlineSnapshot(`"Invalid zod statement"`);
+    ).toThrowErrorMatchingInlineSnapshot(`[Error: Invalid zod statement]`);
   });
 });
