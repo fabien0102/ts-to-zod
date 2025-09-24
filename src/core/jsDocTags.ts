@@ -226,7 +226,7 @@ export function getJSDocTags(nodeType: ts.Node, sourceFile: ts.SourceFile) {
                 // Attempt to parse as JSON
                 const parsedValue = JSON.parse(tag.comment);
                 jsDocTags[tagName] = parsedValue;
-              } catch (e) {
+              } catch {
                 // If JSON parsing fails, handle as before
                 jsDocTags[tagName] = tag.comment;
               }
@@ -367,23 +367,23 @@ export function jsDocTagToZodProperties(
         jsDocTags.default === true
           ? [f.createTrue()]
           : jsDocTags.default === false
-          ? [f.createFalse()]
-          : typeof jsDocTags.default === "number"
-          ? jsDocTags.default < 0
-            ? [
-                f.createPrefixUnaryExpression(
-                  ts.SyntaxKind.MinusToken,
-                  f.createNumericLiteral(Math.abs(jsDocTags.default))
-                ),
-              ]
-            : [f.createNumericLiteral(jsDocTags.default)]
-          : jsDocTags.default === null
-          ? [f.createNull()]
-          : Array.isArray(jsDocTags.default)
-          ? [createArrayLiteralExpression(jsDocTags.default)]
-          : typeof jsDocTags.default === "object"
-          ? [createObjectLiteralExpression(jsDocTags.default)]
-          : [f.createStringLiteral(String(jsDocTags.default))],
+            ? [f.createFalse()]
+            : typeof jsDocTags.default === "number"
+              ? jsDocTags.default < 0
+                ? [
+                    f.createPrefixUnaryExpression(
+                      ts.SyntaxKind.MinusToken,
+                      f.createNumericLiteral(Math.abs(jsDocTags.default))
+                    ),
+                  ]
+                : [f.createNumericLiteral(jsDocTags.default)]
+              : jsDocTags.default === null
+                ? [f.createNull()]
+                : Array.isArray(jsDocTags.default)
+                  ? [createArrayLiteralExpression(jsDocTags.default)]
+                  : typeof jsDocTags.default === "object"
+                    ? [createObjectLiteralExpression(jsDocTags.default)]
+                    : [f.createStringLiteral(String(jsDocTags.default))],
     });
   }
 

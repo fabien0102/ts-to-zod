@@ -124,15 +124,15 @@ const moduleToPrefix =
                   ) as ts.NodeArray<ts.TypeElement>
                 )
               : ts.isTypeReferenceNode(node.type)
-              ? f.updateTypeReferenceNode(
-                  node.type,
-                  node.type.typeName,
-                  ts.visitNodes(
-                    node.type.typeArguments,
-                    prefixInterfacesAndTypes(moduleName)
-                  ) as ts.NodeArray<ts.TypeNode>
-                )
-              : node.type
+                ? f.updateTypeReferenceNode(
+                    node.type,
+                    node.type.typeName,
+                    ts.visitNodes(
+                      node.type.typeArguments,
+                      prefixInterfacesAndTypes(moduleName)
+                    ) as ts.NodeArray<ts.TypeNode>
+                  )
+                : node.type
           );
         }
 

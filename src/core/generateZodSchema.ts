@@ -1588,8 +1588,8 @@ function buildSchemaReference(
         ts.isTypeLiteralNode(declaration.type)
           ? declaration.type.members
           : ts.isInterfaceDeclaration(declaration)
-          ? declaration.members
-          : [];
+            ? declaration.members
+            : [];
 
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 

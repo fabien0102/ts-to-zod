@@ -27,6 +27,7 @@ let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
+// eslint-disable-next-line prefer-const
 let { tsToZodConfigFileName, configPath, hasConfigFile } = findConfigFile();
 
 // Propose migration if the config is with .js instead of .mjs/.cjs
