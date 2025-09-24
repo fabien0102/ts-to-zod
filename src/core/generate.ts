@@ -1,4 +1,3 @@
-import casePkg from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
 import type {
@@ -32,10 +31,9 @@ import {
 } from "./generateZodSchema.js";
 import { transformRecursiveSchema } from "./transformRecursiveSchema.js";
 import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath.js";
+import { camelCase } from "text-case";
 
-const { camel } = casePkg;
-
-const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
+const DEFAULT_GET_SCHEMA = (id: string) => camelCase(id) + "Schema";
 
 export interface GenerateProps {
   /**

@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
-import casePkg from "case";
 import ts from "typescript";
 import type { CustomJSDocFormatTypes } from "../config.js";
 import { findNode } from "../utils/findNode.js";
 import { generateZodSchemaVariableStatement } from "./generateZodSchema.js";
-
-const { camel } = casePkg;
+import { camelCase } from "text-case";
 
 describe("generateZodSchema", () => {
   it("should generate a string schema", () => {
@@ -1943,7 +1941,7 @@ function generate(
     throw new Error("No `type` or `interface` found!");
   }
   const interfaceName = declaration.name.text;
-  const zodConstName = `${camel(interfaceName)}Schema`;
+  const zodConstName = `${camelCase(interfaceName)}Schema`;
 
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue: z,

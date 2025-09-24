@@ -1,7 +1,5 @@
-import casePkg from "case";
 import ts, { factory as f, SourceFile } from "typescript";
-
-const { pascal } = casePkg;
+import { pascalCase } from "text-case";
 
 /**
  * Resolve all modules from a source text.
@@ -102,7 +100,9 @@ const moduleToPrefix =
         ) {
           return f.updateTypeReferenceNode(
             node,
-            f.createIdentifier(pascal(moduleName) + pascal(node.typeName.text)),
+            f.createIdentifier(
+              pascalCase(moduleName) + pascalCase(node.typeName.text)
+            ),
             node.typeArguments
           );
         }
@@ -111,7 +111,9 @@ const moduleToPrefix =
           return f.updateTypeAliasDeclaration(
             node,
             node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+            f.createIdentifier(
+              pascalCase(moduleName) + pascalCase(node.name.text)
+            ),
             node.typeParameters,
             ts.isTypeLiteralNode(node.type)
               ? f.updateTypeLiteralNode(
@@ -138,7 +140,9 @@ const moduleToPrefix =
           return f.updateInterfaceDeclaration(
             node,
             node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+            f.createIdentifier(
+              pascalCase(moduleName) + pascalCase(node.name.text)
+            ),
             node.typeParameters,
             ts.visitNodes(
               node.heritageClauses,
@@ -171,7 +175,7 @@ const moduleToPrefix =
           return f.updateExpressionWithTypeArguments(
             node,
             f.createIdentifier(
-              pascal(moduleName) + pascal(node.expression.text)
+              pascalCase(moduleName) + pascalCase(node.expression.text)
             ),
             node.typeArguments
           );
@@ -181,7 +185,9 @@ const moduleToPrefix =
           return f.updateEnumDeclaration(
             node,
             node.modifiers,
-            f.createIdentifier(pascal(moduleName) + pascal(node.name.text)),
+            f.createIdentifier(
+              pascalCase(moduleName) + pascalCase(node.name.text)
+            ),
             node.members
           );
         }

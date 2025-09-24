@@ -1,4 +1,3 @@
-import casePkg from "case";
 import ts, { factory as f } from "typescript";
 import type { CustomJSDocFormatTypes } from "../config.js";
 import { findNode } from "../utils/findNode.js";
@@ -12,8 +11,7 @@ import {
   jsDocTagToZodProperties,
 } from "./jsDocTags.js";
 import { uniq } from "../utils/uniq.js";
-
-const { camel, lower } = casePkg;
+import { camelCase, lowerCase } from "text-case";
 
 export interface GenerateZodSchemaProps {
   /**
@@ -91,7 +89,7 @@ export function generateZodSchemaVariableStatement({
   sourceFile,
   varName,
   zodImportValue = "z",
-  getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
+  getDependencyName = (identifierName) => camelCase(`${identifierName}Schema`),
   skipParseJSDoc = false,
   customJSDocFormatTypes,
 }: GenerateZodSchemaProps) {
@@ -1729,7 +1727,7 @@ function buildOmitPickObject(
   return f.createCallExpression(
     f.createPropertyAccessExpression(
       zodCall,
-      f.createIdentifier(lower(omitOrPickIdentifierName))
+      f.createIdentifier(lowerCase(omitOrPickIdentifierName))
     ),
     undefined,
     [parameters]
