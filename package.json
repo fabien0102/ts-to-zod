@@ -28,7 +28,7 @@
     "gen:all": "./bin/run --all",
     "gen:example": "./bin/run --config example",
     "gen:config": "./bin/run --config config",
-    "prepare": "husky install"
+    "prepare": "husky"
   },
   "files": [
     "LICENSE",
@@ -70,8 +70,8 @@
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
-    "husky": "^8.0.3",
-    "pretty-quick": "^3.1.0",
+    "husky": "^9.1.7",
+    "pretty-quick": "5.0.0-next.2",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.1"
   },
