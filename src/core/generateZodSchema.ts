@@ -11,6 +11,7 @@ import {
   getJSDocTags,
   jsDocTagToZodProperties,
 } from "./jsDocTags.js";
+import { uniq } from "../utils/uniq.js";
 
 const { camel, lower } = casePkg;
 
@@ -185,7 +186,7 @@ export function generateZodSchemaVariableStatement({
   }
 
   return {
-    dependencies: Array.from(new Set(dependencies)),
+    dependencies: uniq(dependencies),
     statement: f.createVariableStatement(
       node.modifiers,
       f.createVariableDeclarationList(
