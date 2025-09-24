@@ -1,5 +1,7 @@
-import { pascal } from "case";
+import casePkg from "case";
 import ts, { factory as f, SourceFile } from "typescript";
+
+const { pascal } = casePkg;
 
 /**
  * Resolve all modules from a source text.

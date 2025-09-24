@@ -1,6 +1,9 @@
 import { getJsDoc } from "tsutils";
 import ts, { factory as f } from "typescript";
-import type { CustomJSDocFormatType, CustomJSDocFormatTypes } from "../config";
+import type {
+  CustomJSDocFormatType,
+  CustomJSDocFormatTypes,
+} from "../config.js";
 import { ZodString } from "zod";
 
 /**

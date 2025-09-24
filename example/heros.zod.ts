@@ -7,48 +7,11 @@ import {
   EnemyPower,
 } from "./heros";
 
-import { personSchema } from "./person.zod";
-
 export const enemyPowerSchema = z.enum(EnemyPower);
 
 export const skillsSpeedEnemySchema = z.object({
   power: z.literal(EnemyPower.Speed),
 });
-
-export const enemySchema = personSchema.extend({
-  name: z.string(),
-  powers: z.array(enemyPowerSchema),
-  inPrison: z.boolean(),
-  mainPower: z.union([
-    z.literal("flight"),
-    z.literal("strength"),
-    z.literal("speed"),
-  ]),
-});
-
-export const supermanSchema = z.object({
-  person: personSchema,
-  name: z.union([
-    z.literal("superman"),
-    z.literal("clark kent"),
-    z.literal("kal-l"),
-  ]),
-  enemies: z.record(z.string(), enemySchema),
-  age: z.number(),
-  underKryptonite: z.boolean().optional(),
-  powers: z.tuple([
-    z.literal("fly"),
-    z.literal("laser"),
-    z.literal("invincible"),
-  ]),
-});
-
-export const supermanNameSchema = supermanSchema.shape.name;
-
-export const supermanInvinciblePowerSchema =
-  supermanSchema.shape.powers.def.items[2];
-
-export const personTupleSchema = z.tuple([personSchema]).rest(personSchema);
 
 export const villainSchema: z.ZodSchema<Villain> = z.lazy(() =>
   z.object({
@@ -101,10 +64,45 @@ export const heroContactSchema = z.object({
   phoneNumber: z.string().regex(/^\d{3}-\d{3}-\d{4}$/),
   hasSuperPower: z.boolean().optional().default(true),
   age: z.number().min(0).max(500),
-  birthday: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Must be in YYYY-MM-DD format."),
+  birthday: z.iso.date(),
 });
+
+const personSchema = z.any();
+
+export const enemySchema = personSchema.extend({
+  name: z.string(),
+  powers: z.array(enemyPowerSchema),
+  inPrison: z.boolean(),
+  mainPower: z.union([
+    z.literal("flight"),
+    z.literal("strength"),
+    z.literal("speed"),
+  ]),
+});
+
+export const supermanSchema = z.object({
+  person: personSchema,
+  name: z.union([
+    z.literal("superman"),
+    z.literal("clark kent"),
+    z.literal("kal-l"),
+  ]),
+  enemies: z.record(z.string(), enemySchema),
+  age: z.number(),
+  underKryptonite: z.boolean().optional(),
+  powers: z.tuple([
+    z.literal("fly"),
+    z.literal("laser"),
+    z.literal("invincible"),
+  ]),
+});
+
+export const supermanNameSchema = supermanSchema.shape.name;
+
+export const supermanInvinciblePowerSchema =
+  supermanSchema.shape.powers.def.items[2];
+
+export const personTupleSchema = z.tuple([personSchema]).rest(personSchema);
 
 export const supermanEnemySchema = supermanSchema.shape.enemies.valueType;
 

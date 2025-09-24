@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { camel } from "case";
+import casePkg from "case";
 import ts from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { generateZodSchemaVariableStatement } from "./generateZodSchema";
+import type { CustomJSDocFormatTypes } from "../config.js";
+import { findNode } from "../utils/findNode.js";
+import { generateZodSchemaVariableStatement } from "./generateZodSchema.js";
+
+const { camel } = casePkg;
 
 describe("generateZodSchema", () => {
   it("should generate a string schema", () => {

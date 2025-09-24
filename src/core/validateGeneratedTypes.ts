@@ -5,13 +5,14 @@ import {
 } from "@typescript/vfs";
 import ts from "typescript";
 import { join, sep, posix } from "path";
-import { resolveDefaultProperties } from "../utils/resolveDefaultProperties";
-import { fixOptionalAny } from "../utils/fixOptionalAny";
-import { getImportIdentifiers } from "../utils/importHandling";
+
+import { resolveDefaultProperties } from "../utils/resolveDefaultProperties.js";
+import { fixOptionalAny } from "../utils/fixOptionalAny.js";
+import { getImportIdentifiers } from "../utils/importHandling.js";
 import {
   getImportPath,
   areImportPathsEqualIgnoringExtension,
-} from "../utils/getImportPath";
+} from "../utils/getImportPath.js";
 
 interface File {
   sourceText: string;

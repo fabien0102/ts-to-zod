@@ -1,17 +1,18 @@
-import { camel, lower } from "case";
-import uniq from "lodash/uniq";
+import casePkg from "case";
 import ts, { factory as f } from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { isNotNull } from "../utils/isNotNull";
-import { generateCombinations } from "../utils/generateCombinations";
-import { extractLiteralValue } from "../utils/extractLiteralValue";
+import type { CustomJSDocFormatTypes } from "../config.js";
+import { findNode } from "../utils/findNode.js";
+import { isNotNull } from "../utils/isNotNull.js";
+import { generateCombinations } from "../utils/generateCombinations.js";
+import { extractLiteralValue } from "../utils/extractLiteralValue.js";
 import {
   type JSDocTags,
   type ZodProperty,
   getJSDocTags,
   jsDocTagToZodProperties,
-} from "./jsDocTags";
+} from "./jsDocTags.js";
+
+const { camel, lower } = casePkg;
 
 export interface GenerateZodSchemaProps {
   /**
@@ -184,7 +185,7 @@ export function generateZodSchemaVariableStatement({
   }
 
   return {
-    dependencies: uniq(dependencies),
+    dependencies: Array.from(new Set(dependencies)),
     statement: f.createVariableStatement(
       node.modifiers,
       f.createVariableDeclarationList(

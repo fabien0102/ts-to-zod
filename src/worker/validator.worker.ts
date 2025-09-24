@@ -1,7 +1,6 @@
-import { expose } from "threads";
-import { validateGeneratedTypes } from "../core/validateGeneratedTypes";
+import { parentPort, workerData } from "node:worker_threads";
+import { validateGeneratedTypes } from "../core/validateGeneratedTypes.js";
 
-/**
- * Expose validateGeneratedTypes as a worker
- */
-expose(validateGeneratedTypes);
+// Expose validateGeneratedTypes in a worker
+const result = validateGeneratedTypes(workerData);
+parentPort?.postMessage(result);

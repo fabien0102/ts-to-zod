@@ -1,7 +1,8 @@
-import inquirer, { DistinctQuestion } from "inquirer";
-import { existsSync, outputFile } from "fs-extra";
-import { join } from "path";
-import { Subject } from "rxjs";
+import { existsSync } from "node:fs";
+import { writeFile } from "node:fs/promises";
+import { join } from "node:path";
+
+import * as prompt from "@clack/prompts";
 import prettier from "prettier";
 
 /**
@@ -15,159 +16,58 @@ export async function createConfig(
   tsToZodConfigFileName: string
 ) {
   if (existsSync(configPath)) {
-    const { answer } = await inquirer.prompt<{ answer: boolean }>({
-      type: "confirm",
-      name: "answer",
+    const shouldOverride = await prompt.confirm({
       message: `${tsToZodConfigFileName} already exists, do you want to override it?`,
     });
-    if (!answer) {
+    if (prompt.isCancel(shouldOverride) || shouldOverride === false) {
       return false;
     }
   }
 
-  const project = join(__dirname, "../tsconfig.json");
-  const dev = existsSync(project);
+  const project = join(import.meta.dirname, "../tsconfig.json");
+  const isDev = existsSync(project);
 
-  let answers: Answers | undefined;
-  let prefix: string | undefined;
+  const configs: Array<{ input: string; output: string; name: string }> = [];
 
-  const getOutputDefault = () => {
-    if (answers?.mode === "single") {
-      return answers.config.input.replace(/\.ts(x)?$/, ".zod.ts$1");
-    } else if (answers?.mode === "multi") {
-      return answers.config[answers.config.length - 1].input.replace(
-        /\.ts(x)?$/,
-        ".zod.ts$1"
-      );
-    }
-  };
+  while (true) {
+    const input = await ask("Where is your file with types?");
+    const output = await ask(
+      "Where do you want to save the generated zod schemas?",
+      { initialValue: input.replace(/\.ts(x)?$/, ".zod.ts$1") }
+    );
+    const name = await ask("How should we call your configuration?");
+    configs.push({ name, input, output });
 
-  const prompts = new Subject<DistinctQuestion>();
-  let i = 0; // Trick to ask the same question (`askAnswered` is not in the types…)
-
-  const askForInput = () => {
-    prompts.next({
-      type: "input",
-      name: `input-${i}`,
-      message: "Where is your file with types?",
-      default: prefix ? `${prefix}.ts` : undefined,
-      prefix: prefix ? `[${prefix}]` : undefined,
-    });
-  };
-
-  const askForOutput = (prefix?: string) => {
-    prompts.next({
-      type: "input",
-      name: `output-${i}`,
-      message: "Where do you want to save the generated zod schemas?",
-      default: getOutputDefault(),
-      prefix: prefix ? `[${prefix}]` : undefined,
-    });
-  };
-
-  const askForConfigName = () => {
-    prompts.next({
-      type: "input",
-      name: `configName-${i}`,
-      message: "How should we call your configuration?",
-    });
-  };
-
-  const askForOneMore = () => {
-    prompts.next({
-      type: "confirm",
-      name: `oneMore-${i++}`,
+    const more = await prompt.confirm({
       message: "Do you want to add another config?",
+      initialValue: false,
     });
-  };
 
-  inquirer.prompt(prompts).ui.process.subscribe(
-    (q) => {
-      // inquirer type are a bit broken…
-      const question = q as { name: string; answer: string };
-
-      if (question.name === "mode") {
-        if (question.answer.toLowerCase().includes("single")) {
-          answers = { mode: "single", config: { input: "", output: "" } };
-          askForInput();
-        } else {
-          answers = { mode: "multi", config: [] };
-          askForConfigName();
-        }
-      }
-
-      if (question.name.startsWith("input")) {
-        if (answers?.mode === "single") {
-          answers.config.input = question.answer;
-        } else if (answers?.mode === "multi") {
-          answers.config[answers.config.length - 1].input = question.answer;
-        }
-        askForOutput();
-      }
-
-      if (question.name.startsWith("output")) {
-        if (answers?.mode === "single") {
-          answers.config.output = question.answer;
-          prompts.complete();
-        } else if (answers?.mode === "multi") {
-          answers.config[answers.config.length - 1].output = question.answer;
-          askForOneMore();
-        }
-      }
-
-      if (question.name.startsWith("configName")) {
-        if (answers?.mode === "multi") {
-          answers.config.push({
-            name: question.answer,
-            input: "",
-            output: "",
-          });
-        }
-        prefix = question.answer;
-        askForInput();
-      }
-
-      if (question.name.startsWith("oneMore")) {
-        if (question.answer) {
-          askForConfigName();
-        } else {
-          prompts.complete();
-        }
-      }
-    },
-    (err) => console.error(err)
-  );
-
-  // First question to start the flow
-  prompts.next({
-    type: "list",
-    name: "mode",
-    message: "What kind of configuration do you need?",
-    choices: [
-      { value: "single", name: "Single configuration" },
-      { value: "multi", name: "Multiple configurations" },
-    ],
-  });
-
-  await prompts.toPromise();
+    if (more !== true) {
+      break;
+    }
+  }
 
   const header = `/**
  * ts-to-zod configuration.
  *
  * @type {${
-   dev ? 'import("./src/config")' : 'import("ts-to-zod")'
+   isDev ? 'import("./src/config")' : 'import("ts-to-zod")'
  }.TsToZodConfig}
  */
-module.exports = `;
+export default `;
 
-  if (answers) {
+  if (configs.length > 0) {
     const prettierConfig = await prettier.resolveConfig(process.cwd());
-    await outputFile(
+    await writeFile(
       configPath,
-      await prettier.format(header + JSON.stringify(answers.config), {
-        parser: "babel",
-        ...prettierConfig,
-      }),
+      await prettier.format(
+        header + JSON.stringify(configs.length === 1 ? configs[0] : configs),
+        {
+          parser: "babel",
+          ...prettierConfig,
+        }
+      ),
       "utf-8"
     );
     return true;
@@ -176,15 +76,14 @@ module.exports = `;
   return false;
 }
 
-type Answers =
-  | {
-      mode: "single";
-      config: {
-        input: string;
-        output: string;
-      };
-    }
-  | {
-      mode: "multi";
-      config: Array<{ name: string; input: string; output: string }>;
-    };
+/**
+ * Ask a question to the user (and deal with cancel state)
+ */
+async function ask(message: string, opt?: Omit<prompt.TextOptions, "message">) {
+  const answer = await prompt.text({ message, ...opt });
+  if (prompt.isCancel(answer)) {
+    prompt.cancel("Operation cancelled");
+    process.exit(0);
+  }
+  return answer;
+}

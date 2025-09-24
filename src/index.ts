@@ -1,15 +1,15 @@
-export { generate, GenerateProps } from "./core/generate";
+export { generate, GenerateProps } from "./core/generate.js";
 
 export {
   generateZodInferredType,
   GenerateZodInferredTypeProps,
-} from "./core/generateZodInferredType";
+} from "./core/generateZodInferredType.js";
 
 export {
   generateZodSchemaVariableStatement,
   GenerateZodSchemaProps,
-} from "./core/generateZodSchema";
+} from "./core/generateZodSchema.js";
 
-export { generateIntegrationTests } from "./core/generateIntegrationTests";
+export { generateIntegrationTests } from "./core/generateIntegrationTests.js";
 
-export { TsToZodConfig } from "./config";
+export { TsToZodConfig } from "./config.js";

@@ -1,49 +1,77 @@
 import { Command, Flags, Errors, Args, type Interfaces } from "@oclif/core";
+import { Listr, ListrTask } from "listr2";
 
 import chokidar from "chokidar";
-import { existsSync, outputFile, readFile } from "fs-extra";
-import inquirer from "inquirer";
-import ora from "ora";
+import { writeFile, readFile, rename } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import * as prompt from "@clack/prompts";
 import { join, normalize, parse, relative } from "path";
 import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
-import type { Config, TsToZodConfig, InputOutputMapping } from "./config";
+import type { Config, TsToZodConfig, InputOutputMapping } from "./config.js";
 import {
   getSchemaNameSchema,
   nameFilterSchema,
   tsToZodConfigSchema,
-} from "./config.zod";
-import { type GenerateProps, generate } from "./core/generate";
-import { createConfig } from "./createConfig";
+} from "./config.zod.js";
+import { type GenerateProps, generate } from "./core/generate.js";
+import { createConfig } from "./createConfig.js";
 import {
   areImportPathsEqualIgnoringExtension,
   getImportPath,
-} from "./utils/getImportPath";
-import * as worker from "./worker";
+} from "./utils/getImportPath.js";
+import * as worker from "./worker/index.js";
 
 let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
 const configKeys: string[] = [];
 
-function isEsm() {
-  try {
-    const packageJsonPath = join(process.cwd(), "package.json");
-    const rawPackageJson = require(slash(relative(__dirname, packageJsonPath)));
-    return rawPackageJson.type === "module";
-  } catch (e) {}
-  return false;
+let { tsToZodConfigFileName, configPath, hasConfigFile } = findConfigFile();
+
+// Propose migration if the config is with .js instead of .mjs/.cjs
+if (configPath.endsWith(".js")) {
+  const format = await prompt.select({
+    message: `Your config file is using .js and need to be updated.\nWhat format do you prefer?`,
+    options: [
+      { label: "Transform to esm (.mjs)", value: "mjs" },
+      { label: "Transform to cjs (.cjs)", value: "cjs" },
+    ],
+  });
+  if (prompt.isCancel(format)) {
+    prompt.cancel("Operation cancelled");
+    process.exit(0);
+  }
+  const newConfigPath = configPath.replace(/.js$/, `.${format}`);
+  const newTsToZodConfigFileName = tsToZodConfigFileName.replace(
+    /.js$/,
+    `.${format}`
+  );
+  await rename(configPath, newConfigPath);
+  prompt.log.success(
+    `${tsToZodConfigFileName} has been renamed to ${newTsToZodConfigFileName}`
+  );
+  configPath = newConfigPath;
+  tsToZodConfigFileName = newTsToZodConfigFileName;
+
+  if (format === "mjs") {
+    const oldConfig = await readFile(configPath, "utf-8");
+    await writeFile(
+      configPath,
+      oldConfig.replace(/module\.exports =/, "export default")
+    );
+    prompt.log.success(`${tsToZodConfigFileName} has been converted to esm`);
+  }
 }
 
-// Try to load `ts-to-zod.config.c?js`
-// We are doing this here to be able to infer the `flags` & `usage` in the cli help
-const fileExtension = isEsm() ? "cjs" : "js";
-const tsToZodConfigFileName = `ts-to-zod.config.${fileExtension}`;
-const configPath = join(process.cwd(), tsToZodConfigFileName);
 try {
-  if (existsSync(configPath)) {
-    const rawConfig = require(slash(relative(__dirname, configPath)));
-    config = tsToZodConfigSchema.parse(rawConfig);
+  // Try to load `ts-to-zod.config.(mjs|cjs)`
+  // We are doing this here to be able to infer the `flags` & `usage` in the cli help
+  if (hasConfigFile) {
+    const rawConfig = await import(
+      slash(relative(import.meta.dirname, configPath))
+    );
+    config = tsToZodConfigSchema.parse(rawConfig.default);
     if (Array.isArray(config)) {
       haveMultiConfig = true;
       configKeys.push(...config.map((c) => c.name));
@@ -142,36 +170,33 @@ class TsToZod extends Command {
     const fileConfig = await this.loadFileConfig(config, flags);
 
     const ioMappings = getInputOutputMappings(config);
+    const tasks = new Listr<void>([]);
 
     if (Array.isArray(fileConfig)) {
       if (args.input || args.output) {
         this.error(`INPUT and OUTPUT arguments are not compatible with --all`);
       }
-      try {
-        await Promise.all(
-          fileConfig.map(async (config) => {
-            this.log(`Generating "${config.name}"`);
-            const result = await this.generate(args, config, flags, ioMappings);
-            if (result.success) {
-              this.log(` 🎉 Zod schemas generated!`);
-            } else {
-              this.error(result.error, { exit: false });
-            }
-            this.log(); // empty line between configs
-          })
-        );
-      } catch (e) {
-        const error =
-          typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
-        this.error(error);
-      }
+      tasks.add(
+        fileConfig.map((config) => ({
+          title: `Generate "${config.name}"`,
+          task: async (_, task) =>
+            task.newListr(this.generate(args, config, flags, ioMappings), {
+              rendererOptions: {
+                collapseSubtasks: false,
+              },
+            }),
+        }))
+      );
     } else {
-      const result = await this.generate(args, fileConfig, flags, ioMappings);
-      if (result.success) {
-        this.log(`🎉 Zod schemas generated!`);
-      } else {
-        this.error(result.error);
-      }
+      tasks.add(this.generate(args, fileConfig, flags, ioMappings));
+    }
+    try {
+      await tasks.run();
+      this.log("🎉 Zod schemas generated!");
+    } catch (e) {
+      const error =
+        typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
+      this.error(error);
     }
 
     if (flags.watch) {
@@ -187,256 +212,299 @@ class TsToZod extends Command {
           ? fileConfig.find((i) => i.input === slash(path))
           : fileConfig;
 
-        const result = await this.generate(args, config, flags, ioMappings);
-        if (result.success) {
-          this.log(`🎉 Zod schemas generated!`);
-        } else {
-          this.error(result.error);
+        const tasks = new Listr(this.generate(args, config, flags, ioMappings));
+        try {
+          await tasks.run();
+          this.log("🎉 Zod schemas generated!");
+        } catch (e) {
+          const error =
+            typeof e === "string" || e instanceof Error ? e : JSON.stringify(e);
+          this.error(error);
         }
+
         this.log("\nWatching for changes…");
       });
     }
   }
 
   /**
-   * Generate on zod schema file.
+   * Generate a list of tasks.
    * @param args
    * @param fileConfig
    * @param Flags
    * @param inputOutputMappings
    */
-  async generate(
+  generate(
     args: { input?: string; output?: string },
     fileConfig: Config | undefined,
     Flags: Interfaces.InferredFlags<typeof TsToZod.flags>,
     inputOutputMappings: InputOutputMapping[]
-  ): Promise<{ success: true } | { success: false; error: string }> {
+  ): ListrTask[] {
+    type ListrContext = {
+      generateOptions?: GenerateProps;
+      generatedOutput?: ReturnType<typeof generate>;
+    };
+
     const input = args.input || fileConfig?.input;
     const output = args.output || fileConfig?.output;
 
     if (!input) {
-      return {
-        success: false,
-        error: `Missing 1 required arg:
+      throw new Error(`Missing 1 required arg:
 ${TsToZod.args.input.description}
-See more help with --help`,
-      };
+See more help with --help`);
     }
 
     const inputPath = join(process.cwd(), input);
     const outputPath = join(process.cwd(), output || input);
 
-    const relativeIOMappings = inputOutputMappings.map((io) => {
-      const relativeInput = getImportPath(inputPath, io.input);
-      const relativeOutput = getImportPath(outputPath, io.output);
+    const generateZodSchemasTask: ListrTask<ListrContext> = {
+      title: "Generate zod schemas",
+      task: async (ctx) => {
+        // Check args/flags file extensions
+        const extErrors: { path: string; expectedExtensions: string[] }[] = [];
+        if (!hasExtensions(input, typescriptExtensions)) {
+          extErrors.push({
+            path: input,
+            expectedExtensions: typescriptExtensions,
+          });
+        }
+        if (
+          output &&
+          !hasExtensions(output, [
+            ...typescriptExtensions,
+            ...javascriptExtensions,
+          ])
+        ) {
+          extErrors.push({
+            path: output,
+            expectedExtensions: [
+              ...typescriptExtensions,
+              ...javascriptExtensions,
+            ],
+          });
+        }
 
-      return {
-        input: relativeInput,
-        output: relativeOutput,
-        getSchemaName: io.getSchemaName,
-      };
-    });
+        if (extErrors.length) {
+          throw new Error(
+            `Unexpected file extension:\n${extErrors
+              .map(
+                ({ path, expectedExtensions }) =>
+                  `"${path}" must be ${expectedExtensions
+                    .map((i) => `"${i}"`)
+                    .join(", ")}`
+              )
+              .join("\n")}`
+          );
+        }
 
-    // Check args/flags file extensions
-    const extErrors: { path: string; expectedExtensions: string[] }[] = [];
-    if (!hasExtensions(input, typescriptExtensions)) {
-      extErrors.push({
-        path: input,
-        expectedExtensions: typescriptExtensions,
-      });
-    }
-    if (
-      output &&
-      !hasExtensions(output, [...typescriptExtensions, ...javascriptExtensions])
-    ) {
-      extErrors.push({
-        path: output,
-        expectedExtensions: [...typescriptExtensions, ...javascriptExtensions],
-      });
-    }
+        const sourceText = await readFile(inputPath, "utf-8");
 
-    if (extErrors.length) {
-      return {
-        success: false,
-        error: `Unexpected file extension:\n${extErrors
-          .map(
-            ({ path, expectedExtensions }) =>
-              `"${path}" must be ${expectedExtensions
-                .map((i) => `"${i}"`)
-                .join(", ")}`
-          )
-          .join("\n")}`,
-      };
-    }
+        const relativeIOMappings = inputOutputMappings.map((io) => {
+          const relativeInput = getImportPath(inputPath, io.input);
+          const relativeOutput = getImportPath(outputPath, io.output);
 
-    const sourceText = await readFile(inputPath, "utf-8");
+          return {
+            input: relativeInput,
+            output: relativeOutput,
+            getSchemaName: io.getSchemaName,
+          };
+        });
 
-    const generateOptions: GenerateProps = {
-      sourceText,
-      inputOutputMappings: relativeIOMappings,
-      ...fileConfig,
+        const generateOptions: GenerateProps = {
+          sourceText,
+          inputOutputMappings: relativeIOMappings,
+          ...fileConfig,
+        };
+        if (typeof Flags.keepComments === "boolean") {
+          generateOptions.keepComments = Flags.keepComments;
+        }
+        if (typeof Flags.skipParseJSDoc === "boolean") {
+          generateOptions.skipParseJSDoc = Flags.skipParseJSDoc;
+        }
+        if (typeof Flags.inferredTypes === "string") {
+          generateOptions.inferredTypes = Flags.inferredTypes;
+        }
+
+        ctx.generateOptions = generateOptions;
+        ctx.generatedOutput = generate(generateOptions);
+
+        if (ctx.generatedOutput.hasCircularDependencies && !output) {
+          throw new Error(
+            "--output= must also be provided when input files have some circular dependencies"
+          );
+        }
+      },
     };
-    if (typeof Flags.keepComments === "boolean") {
-      generateOptions.keepComments = Flags.keepComments;
-    }
-    if (typeof Flags.skipParseJSDoc === "boolean") {
-      generateOptions.skipParseJSDoc = Flags.skipParseJSDoc;
-    }
-    if (typeof Flags.inferredTypes === "string") {
-      generateOptions.inferredTypes = Flags.inferredTypes;
-    }
 
-    const {
-      errors,
-      transformedSourceText,
-      getZodSchemasFile,
-      getIntegrationTestFile,
-      getInferredTypes,
-      hasCircularDependencies,
-    } = generate(generateOptions);
+    const validationTask: ListrTask<ListrContext> = {
+      title: "Validate generated types",
+      task: async (ctx) => {
+        if (!ctx.generateOptions || !ctx.generatedOutput) {
+          throw new Error(
+            "Validation can only be perform after the generation"
+          );
+        }
 
-    if (hasCircularDependencies && !output) {
-      return {
-        success: false,
-        error:
-          "--output= must also be provided when input files have some circular dependencies",
-      };
-    }
+        const { skipParseJSDoc } = ctx.generateOptions;
+        const {
+          transformedSourceText,
+          getIntegrationTestFile,
+          getZodSchemasFile,
+        } = ctx.generatedOutput;
 
-    errors.map(this.warn.bind(this));
+        const extraFiles = [];
+        for (const io of inputOutputMappings) {
+          if (getImportPath(inputPath, io.input) !== "/") {
+            try {
+              const fileInputPath = join(process.cwd(), io.input);
+              const inputFile = await readFile(fileInputPath, "utf-8");
+              extraFiles.push({
+                sourceText: inputFile,
+                relativePath: io.input,
+              });
+            } catch {
+              throw new Error(`File "${io.input}" not found`);
+            }
 
-    if (!Flags.skipValidation) {
-      const validatorSpinner = ora("Validating generated types").start();
-      if (Flags.all) validatorSpinner.indent = 1;
-
-      const extraFiles = [];
-      for (const io of inputOutputMappings) {
-        if (getImportPath(inputPath, io.input) !== "/") {
-          try {
-            const fileInputPath = join(process.cwd(), io.input);
-            const inputFile = await readFile(fileInputPath, "utf-8");
-            extraFiles.push({
-              sourceText: inputFile,
-              relativePath: io.input,
-            });
-          } catch {
-            validatorSpinner.warn(`File "${io.input}" not found`);
-          }
-
-          try {
-            const fileOutputPath = join(process.cwd(), io.output);
-            const outputFile = await readFile(fileOutputPath, "utf-8");
-            extraFiles.push({
-              sourceText: outputFile,
-              relativePath: io.output,
-            });
-          } catch {
-            validatorSpinner.warn(
-              `File "${io.output}" not found: maybe it hasn't been generated yet?`
-            );
+            try {
+              const fileOutputPath = join(process.cwd(), io.output);
+              const outputFile = await readFile(fileOutputPath, "utf-8");
+              extraFiles.push({
+                sourceText: outputFile,
+                relativePath: io.output,
+              });
+            } catch {
+              throw new Error(
+                `File "${io.output}" not found: maybe it hasn't been generated yet?`
+              );
+            }
           }
         }
-      }
 
-      let outputForValidation = output || "";
+        let outputForValidation = output || "";
 
-      // If we're generating over the same file, we need to set a fake output path for validation
-      if (!output || areImportPathsEqualIgnoringExtension(input, output)) {
-        const outputFileName = "source.zod.ts";
-        const { dir } = parse(normalize(input));
+        // If we're generating over the same file, we need to set a fake output path for validation
+        if (!output || areImportPathsEqualIgnoringExtension(input, output)) {
+          const outputFileName = "source.zod.ts";
+          const { dir } = parse(normalize(input));
 
-        outputForValidation = join(dir, outputFileName);
-      }
+          outputForValidation = join(dir, outputFileName);
+        }
 
-      const generationErrors = await worker.validateGeneratedTypesInWorker({
-        sourceTypes: {
-          sourceText: transformedSourceText,
-          relativePath: input,
-        },
-        integrationTests: {
-          sourceText: getIntegrationTestFile(
-            getImportPath("./source.integration.ts", input),
-            getImportPath("./source.integration.ts", outputForValidation)
-          ),
-          relativePath: "./source.integration.ts",
-        },
-        zodSchemas: {
-          sourceText: getZodSchemasFile(
-            getImportPath(outputForValidation, input)
-          ),
-          relativePath: outputForValidation,
-        },
-        skipParseJSDoc: Boolean(generateOptions.skipParseJSDoc),
-        extraFiles,
-      });
+        const generationErrors = await worker.validateGeneratedTypesInWorker({
+          sourceTypes: {
+            sourceText: transformedSourceText,
+            relativePath: input,
+          },
+          integrationTests: {
+            sourceText: getIntegrationTestFile(
+              getImportPath("./source.integration.ts", input),
+              getImportPath("./source.integration.ts", outputForValidation)
+            ),
+            relativePath: "./source.integration.ts",
+          },
+          zodSchemas: {
+            sourceText: getZodSchemasFile(
+              getImportPath(outputForValidation, input)
+            ),
+            relativePath: outputForValidation,
+          },
+          skipParseJSDoc: Boolean(skipParseJSDoc),
+          extraFiles,
+        });
 
-      generationErrors.length
-        ? validatorSpinner.fail()
-        : validatorSpinner.succeed();
+        if (generationErrors.length > 0) {
+          throw new Error(generationErrors.join("\n"));
+        }
+      },
+      enabled: !Flags.skipValidation,
+    };
 
-      if (generationErrors.length > 0) {
-        return {
-          success: false,
-          error: generationErrors.join("\n"),
-        };
-      }
-    }
+    const writingFilesTask: ListrTask<ListrContext> = {
+      title: "Write files",
+      task: async (ctx, task) => {
+        if (!ctx.generateOptions || !ctx.generatedOutput) {
+          throw new Error(
+            "Writing files can only be perform after the generation"
+          );
+        }
 
-    const zodSchemasFile = getZodSchemasFile(
-      getImportPath(outputPath, inputPath)
-    );
+        const { inferredTypes } = ctx.generateOptions;
+        const { getZodSchemasFile, getInferredTypes } = ctx.generatedOutput;
 
-    const prettierConfig = await prettier.resolveConfig(process.cwd());
+        const subtasks = task.newListr([]);
 
-    if (generateOptions.inferredTypes) {
-      const zodInferredTypesFile = getInferredTypes(
-        getImportPath(generateOptions.inferredTypes, outputPath)
-      );
-      await outputFile(
-        generateOptions.inferredTypes,
-        await prettier.format(
-          hasExtensions(generateOptions.inferredTypes, javascriptExtensions)
-            ? ts.transpileModule(zodInferredTypesFile, {
-                compilerOptions: {
-                  target: ts.ScriptTarget.Latest,
-                  module: ts.ModuleKind.ESNext,
-                  newLine: ts.NewLineKind.LineFeed,
-                },
-              }).outputText
-            : zodInferredTypesFile,
-          { parser: "babel-ts", ...prettierConfig }
-        )
-      );
-    }
+        const zodSchemasFile = getZodSchemasFile(
+          getImportPath(outputPath, inputPath)
+        );
 
-    if (output && hasExtensions(output, javascriptExtensions)) {
-      await outputFile(
-        outputPath,
-        await prettier.format(
-          ts.transpileModule(zodSchemasFile, {
-            compilerOptions: {
-              target: ts.ScriptTarget.Latest,
-              module: ts.ModuleKind.ESNext,
-              newLine: ts.NewLineKind.LineFeed,
+        const prettierConfig = await prettier.resolveConfig(process.cwd());
+
+        if (inferredTypes) {
+          subtasks.add({
+            title: `Write ${inferredTypes}`,
+            task: async () => {
+              const zodInferredTypesFile = getInferredTypes(
+                getImportPath(inferredTypes, outputPath)
+              );
+              await writeFile(
+                inferredTypes,
+                await prettier.format(
+                  hasExtensions(inferredTypes, javascriptExtensions)
+                    ? ts.transpileModule(zodInferredTypesFile, {
+                        compilerOptions: {
+                          target: ts.ScriptTarget.Latest,
+                          module: ts.ModuleKind.ESNext,
+                          newLine: ts.NewLineKind.LineFeed,
+                        },
+                      }).outputText
+                    : zodInferredTypesFile,
+                  { parser: "babel-ts", ...prettierConfig }
+                ),
+                "utf-8"
+              );
             },
-          }).outputText,
-          { parser: "babel-ts", ...prettierConfig }
-        )
-      );
-    } else {
-      await outputFile(
-        outputPath,
-        await prettier.format(zodSchemasFile, {
-          parser: "babel-ts",
-          ...prettierConfig,
-        })
-      );
-    }
-    return { success: true };
+          });
+        }
+
+        subtasks.add({
+          title: `Write ${outputPath}`,
+          task: async () => {
+            if (output && hasExtensions(output, javascriptExtensions)) {
+              await writeFile(
+                outputPath,
+                await prettier.format(
+                  ts.transpileModule(zodSchemasFile, {
+                    compilerOptions: {
+                      target: ts.ScriptTarget.Latest,
+                      module: ts.ModuleKind.ESNext,
+                      newLine: ts.NewLineKind.LineFeed,
+                    },
+                  }).outputText,
+                  { parser: "babel-ts", ...prettierConfig }
+                ),
+                "utf-8"
+              );
+            } else {
+              await writeFile(
+                outputPath,
+                await prettier.format(zodSchemasFile, {
+                  parser: "babel-ts",
+                  ...prettierConfig,
+                }),
+                "utf-8"
+              );
+            }
+          },
+        });
+      },
+    };
+
+    return [generateZodSchemasTask, validationTask, writingFilesTask];
   }
 
   /**
-   * Load user config from `ts-to-zod.config.c?js`
+   * Load user config from `ts-to-zod.config.mjs`
    */
   async loadFileConfig(
     config: TsToZodConfig | undefined,
@@ -447,26 +515,25 @@ See more help with --help`,
     }
     if (Array.isArray(config)) {
       if (!flags.all && !flags.config) {
-        const { mode } = await inquirer.prompt<{
-          mode: "none" | "multi" | `single-${string}`;
-        }>([
-          {
-            name: "mode",
-            message: `You have multiple configs available in "${tsToZodConfigFileName}"\n What do you want?`,
-            type: "list",
-            choices: [
-              {
-                value: "multi",
-                name: `${TsToZod.flags.all.description} (--all)`,
-              },
-              ...configKeys.map((key) => ({
-                value: `single-${key}`,
-                name: `Execute "${key}" config (--config=${key})`,
-              })),
-              { value: "none", name: "Don't use the config" },
-            ],
-          },
-        ]);
+        const mode = await prompt.select({
+          message: `You have multiple configs available in "${tsToZodConfigFileName}"\n What do you want?`,
+          options: [
+            {
+              label: `${TsToZod.flags.all.description} (--all)`,
+              value: "multi",
+            },
+            ...configKeys.map((key) => ({
+              value: `single-${key}` as const,
+              label: `Execute "${key}" config (--config=${key})`,
+            })),
+            { value: "none", label: "Don't use the config" },
+          ],
+        });
+
+        if (prompt.isCancel(mode)) {
+          this.error("Mode selection cancelled");
+        }
+
         if (mode.startsWith("single-")) {
           flags.config = mode.slice("single-".length);
         } else if (mode === "multi") {
@@ -531,4 +598,20 @@ function getInputOutputMappings(
   return [{ input, output, getSchemaName }];
 }
 
-export = TsToZod;
+function findConfigFile() {
+  for (const ext of ["mjs", "cjs", "js"] as const) {
+    const tsToZodConfigFileName = `ts-to-zod.config.${ext}`;
+    const configPath = join(process.cwd(), tsToZodConfigFileName);
+    if (existsSync(configPath)) {
+      return { tsToZodConfigFileName, configPath, hasConfigFile: true };
+    }
+  }
+
+  return {
+    tsToZodConfigFileName: `ts-to-zod.config.mjs`,
+    configPath: join(process.cwd(), `ts-to-zod.config.mjs`),
+    hasConfigFile: false,
+  };
+}
+
+export default TsToZod;
