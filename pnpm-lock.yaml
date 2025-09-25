@@ -22,9 +22,6 @@ importers:
       listr2:
         specifier: ^9.0.4
         version: 9.0.4
-      prettier:
-        specifier: 3.6.2
-        version: 3.6.2
       slash:
         specifier: ^5.1.0
         version: 5.1.0
@@ -95,6 +92,9 @@ importers:
       husky:
         specifier: ^9.1.7
         version: 9.1.7
+      prettier:
+        specifier: 3.6.2
+        version: 3.6.2
       pretty-quick:
         specifier: 5.0.0-next.2
         version: 5.0.0-next.2(prettier@3.6.2)

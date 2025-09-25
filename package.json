@@ -26,9 +26,9 @@
     "typecheck": "tsc --noEmit --watch",
     "test": "vitest",
     "test:ci": "vitest --coverage && tsc --noEmit",
-    "gen:all": "./bin/run --all",
-    "gen:example": "./bin/run --config example",
-    "gen:config": "./bin/run --config config",
+    "gen:all": "./bin/run --all && pretty-quick",
+    "gen:example": "./bin/run --config example && pretty-quick",
+    "gen:config": "./bin/run --config config && pretty-quick",
     "prepare": "husky"
   },
   "files": [
@@ -46,7 +46,6 @@
     "@typescript/vfs": "^1.5.0",
     "chokidar": "^4.0.3",
     "listr2": "^9.0.4",
-    "prettier": "3.6.2",
     "slash": "^5.1.0",
     "text-case": "^1.2.4",
     "tslib": "^2.3.1",
@@ -72,6 +71,7 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.4",
     "husky": "^9.1.7",
+    "prettier": "3.6.2",
     "pretty-quick": "5.0.0-next.2",
     "rimraf": "^5.0.5",
     "ts-node": "^10.9.1"

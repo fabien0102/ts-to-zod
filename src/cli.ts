@@ -6,7 +6,6 @@ import { writeFile, readFile, rename } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import * as prompt from "@clack/prompts";
 import { join, normalize, parse, relative } from "path";
-import prettier from "prettier";
 import slash from "slash";
 import ts from "typescript";
 import type { Config, TsToZodConfig, InputOutputMapping } from "./config.js";
@@ -443,8 +442,6 @@ See more help with --help`);
           getImportPath(outputPath, inputPath)
         );
 
-        const prettierConfig = await prettier.resolveConfig(process.cwd());
-
         if (inferredTypes) {
           subtasks.add({
             title: `Write ${relative(process.cwd(), inferredTypes)}`,
@@ -454,18 +451,16 @@ See more help with --help`);
               );
               await writeFile(
                 inferredTypes,
-                await prettier.format(
-                  hasExtensions(inferredTypes, javascriptExtensions)
-                    ? ts.transpileModule(zodInferredTypesFile, {
-                        compilerOptions: {
-                          target: ts.ScriptTarget.Latest,
-                          module: ts.ModuleKind.ESNext,
-                          newLine: ts.NewLineKind.LineFeed,
-                        },
-                      }).outputText
-                    : zodInferredTypesFile,
-                  { parser: "babel-ts", ...prettierConfig }
-                ),
+                hasExtensions(inferredTypes, javascriptExtensions)
+                  ? ts.transpileModule(zodInferredTypesFile, {
+                      compilerOptions: {
+                        target: ts.ScriptTarget.Latest,
+                        module: ts.ModuleKind.ESNext,
+                        newLine: ts.NewLineKind.LineFeed,
+                      },
+                    }).outputText
+                  : zodInferredTypesFile,
+
                 "utf-8"
               );
             },
@@ -478,27 +473,17 @@ See more help with --help`);
             if (output && hasExtensions(output, javascriptExtensions)) {
               await writeFile(
                 outputPath,
-                await prettier.format(
-                  ts.transpileModule(zodSchemasFile, {
-                    compilerOptions: {
-                      target: ts.ScriptTarget.Latest,
-                      module: ts.ModuleKind.ESNext,
-                      newLine: ts.NewLineKind.LineFeed,
-                    },
-                  }).outputText,
-                  { parser: "babel-ts", ...prettierConfig }
-                ),
+                ts.transpileModule(zodSchemasFile, {
+                  compilerOptions: {
+                    target: ts.ScriptTarget.Latest,
+                    module: ts.ModuleKind.ESNext,
+                    newLine: ts.NewLineKind.LineFeed,
+                  },
+                }).outputText,
                 "utf-8"
               );
             } else {
-              await writeFile(
-                outputPath,
-                await prettier.format(zodSchemasFile, {
-                  parser: "babel-ts",
-                  ...prettierConfig,
-                }),
-                "utf-8"
-              );
+              await writeFile(outputPath, zodSchemasFile, "utf-8");
             }
           },
         });

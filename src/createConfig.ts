@@ -3,7 +3,6 @@ import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import * as prompt from "@clack/prompts";
-import prettier from "prettier";
 
 /**
  * Create `ts-to-zod.config.js` file.
@@ -58,16 +57,9 @@ export async function createConfig(
 export default `;
 
   if (configs.length > 0) {
-    const prettierConfig = await prettier.resolveConfig(process.cwd());
     await writeFile(
       configPath,
-      await prettier.format(
-        header + JSON.stringify(configs.length === 1 ? configs[0] : configs),
-        {
-          parser: "babel",
-          ...prettierConfig,
-        }
-      ),
+      header + JSON.stringify(configs.length === 1 ? configs[0] : configs),
       "utf-8"
     );
     return true;
