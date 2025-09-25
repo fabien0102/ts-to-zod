@@ -433,7 +433,11 @@ See more help with --help`);
         const { inferredTypes } = ctx.generateOptions;
         const { getZodSchemasFile, getInferredTypes } = ctx.generatedOutput;
 
-        const subtasks = task.newListr([]);
+        const subtasks = task.newListr([], {
+          rendererOptions: {
+            collapseSubtasks: false,
+          },
+        });
 
         const zodSchemasFile = getZodSchemasFile(
           getImportPath(outputPath, inputPath)
@@ -443,7 +447,7 @@ See more help with --help`);
 
         if (inferredTypes) {
           subtasks.add({
-            title: `Write ${inferredTypes}`,
+            title: `Write ${relative(process.cwd(), inferredTypes)}`,
             task: async () => {
               const zodInferredTypesFile = getInferredTypes(
                 getImportPath(inferredTypes, outputPath)
@@ -469,7 +473,7 @@ See more help with --help`);
         }
 
         subtasks.add({
-          title: `Write ${outputPath}`,
+          title: `Write ${relative(process.cwd(), outputPath)}`,
           task: async () => {
             if (output && hasExtensions(output, javascriptExtensions)) {
               await writeFile(
@@ -498,6 +502,8 @@ See more help with --help`);
             }
           },
         });
+
+        return subtasks;
       },
     };
 
