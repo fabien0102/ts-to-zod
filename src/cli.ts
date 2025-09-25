@@ -21,6 +21,7 @@ import {
   getImportPath,
 } from "./utils/getImportPath.js";
 import * as worker from "./worker/index.js";
+import z from "zod";
 
 let config: TsToZodConfig | undefined;
 let haveMultiConfig = false;
@@ -169,6 +170,24 @@ class TsToZod extends Command {
 
     const fileConfig = await this.loadFileConfig(config, flags);
 
+    // Read `tsconfig.json` to find `moduleResolution` value
+    let explicitFileExtImports = false;
+    try {
+      const rawTsConfig = await readFile(
+        join(process.cwd(), "tsconfig.json"),
+        "utf-8"
+      );
+      const tsConfigSchema = z.object({
+        compilerOptions: z.object({
+          moduleResolution: z.string(),
+        }),
+      });
+      const tsConfig = z.parse(tsConfigSchema, JSON.parse(rawTsConfig));
+      explicitFileExtImports = ["node16", "nodenext"].includes(
+        tsConfig.compilerOptions.moduleResolution
+      );
+    } catch {}
+
     const ioMappings = getInputOutputMappings(config);
     const tasks = new Listr<void>([]);
 
@@ -180,15 +199,32 @@ class TsToZod extends Command {
         fileConfig.map((config) => ({
           title: `Generate "${config.name}"`,
           task: async (_, task) =>
-            task.newListr(this.generate(args, config, flags, ioMappings), {
-              rendererOptions: {
-                collapseSubtasks: false,
-              },
-            }),
+            task.newListr(
+              this.generate({
+                args,
+                fileConfig: config,
+                flags,
+                ioMappings,
+                explicitFileExtImports,
+              }),
+              {
+                rendererOptions: {
+                  collapseSubtasks: false,
+                },
+              }
+            ),
         }))
       );
     } else {
-      tasks.add(this.generate(args, fileConfig, flags, ioMappings));
+      tasks.add(
+        this.generate({
+          args,
+          fileConfig,
+          flags,
+          ioMappings,
+          explicitFileExtImports,
+        })
+      );
     }
     try {
       await tasks.run();
@@ -212,7 +248,15 @@ class TsToZod extends Command {
           ? fileConfig.find((i) => i.input === slash(path))
           : fileConfig;
 
-        const tasks = new Listr(this.generate(args, config, flags, ioMappings));
+        const tasks = new Listr(
+          this.generate({
+            args,
+            fileConfig: config,
+            flags,
+            ioMappings,
+            explicitFileExtImports,
+          })
+        );
         try {
           await tasks.run();
           this.log("🎉 Zod schemas generated!");
@@ -228,18 +272,21 @@ class TsToZod extends Command {
   }
 
   /**
-   * Generate a list of tasks.
-   * @param args
-   * @param fileConfig
-   * @param Flags
-   * @param inputOutputMappings
+   * Generate a list of tasks (generating schemas, validation, writing files).
    */
-  generate(
-    args: { input?: string; output?: string },
-    fileConfig: Config | undefined,
-    Flags: Interfaces.InferredFlags<typeof TsToZod.flags>,
-    inputOutputMappings: InputOutputMapping[]
-  ): ListrTask[] {
+  generate({
+    args,
+    fileConfig,
+    flags,
+    ioMappings,
+    explicitFileExtImports,
+  }: {
+    args: { input?: string; output?: string };
+    fileConfig: Config | undefined;
+    flags: Interfaces.InferredFlags<typeof TsToZod.flags>;
+    ioMappings: InputOutputMapping[];
+    explicitFileExtImports: boolean;
+  }): ListrTask[] {
     type ListrContext = {
       generateOptions?: GenerateProps;
       generatedOutput?: ReturnType<typeof generate>;
@@ -247,6 +294,7 @@ class TsToZod extends Command {
 
     const input = args.input || fileConfig?.input;
     const output = args.output || fileConfig?.output;
+    const importPathExt = explicitFileExtImports ? ".js" : "";
 
     if (!input) {
       throw new Error(`Missing 1 required arg:
@@ -299,9 +347,11 @@ See more help with --help`);
 
         const sourceText = await readFile(inputPath, "utf-8");
 
-        const relativeIOMappings = inputOutputMappings.map((io) => {
-          const relativeInput = getImportPath(inputPath, io.input);
-          const relativeOutput = getImportPath(outputPath, io.output);
+        const relativeIOMappings = ioMappings.map((io) => {
+          const relativeInput =
+            getImportPath(inputPath, io.input) + importPathExt;
+          const relativeOutput =
+            getImportPath(outputPath, io.output) + importPathExt;
 
           return {
             input: relativeInput,
@@ -315,14 +365,14 @@ See more help with --help`);
           inputOutputMappings: relativeIOMappings,
           ...fileConfig,
         };
-        if (typeof Flags.keepComments === "boolean") {
-          generateOptions.keepComments = Flags.keepComments;
+        if (typeof flags.keepComments === "boolean") {
+          generateOptions.keepComments = flags.keepComments;
         }
-        if (typeof Flags.skipParseJSDoc === "boolean") {
-          generateOptions.skipParseJSDoc = Flags.skipParseJSDoc;
+        if (typeof flags.skipParseJSDoc === "boolean") {
+          generateOptions.skipParseJSDoc = flags.skipParseJSDoc;
         }
-        if (typeof Flags.inferredTypes === "string") {
-          generateOptions.inferredTypes = Flags.inferredTypes;
+        if (typeof flags.inferredTypes === "string") {
+          generateOptions.inferredTypes = flags.inferredTypes;
         }
 
         ctx.generateOptions = generateOptions;
@@ -353,7 +403,7 @@ See more help with --help`);
         } = ctx.generatedOutput;
 
         const extraFiles = [];
-        for (const io of inputOutputMappings) {
+        for (const io of ioMappings) {
           if (getImportPath(inputPath, io.input) !== "/") {
             try {
               const fileInputPath = join(process.cwd(), io.input);
@@ -398,14 +448,15 @@ See more help with --help`);
           },
           integrationTests: {
             sourceText: getIntegrationTestFile(
-              getImportPath("./source.integration.ts", input),
-              getImportPath("./source.integration.ts", outputForValidation)
+              getImportPath("./source.integration.ts", input) + importPathExt,
+              getImportPath("./source.integration.ts", outputForValidation) +
+                importPathExt
             ),
             relativePath: "./source.integration.ts",
           },
           zodSchemas: {
             sourceText: getZodSchemasFile(
-              getImportPath(outputForValidation, input)
+              getImportPath(outputForValidation, input) + importPathExt
             ),
             relativePath: outputForValidation,
           },
@@ -417,7 +468,7 @@ See more help with --help`);
           throw new Error(generationErrors.join("\n"));
         }
       },
-      enabled: !Flags.skipValidation,
+      enabled: !flags.skipValidation,
     };
 
     const writingFilesTask: ListrTask<ListrContext> = {
@@ -439,7 +490,7 @@ See more help with --help`);
         });
 
         const zodSchemasFile = getZodSchemasFile(
-          getImportPath(outputPath, inputPath)
+          getImportPath(outputPath, inputPath) + importPathExt
         );
 
         if (inferredTypes) {
@@ -447,7 +498,7 @@ See more help with --help`);
             title: `Write ${relative(process.cwd(), inferredTypes)}`,
             task: async () => {
               const zodInferredTypesFile = getInferredTypes(
-                getImportPath(inferredTypes, outputPath)
+                getImportPath(inferredTypes, outputPath) + importPathExt
               );
               await writeFile(
                 inferredTypes,
