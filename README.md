@@ -44,6 +44,21 @@ The tool automatically generates code compatible with Zod v4, including updated 
 
 That's it, go to `src/nowIcanValidateEverything.ts` file, you should have all the exported `interface` and `type` as Zod schemas with the following name pattern: `${originalType}Schema`.
 
+## Prettifying the generated files
+
+Prior to v5, prettier was embedded in the generation process. To make the package leaner and more flexible (maybe you prefer biomejs!), this was removed.
+
+To have the same behavior as before, we can suggest to add `pretty-quick` after generation process.
+
+```diff
+--- a/package.json
++++ b/package.json
+-    "gen:all": "ts-to-zod --all",
++    "gen:all": "ts-to-zod --all && pretty-quick",
+```
+
+This will only format the staged files so it’s very fast. Enjoy!
+
 ## Embedded validation
 
 To make sure the generated zod schemas are 100% compatible with your original types, this tool is internally comparing `z.infer<generatedSchema>` and your original type. If you are running on those validation, please open an issue 😀
@@ -481,11 +496,11 @@ export const heroSchema = z.object({
 
 ### Zod Imports
 
-If an imported type is referenced in the `ts-to-zod.config.js` config (as input), this utility will automatically replace the import with the given output from the file, resolving the relative paths between both.
+If an imported type is referenced in the `ts-to-zod.config.mjs` config (as input), this utility will automatically replace the import with the given output from the file, resolving the relative paths between both.
 
 ```ts
 
-//ts-to-zod.config.js
+//ts-to-zod.config.mjs
 /**
  * ts-to-zod configuration.
  *
@@ -550,8 +565,8 @@ To learn more about those functions or their usages, `src/core/generate.ts` is a
 ```sh
 $ git clone
 $ cd ts-to-zod
-$ yarn
-$ yarn build
+$ pnpm install
+$ pnpm build
 $ ./bin/run
 USAGE
   $ ts-to-zod [input] [output]
@@ -561,15 +576,15 @@ USAGE
 You also have plenty of unit tests to play safely:
 
 ```sh
-$ yarn test --watch
+$ pnpm test
 ```
 
 And a playground inside `example`, buildable with the following command:
 
 ```sh
-$ yarn gen:example
+$ pnpm gen:example
 ```
 
-Last note, if you are updating `src/config.ts`, you need to run `yarn gen:config` to have generate the schemas of the config (`src/config.zod.ts`) (Yes, we are using the tool to build itself #inception)
+Last note, if you are updating `src/config.ts`, you need to run `pnpm gen:config` to have generate the schemas of the config (`src/config.zod.ts`) (Yes, we are using the tool to build itself #inception)
 
 Have fun!
