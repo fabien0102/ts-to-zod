@@ -20,13 +20,13 @@ ts-to-zod now supports **Zod v4** with improved performance and enhanced functio
 Install ts-to-zod:
 
 ```sh
-$ yarn add --dev ts-to-zod
+$ pnpm add --dev ts-to-zod
 ```
 
 Generate Zod schemas from a TypeScript file:
 
 ```sh
-$ yarn ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
+$ pnpm ts-to-zod src/iDontTrustThisApi.ts src/nowIcanValidateEverything.ts
 ```
 
 ### Migration from Zod v3
@@ -279,7 +279,7 @@ export const enemyContactSchema = z.object({
 
 If you want to customize the schema name or restrict the exported schemas, you can do this by adding a `ts-to-zod.config.js` at the root of your project.
 
-Just run `yarn ts-to-zod --init` and you will have a ready to use configuration file (with a bit of type safety).
+Just run `pnpm ts-to-zod --init` and you will have a ready to use configuration file (with a bit of type safety).
 
 You have two ways to restrict the scope of ts-to-zod:
 
@@ -418,12 +418,11 @@ const infoSchema = z.object({
 Since we are generating Zod schemas, we are limited by what Zod actually supports:
 
 - No type generics
-- No `Record<number, …>`
 - …
 
 To resume, you can use all the primitive types and some the following typescript helpers:
 
-- `Record<string, …>`
+- `Record<>`
 - `Pick<>`
 - `Omit<>`
 - `Partial<>`

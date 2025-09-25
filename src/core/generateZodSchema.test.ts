@@ -275,6 +275,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a record schema (number)", () => {
+    const source = `export type EnemiesPowers = Record<number, Power>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const enemiesPowersSchema = z.record(z.number(), powerSchema);"`
+    );
+  });
+
   it("should generate a set schema", () => {
     const source = `export type EnemiesPowers = Set<string>;`;
     expect(generate(source)).toMatchInlineSnapshot(
