@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { SimplifiedJSDocTag } from "../config";
+import { SimplifiedJSDocTag } from "../config.js";
 
 /**
  * Get a simplified version of a node JSDocTags.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
-import { resolveModules } from "./resolveModules";
+import { resolveModules } from "./resolveModules.js";
 
 describe("resolveModules", () => {
   it("should prefix interface", () => {

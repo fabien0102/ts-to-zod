@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateGeneratedTypes } from "./validateGeneratedTypes";
+import { validateGeneratedTypes } from "./validateGeneratedTypes.js";
 
 describe("validateGeneratedTypes", () => {
   it("should return no error if the types match", () => {

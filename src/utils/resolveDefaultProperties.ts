@@ -1,5 +1,5 @@
 import ts from "typescript";
-import { getJSDocTags } from "../core/jsDocTags";
+import { getJSDocTags } from "../core/jsDocTags.js";
 
 /**
  * Remove optional properties when `@default` jsdoc tag is defined.

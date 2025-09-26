@@ -1,17 +1,17 @@
-import { camel, lower } from "case";
-import uniq from "lodash/uniq";
 import ts, { factory as f } from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { isNotNull } from "../utils/isNotNull";
-import { generateCombinations } from "../utils/generateCombinations";
-import { extractLiteralValue } from "../utils/extractLiteralValue";
+import type { CustomJSDocFormatTypes } from "../config.js";
+import { findNode } from "../utils/findNode.js";
+import { isNotNull } from "../utils/isNotNull.js";
+import { generateCombinations } from "../utils/generateCombinations.js";
+import { extractLiteralValue } from "../utils/extractLiteralValue.js";
 import {
   type JSDocTags,
   type ZodProperty,
   getJSDocTags,
   jsDocTagToZodProperties,
-} from "./jsDocTags";
+} from "./jsDocTags.js";
+import { uniq } from "../utils/uniq.js";
+import { camelCase, lowerCase } from "text-case";
 
 export interface GenerateZodSchemaProps {
   /**
@@ -89,7 +89,7 @@ export function generateZodSchemaVariableStatement({
   sourceFile,
   varName,
   zodImportValue = "z",
-  getDependencyName = (identifierName) => camel(`${identifierName}Schema`),
+  getDependencyName = (identifierName) => camelCase(`${identifierName}Schema`),
   skipParseJSDoc = false,
   customJSDocFormatTypes,
 }: GenerateZodSchemaProps) {
@@ -1588,8 +1588,8 @@ function buildSchemaReference(
         ts.isTypeLiteralNode(declaration.type)
           ? declaration.type.members
           : ts.isInterfaceDeclaration(declaration)
-          ? declaration.members
-          : [];
+            ? declaration.members
+            : [];
 
       const member = members.find((m) => m.name?.getText(sourceFile) === key);
 
@@ -1727,7 +1727,7 @@ function buildOmitPickObject(
   return f.createCallExpression(
     f.createPropertyAccessExpression(
       zodCall,
-      f.createIdentifier(lower(omitOrPickIdentifierName))
+      f.createIdentifier(lowerCase(omitOrPickIdentifierName))
     ),
     undefined,
     [parameters]

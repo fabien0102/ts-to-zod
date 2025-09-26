@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
-import { findNode } from "../utils/findNode";
-import { transformRecursiveSchema } from "./transformRecursiveSchema";
+import { findNode } from "../utils/findNode.js";
+import { transformRecursiveSchema } from "./transformRecursiveSchema.js";
 
 describe("transformRecursiveSchema", () => {
   it("should wrap the variable declaration with the appropriate syntax", () => {
@@ -16,7 +16,7 @@ describe("transformRecursiveSchema", () => {
 
     const declaration = findNode(sourceFile, ts.isVariableStatement);
     if (!declaration) {
-      fail("should have a variable declaration");
+      throw new Error("should have a variable declaration");
     }
 
     const output = transformRecursiveSchema("z", declaration, "Category");
@@ -42,7 +42,7 @@ describe("transformRecursiveSchema", () => {
 
     const declaration = findNode(sourceFile, ts.isVariableStatement);
     if (!declaration) {
-      fail("should have a variable declaration");
+      throw new Error("should have a variable declaration");
     }
 
     expect(() =>

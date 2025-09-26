@@ -5,9 +5,9 @@ import {
   type EvilPlan,
   type EvilPlanDetails,
   EnemyPower,
-} from "./heros";
+} from "./heros.js";
 
-import { personSchema } from "./person.zod";
+import { personSchema } from "./person.zod.js";
 
 export const enemyPowerSchema = z.enum(EnemyPower);
 

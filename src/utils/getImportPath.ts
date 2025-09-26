@@ -22,7 +22,7 @@ export function areImportPathsEqualIgnoringExtension(
   return relative(normalizePath(path1), normalizePath(path2)) === "";
 }
 
-const normalizePath = (path: string) => {
+function normalizePath(path: string) {
   const { dir, name } = parse(normalize(path));
   return join(dir, name);
-};
+}

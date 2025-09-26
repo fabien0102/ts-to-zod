@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   areImportPathsEqualIgnoringExtension,
   getImportPath,
-} from "./getImportPath";
+} from "./getImportPath.js";
 
 describe("getImportPath", () => {
   it("should return a simple slash when both path are the same", () => {

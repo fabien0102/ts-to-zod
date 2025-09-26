@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
-import { analyzeTypeMetadata } from "./isFunctionType";
+import { analyzeTypeMetadata } from "./isFunctionType.js";
 
 describe("analyzeTypeMetadata", () => {
   it("should identify Promise types", () => {

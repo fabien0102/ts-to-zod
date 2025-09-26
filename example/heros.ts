@@ -1,4 +1,4 @@
-import type { Person } from "./person";
+import type { Person } from "./person.js";
 
 export enum EnemyPower {
   Flight = "flight",

@@ -3,7 +3,7 @@
  *
  * @type {import("./src/config").TsToZodConfig}
  */
-module.exports = [
+export default [
   {
     name: "example",
     input: "example/heros.ts",

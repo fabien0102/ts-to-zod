@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
-import { getReferencedTypeNames } from "./traverseTypes";
-import { findNode } from "./findNode";
+import { getReferencedTypeNames } from "./traverseTypes.js";
+import { findNode } from "./findNode.js";
 
 describe("traverseTypes", () => {
   describe("getExtractedTypeNames", () => {
