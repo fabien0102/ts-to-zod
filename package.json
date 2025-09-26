@@ -26,9 +26,9 @@
     "typecheck": "tsc --noEmit --watch",
     "test": "vitest",
     "test:ci": "vitest --coverage && tsc --noEmit",
-    "gen:all": "./bin/run --all && pretty-quick",
-    "gen:example": "./bin/run --config example && pretty-quick",
-    "gen:config": "./bin/run --config config && pretty-quick",
+    "gen:all": "node ./bin/run --all && pretty-quick",
+    "gen:example": "node ./bin/run --config example && pretty-quick",
+    "gen:config": "node ./bin/run --config config && pretty-quick",
     "prepare": "husky"
   },
   "files": [
