@@ -44,15 +44,6 @@ export const configSchema = z.object({
   skipParseJSDoc: z.boolean().optional().default(false),
   inferredTypes: z.string().optional(),
   customJSDocFormatTypes: customJsDocFormatTypesSchema.optional(),
-  moduleResolution: z
-    .union([
-      z.literal("node10"),
-      z.literal("node16"),
-      z.literal("nodenext"),
-      z.literal("bundler"),
-      z.literal("classic"),
-    ])
-    .optional(),
 });
 
 export const configsSchema = z.array(
