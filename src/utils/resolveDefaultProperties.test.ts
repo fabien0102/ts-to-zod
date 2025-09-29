@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveDefaultProperties } from "./resolveDefaultProperties";
+import { resolveDefaultProperties } from "./resolveDefaultProperties.js";
 
 describe("resolveDefaultProperties", () => {
   it("should remove the question mark if @default is defined (interface)", () => {

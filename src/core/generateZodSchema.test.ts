@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { camel } from "case";
 import ts from "typescript";
-import type { CustomJSDocFormatTypes } from "../config";
-import { findNode } from "../utils/findNode";
-import { generateZodSchemaVariableStatement } from "./generateZodSchema";
+import type { CustomJSDocFormatTypes } from "../config.js";
+import { findNode } from "../utils/findNode.js";
+import { generateZodSchemaVariableStatement } from "./generateZodSchema.js";
+import { camelCase } from "text-case";
 
 describe("generateZodSchema", () => {
   it("should generate a string schema", () => {
@@ -272,6 +272,13 @@ describe("generateZodSchema", () => {
     const source = `export type EnemiesPowers = Record<string, Power>;`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const enemiesPowersSchema = z.record(z.string(), powerSchema);"`
+    );
+  });
+
+  it("should generate a record schema (number)", () => {
+    const source = `export type EnemiesPowers = Record<number, Power>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const enemiesPowersSchema = z.record(z.number(), powerSchema);"`
     );
   });
 
@@ -1941,7 +1948,7 @@ function generate(
     throw new Error("No `type` or `interface` found!");
   }
   const interfaceName = declaration.name.text;
-  const zodConstName = `${camel(interfaceName)}Schema`;
+  const zodConstName = `${camelCase(interfaceName)}Schema`;
 
   const zodSchema = generateZodSchemaVariableStatement({
     zodImportValue: z,

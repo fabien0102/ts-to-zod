@@ -1,4 +1,3 @@
-import { camel } from "case";
 import { getJsDoc } from "tsutils";
 import ts from "typescript";
 import type {
@@ -6,34 +5,35 @@ import type {
   JSDocTagFilter,
   NameFilter,
   CustomJSDocFormatTypes,
-} from "../config";
-import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags";
-import { resolveModules } from "../utils/resolveModules";
+} from "../config.js";
+import { getSimplifiedJsDocTags } from "../utils/getSimplifiedJsDocTags.js";
+import { resolveModules } from "../utils/resolveModules.js";
 import {
   getReferencedTypeNames,
   isTypeNode,
   type TypeNameReference,
   type TypeNode,
-} from "../utils/traverseTypes";
+} from "../utils/traverseTypes.js";
 
 import {
   getImportIdentifiers,
   createImportNode,
   type ImportIdentifier,
   getSingleImportIdentifierForNode,
-} from "../utils/importHandling";
+} from "../utils/importHandling.js";
 
-import { generateIntegrationTests } from "./generateIntegrationTests";
-import { generateZodInferredType } from "./generateZodInferredType";
-import { analyzeTypeMetadata } from "../utils/isFunctionType";
+import { generateIntegrationTests } from "./generateIntegrationTests.js";
+import { generateZodInferredType } from "./generateZodInferredType.js";
+import { analyzeTypeMetadata } from "../utils/isFunctionType.js";
 import {
   generateZodSchemaVariableStatement,
   generateZodSchemaVariableStatementForImport,
-} from "./generateZodSchema";
-import { transformRecursiveSchema } from "./transformRecursiveSchema";
-import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath";
+} from "./generateZodSchema.js";
+import { transformRecursiveSchema } from "./transformRecursiveSchema.js";
+import { areImportPathsEqualIgnoringExtension } from "../utils/getImportPath.js";
+import { camelCase } from "text-case";
 
-const DEFAULT_GET_SCHEMA = (id: string) => camel(id) + "Schema";
+const DEFAULT_GET_SCHEMA = (id: string) => camelCase(id) + "Schema";
 
 export interface GenerateProps {
   /**

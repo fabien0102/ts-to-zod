@@ -1,8 +1,9 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "outDir": "lib",
-    "target": "es2017",
+    "target": "esnext",
     "allowSyntheticDefaultImports": true,
     "importHelpers": true,
     "strict": true,

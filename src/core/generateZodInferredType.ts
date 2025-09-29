@@ -1,5 +1,5 @@
 import ts, { factory as f } from "typescript";
-import { TypeMetadata } from "../utils/isFunctionType";
+import { TypeMetadata } from "../utils/isFunctionType.js";
 
 export interface GenerateZodInferredTypeProps {
   aliasName: string;

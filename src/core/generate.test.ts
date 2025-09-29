@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { InputOutputMapping } from "../config";
-import { generate } from "./generate";
+import { InputOutputMapping } from "../config.js";
+import { generate } from "./generate.js";
 
 describe("generate", () => {
   describe("simple case", () => {

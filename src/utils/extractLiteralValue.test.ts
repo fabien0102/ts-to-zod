@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ts, { factory } from "typescript";
-import { extractLiteralValue } from "./extractLiteralValue";
+import { extractLiteralValue } from "./extractLiteralValue.js";
 
 describe("extractLiteralValue", () => {
   it("should extract string literal value", () => {

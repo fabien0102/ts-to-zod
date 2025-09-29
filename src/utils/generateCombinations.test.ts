@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateCombinations } from "./generateCombinations";
+import { generateCombinations } from "./generateCombinations.js";
 
 describe("generateCombinations", () => {
   it("should generate all combinations of 1 empty array", () => {

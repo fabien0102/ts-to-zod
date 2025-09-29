@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import ts from "typescript";
-import { generateZodInferredType } from "./generateZodInferredType";
+import { generateZodInferredType } from "./generateZodInferredType.js";
 
 describe("generateZodInferredType", () => {
   it("should generate inferred type zod schema", () => {
