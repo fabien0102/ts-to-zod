@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v4.0.1...v5.0.0) (2025-09-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* Support ESM & refresh dependencies (#337)
+
+### Features
+
+* Support ESM & refresh dependencies ([#337](https://www.github.com/fabien0102/ts-to-zod/issues/337)) ([7335e82](https://www.github.com/fabien0102/ts-to-zod/commit/7335e8268e68208d73bf2cffa89fba5a5d42419e))
+
 ### [4.0.1](https://www.github.com/fabien0102/ts-to-zod/compare/v4.0.0...v4.0.1) (2025-09-21)
 
 
