@@ -2,36 +2,44 @@ on:
   push:
     branches:
       - main
-name: release-please
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+name: Run Release Please
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
-      - uses: GoogleCloudPlatform/release-please-action@v2
+      - uses: googleapis/release-please-action@v4
         id: release
         with:
+          token: ${{secrets.GITHUB_TOKEN}}
           release-type: node
           package-name: ts-to-zod
       # The logic below handles the npm publication:
-      - uses: actions/checkout@v2
-        # these if statements ensure that a publication only occurs when
-        # a new release is created:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
         if: ${{ steps.release.outputs.release_created }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.release_created }}
       - name: Setup Node
         uses: actions/setup-node@v4
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.release_created }}
         with:
           node-version: 20
           registry-url: "https://registry.npmjs.org"
       - name: Build Packages
-        if: ${{ steps.release.outputs.releases_created }}
+        if: ${{ steps.release.outputs.release_created }}
         run: |
           pnpm install
           pnpm build
-      - run: npm publish
+
+      - name: Publish to NPM
+        if: ${{ steps.release.outputs.release_created }}
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
-        if: ${{ steps.release.outputs.release_created }}
+        run: npm publish
