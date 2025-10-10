@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/fabien0102/ts-to-zod/compare/v5.0.0...v5.0.1) (2025-10-10)
+
+
+### Bug Fixes
+
+* Update release-please ([#341](https://github.com/fabien0102/ts-to-zod/issues/341)) ([3b68233](https://github.com/fabien0102/ts-to-zod/commit/3b68233f2ba6ce65cca412b58b7719acde26e7aa))
+
 ## [5.0.0](https://www.github.com/fabien0102/ts-to-zod/compare/v4.0.1...v5.0.0) (2025-09-29)
 
 
