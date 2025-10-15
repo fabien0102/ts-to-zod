@@ -51,7 +51,6 @@
     "tslib": "^2.3.1",
     "tsutils": "^3.21.0",
     "typescript": "^5.2.2",
-    "vitest": "^3.2.4",
     "zod": "^4.1.5"
   },
   "devDependencies": {
@@ -74,7 +73,8 @@
     "prettier": "3.6.2",
     "pretty-quick": "5.0.0-next.2",
     "rimraf": "^5.0.5",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "vitest": "^3.2.4"
   },
   "prettier": {
     "printWidth": 80,
