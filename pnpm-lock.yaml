@@ -37,9 +37,6 @@ importers:
       typescript:
         specifier: ^5.2.2
         version: 5.9.2
-      vitest:
-        specifier: ^3.2.4
-        version: 3.2.4(@types/node@24.5.2)
       zod:
         specifier: ^4.1.5
         version: 4.1.11
@@ -104,6 +101,9 @@ importers:
       ts-node:
         specifier: ^10.9.1
         version: 10.9.2(@types/node@24.5.2)(typescript@5.9.2)
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.5.2)
 
 packages:
   "@ampproject/remapping@2.3.0":
