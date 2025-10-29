@@ -299,24 +299,8 @@ export function jsDocTagToZodProperties(
       ),
     });
   }
-  if (jsDocTags.minLength !== undefined) {
-    zodProperties.push({
-      identifier: "min",
-      expressions: withErrorMessage(
-        f.createNumericLiteral(jsDocTags.minLength.value),
-        jsDocTags.minLength.errorMessage
-      ),
-    });
-  }
-  if (jsDocTags.maxLength !== undefined) {
-    zodProperties.push({
-      identifier: "max",
-      expressions: withErrorMessage(
-        f.createNumericLiteral(jsDocTags.maxLength.value),
-        jsDocTags.maxLength.errorMessage
-      ),
-    });
-  }
+
+  let hasFormat = false;
   if (
     jsDocTags.format &&
     (isBuiltInFormatType(jsDocTags.format.value) ||
@@ -328,7 +312,31 @@ export function jsDocTagToZodProperties(
     zodProperties.push(
       formatToZodProperty(jsDocTags.format, customJSDocFormats)
     );
+    hasFormat = true;
   }
+
+  // If format is specified, minLength and maxLength are ignored
+  if (!hasFormat) {
+    if (jsDocTags.minLength !== undefined) {
+      zodProperties.push({
+        identifier: "min",
+        expressions: withErrorMessage(
+          f.createNumericLiteral(jsDocTags.minLength.value),
+          jsDocTags.minLength.errorMessage
+        ),
+      });
+    }
+    if (jsDocTags.maxLength !== undefined) {
+      zodProperties.push({
+        identifier: "max",
+        expressions: withErrorMessage(
+          f.createNumericLiteral(jsDocTags.maxLength.value),
+          jsDocTags.maxLength.errorMessage
+        ),
+      });
+    }
+  }
+
   if (jsDocTags.pattern) {
     zodProperties.push(createZodRegexProperty(jsDocTags.pattern));
   }
