@@ -633,6 +633,7 @@ describe("generateZodSchema", () => {
         node: middleDeclaration,
         sourceFile,
         varName: "middleSchema",
+        customJSDocFormatTypes: {},
       });
 
       const output = ts
