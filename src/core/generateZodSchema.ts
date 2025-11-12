@@ -60,6 +60,7 @@ type SchemaExtensionClause = {
   extendedSchemaName: string;
   omitOrPickType?: "Omit" | "Pick";
   omitOrPickKeys?: ts.TypeNode;
+  hasIndexSignature?: boolean;
 };
 
 interface BuildZodPrimitiveParams {
@@ -75,6 +76,89 @@ interface BuildZodPrimitiveParams {
   dependencies: string[];
   getDependencyName: (identifierName: string) => string;
   skipParseJSDoc: boolean;
+}
+
+/**
+ * Check if a type node has an index signature (directly or through inheritance).
+ * This is used to determine if we should use .and() instead of .extend() for interface extensions.
+ */
+function hasIndexSignature(
+  node:
+    | ts.InterfaceDeclaration
+    | ts.TypeLiteralNode
+    | ts.TypeAliasDeclaration
+    | undefined,
+  sourceFile: ts.SourceFile
+): boolean {
+  if (!node) {
+    return false;
+  }
+
+  // For type aliases, check if the type is a type literal with index signature
+  if (ts.isTypeAliasDeclaration(node)) {
+    if (ts.isTypeLiteralNode(node.type)) {
+      return node.type.members.some((member) =>
+        ts.isIndexSignatureDeclaration(member)
+      );
+    }
+    // Type aliases with other types (unions, intersections, etc.) don't have index signatures
+    return false;
+  }
+
+  // For interfaces and type literals, check members directly
+  if (ts.isInterfaceDeclaration(node) || ts.isTypeLiteralNode(node)) {
+    // Check if this node directly has an index signature
+    const hasDirectIndexSignature = node.members.some((member) =>
+      ts.isIndexSignatureDeclaration(member)
+    );
+
+    if (hasDirectIndexSignature) {
+      return true;
+    }
+
+    // For interfaces, also check if any extended interface has an index signature
+    if (ts.isInterfaceDeclaration(node) && node.heritageClauses) {
+      for (const clause of node.heritageClauses) {
+        if (clause.token === ts.SyntaxKind.ExtendsKeyword && clause.types) {
+          for (const type of clause.types) {
+            const baseInterfaceName = type.expression.getText(sourceFile);
+            // Skip Omit and Pick - they return regular objects, not intersections
+            if (["Omit", "Pick"].includes(baseInterfaceName)) {
+              continue;
+            }
+            const baseDeclaration = resolveTypeDeclaration(
+              baseInterfaceName,
+              sourceFile
+            );
+            if (hasIndexSignature(baseDeclaration, sourceFile)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Resolve a type reference to its declaration in the source file.
+ * Returns undefined if the declaration cannot be found.
+ */
+function resolveTypeDeclaration(
+  identifierName: string,
+  sourceFile: ts.SourceFile
+): ts.InterfaceDeclaration | ts.TypeAliasDeclaration | undefined {
+  return findNode(
+    sourceFile,
+    (n): n is ts.InterfaceDeclaration | ts.TypeAliasDeclaration => {
+      return (
+        (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) &&
+        n.name.text === identifierName
+      );
+    }
+  );
 }
 
 /**
@@ -123,16 +207,31 @@ export function generateZodSchemaVariableStatement({
               expression.typeArguments
             ) {
               const [originalType, keys] = expression.typeArguments;
+              const originalTypeName = originalType.getText(sourceFile);
+              const baseDeclaration = resolveTypeDeclaration(
+                originalTypeName,
+                sourceFile
+              );
               return {
-                extendedSchemaName: getDependencyName(
-                  originalType.getText(sourceFile)
-                ),
+                extendedSchemaName: getDependencyName(originalTypeName),
                 omitOrPickType: identifierName as "Omit" | "Pick",
                 omitOrPickKeys: keys,
+                hasIndexSignature: hasIndexSignature(
+                  baseDeclaration,
+                  sourceFile
+                ),
               };
             }
 
-            return { extendedSchemaName: getDependencyName(identifierName) };
+            // Check if the extended interface has an index signature
+            const baseDeclaration = resolveTypeDeclaration(
+              identifierName,
+              sourceFile
+            );
+            return {
+              extendedSchemaName: getDependencyName(identifierName),
+              hasIndexSignature: hasIndexSignature(baseDeclaration, sourceFile),
+            };
           });
 
           return deps.concat(heritages);
@@ -1323,6 +1422,9 @@ function buildZodExtendedSchema(
     schemaList[0].extendedSchemaName
   ) as ts.Expression;
 
+  // Track if the current schema has an index signature (uses .and() instead of .extend())
+  let hasIndexSig = schemaList[0].hasIndexSignature || false;
+
   if (schemaList[0].omitOrPickType && schemaList[0].omitOrPickKeys) {
     const keys = schemaList[0].omitOrPickKeys;
     const omitOrPickIdentifierName = schemaList[0].omitOrPickType;
@@ -1337,43 +1439,93 @@ function buildZodExtendedSchema(
   for (let i = 1; i < schemaList.length; i++) {
     const omitOrPickIdentifierName = schemaList[i].omitOrPickType;
     const keys = schemaList[i].omitOrPickKeys;
+    const currentSchemaHasIndexSig = schemaList[i].hasIndexSignature || false;
 
     if (omitOrPickIdentifierName && keys) {
-      zodCall = f.createCallExpression(
-        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-        undefined,
-        [
+      const omitPickSchema = buildOmitPickObject(
+        omitOrPickIdentifierName,
+        keys,
+        sourceFile,
+        f.createIdentifier(schemaList[i].extendedSchemaName)
+      );
+
+      if (hasIndexSig || currentSchemaHasIndexSig) {
+        // Use .and(z.object()) pattern when dealing with index signatures
+        zodCall = f.createCallExpression(
+          f.createPropertyAccessExpression(zodCall, f.createIdentifier("and")),
+          undefined,
+          [omitPickSchema]
+        );
+        hasIndexSig = true; // Once we use .and(), the result is also an intersection
+      } else {
+        // Use .extend() pattern for regular objects
+        zodCall = f.createCallExpression(
           f.createPropertyAccessExpression(
-            buildOmitPickObject(
-              omitOrPickIdentifierName,
-              keys,
-              sourceFile,
-              f.createIdentifier(schemaList[i].extendedSchemaName)
+            zodCall,
+            f.createIdentifier("extend")
+          ),
+          undefined,
+          [
+            f.createPropertyAccessExpression(
+              omitPickSchema,
+              f.createIdentifier("shape")
             ),
-            f.createIdentifier("shape")
-          ),
-        ]
-      );
+          ]
+        );
+      }
     } else {
-      zodCall = f.createCallExpression(
-        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-        undefined,
-        [
+      if (hasIndexSig || currentSchemaHasIndexSig) {
+        // Use .and() pattern when dealing with index signatures
+        zodCall = f.createCallExpression(
+          f.createPropertyAccessExpression(zodCall, f.createIdentifier("and")),
+          undefined,
+          [f.createIdentifier(schemaList[i].extendedSchemaName)]
+        );
+        hasIndexSig = true;
+      } else {
+        // Use .extend() pattern for regular objects
+        zodCall = f.createCallExpression(
           f.createPropertyAccessExpression(
-            f.createIdentifier(schemaList[i].extendedSchemaName),
-            f.createIdentifier("shape")
+            zodCall,
+            f.createIdentifier("extend")
           ),
-        ]
-      );
+          undefined,
+          [
+            f.createPropertyAccessExpression(
+              f.createIdentifier(schemaList[i].extendedSchemaName),
+              f.createIdentifier("shape")
+            ),
+          ]
+        );
+      }
     }
   }
 
   if (args?.length) {
-    zodCall = f.createCallExpression(
-      f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
-      undefined,
-      args
-    );
+    if (hasIndexSig) {
+      // Use .and(z.object({...})) pattern when the base has an index signature
+      // Need to wrap args in z.object() call
+      const objectCall = f.createCallExpression(
+        f.createPropertyAccessExpression(
+          f.createIdentifier("z"),
+          f.createIdentifier("object")
+        ),
+        undefined,
+        args
+      );
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("and")),
+        undefined,
+        [objectCall]
+      );
+    } else {
+      // Use .extend({...}) pattern for regular objects
+      zodCall = f.createCallExpression(
+        f.createPropertyAccessExpression(zodCall, f.createIdentifier("extend")),
+        undefined,
+        args
+      );
+    }
   }
 
   return withZodProperties(zodCall, properties);
@@ -1492,11 +1644,6 @@ function buildZodObject({
   }
 
   if (indexSignature) {
-    if (schemaExtensionClauses) {
-      throw new Error(
-        "interface with `extends` and index signature are not supported!"
-      );
-    }
     const indexSignatureSchema = buildZodSchema(z, "record", [
       buildZodSchema(z, "string", [], []),
       // Index signature type can't be optional or have validators.
@@ -1514,14 +1661,29 @@ function buildZodObject({
     ]);
 
     if (objectSchema) {
-      return f.createCallExpression(
-        f.createPropertyAccessExpression(
-          indexSignatureSchema,
-          f.createIdentifier("and")
-        ),
-        undefined,
-        [objectSchema]
-      );
+      // If we have an extension (schemaExtensionClauses), the objectSchema is the base,
+      // and we should add the index signature to it: baseSchema.and(indexSignature)
+      // Otherwise (just properties + index signature), the standard pattern is:
+      // indexSignature.and(properties)
+      if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
+        return f.createCallExpression(
+          f.createPropertyAccessExpression(
+            objectSchema,
+            f.createIdentifier("and")
+          ),
+          undefined,
+          [indexSignatureSchema]
+        );
+      } else {
+        return f.createCallExpression(
+          f.createPropertyAccessExpression(
+            indexSignatureSchema,
+            f.createIdentifier("and")
+          ),
+          undefined,
+          [objectSchema]
+        );
+      }
     }
     return indexSignatureSchema;
   } else if (objectSchema) {

@@ -321,14 +321,14 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on not supported interface with extends and index signature", () => {
+  it("should generate schema for interface with extends and index signature", () => {
     const source = `export interface Superman extends Clark {
       [key: string]: any;
     };`;
 
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `[Error: interface with \`extends\` and index signature are not supported!]`
-    );
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const supermanSchema = clarkSchema.and(z.record(z.string(), z.any()));"
+    `);
   });
 
   it("should throw on not supported key in omit (union)", () => {
@@ -501,6 +501,152 @@ describe("generateZodSchema", () => {
         withPower: z.boolean()
     });"
   `);
+  });
+
+  // Tests for interface extensions with index signatures
+  it("should generate schema for interface with index signature and properties", () => {
+    const source = `export interface Result {
+      _meta?: Record<string, unknown>;
+      [key: string]: unknown;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const resultSchema = z.record(z.string(), z.unknown()).and(z.object({
+          _meta: z.record(z.string(), z.unknown()).optional()
+      }));"
+    `);
+  });
+
+  it("should generate schema for interface extending external interface (Result)", () => {
+    // When Result is not defined in the source, we can't detect its index signature
+    const source = `export interface PaginatedResult extends Result {
+      nextCursor?: string;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const paginatedResultSchema = resultSchema.extend({
+          nextCursor: z.string().optional()
+      });"
+    `);
+  });
+
+  it("should generate schema for interface extending interface with index signature and no new properties", () => {
+    const source = `export interface ExtendedResult extends Result {}`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const extendedResultSchema = resultSchema;"
+    `);
+  });
+
+  it("should generate schema for interface with properties and index signature", () => {
+    const source = `export interface Base {
+      _meta?: string;
+      [key: string]: unknown;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const baseSchema = z.record(z.string(), z.unknown()).and(z.object({
+          _meta: z.string().optional()
+      }));"
+    `);
+  });
+
+  it("should generate schema for interface extending external base and adding both properties and index signature", () => {
+    // When Base is not defined in source, we can't detect its index signature
+    const source = `export interface Extended extends Base {
+      name: string;
+      [key: string]: unknown;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const extendedSchema = baseSchema.extend({
+          name: z.string()
+      }).and(z.record(z.string(), z.unknown()));"
+    `);
+  });
+
+  it("should generate schema for multiple inheritance with external bases", () => {
+    // When Result and Named are not in the source, we can't detect index signatures
+    const source = `export interface Combined extends Result, Named {
+      id: number;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const combinedSchema = resultSchema.extend(namedSchema.shape).extend({
+          id: z.number()
+      });"
+    `);
+  });
+
+  it("should generate schema for interface extending Omit of interface with index signature", () => {
+    const source = `export interface CleanResult extends Omit<Result, "_meta"> {
+      data: string;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const cleanResultSchema = resultSchema.omit({ "_meta": true }).extend({
+          data: z.string()
+      });"
+    `);
+  });
+
+  it("should generate schema for interface extending undefined base (without index signature detection)", () => {
+    const source = `export interface Final extends Middle {
+      final: number;
+    }`;
+
+    // Note: When Middle is not defined in the source, we can't detect if it has
+    // an index signature, so we use .extend() which works for regular objects
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const finalSchema = middleSchema.extend({
+          final: z.number()
+      });"
+    `);
+  });
+
+  it("should generate schema for chain of extensions with index signatures (when base is in same file)", () => {
+    // When Base is defined in the same file, we CAN detect its index signature
+    const source = `export interface Base {
+      [key: string]: unknown;
+    }
+
+    export interface Middle extends Base {
+      middle: string;
+    }`;
+
+    // Generate the Middle schema (first interface found is Base, but we want to test Middle)
+    // Create a source file that has Base defined but we generate Middle
+    const sourceFile = ts.createSourceFile(
+      "index.ts",
+      source,
+      ts.ScriptTarget.Latest
+    );
+
+    const middleDeclaration = findNode(
+      sourceFile,
+      (node): node is ts.InterfaceDeclaration =>
+        ts.isInterfaceDeclaration(node) && node.name.text === "Middle"
+    );
+
+    if (middleDeclaration) {
+      const zodSchema = generateZodSchemaVariableStatement({
+        node: middleDeclaration,
+        sourceFile,
+        varName: "middleSchema",
+      });
+
+      const output = ts
+        .createPrinter({ newLine: ts.NewLineKind.LineFeed })
+        .printNode(ts.EmitHint.Unspecified, zodSchema.statement, sourceFile);
+
+      expect(output).toMatchInlineSnapshot(`
+        "export const middleSchema = baseSchema.and(z.object({
+            middle: z.string()
+        }));"
+      `);
+    } else {
+      throw new Error("Middle interface not found");
+    }
   });
 
   it("should deal with literal keys", () => {
