@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.0](https://github.com/fabien0102/ts-to-zod/compare/v5.0.1...v5.1.0) (2025-11-14)
+
+
+### Features
+
+* Support index signature on extended interface ([#352](https://github.com/fabien0102/ts-to-zod/issues/352)) ([04895ee](https://github.com/fabien0102/ts-to-zod/commit/04895ee42b703b6a3868cdd452054c815a78fdcd))
+
 ## [5.0.1](https://github.com/fabien0102/ts-to-zod/compare/v5.0.0...v5.0.1) (2025-10-10)
 
 
