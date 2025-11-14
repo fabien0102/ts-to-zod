@@ -1492,28 +1492,34 @@ function buildZodObject({
   }
 
   if (indexSignature) {
-    if (schemaExtensionClauses) {
-      throw new Error(
-        "interface with `extends` and index signature are not supported!"
-      );
-    }
-    const indexSignatureSchema = buildZodSchema(z, "record", [
-      buildZodSchema(z, "string", [], []),
+    const indexSignatureSchema = buildZodPrimitive({
+      z,
+      typeNode: f.createTypeReferenceNode("Record", [
+        indexSignature.parameters[0].type ||
+          f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+        indexSignature.type,
+      ]),
       // Index signature type can't be optional or have validators.
-      buildZodPrimitive({
-        z,
-        typeNode: indexSignature.type,
-        isOptional: false,
-        jsDocTags: {},
-        sourceFile,
-        dependencies,
-        getDependencyName,
-        skipParseJSDoc,
-        customJSDocFormatTypes,
-      }),
-    ]);
+      isOptional: false,
+      jsDocTags: {},
+      sourceFile,
+      dependencies,
+      getDependencyName,
+      skipParseJSDoc,
+      customJSDocFormatTypes,
+    });
 
     if (objectSchema) {
+      if (schemaExtensionClauses && schemaExtensionClauses.length > 0) {
+        return f.createCallExpression(
+          f.createPropertyAccessExpression(
+            objectSchema,
+            f.createIdentifier("and")
+          ),
+          undefined,
+          [indexSignatureSchema]
+        );
+      }
       return f.createCallExpression(
         f.createPropertyAccessExpression(
           indexSignatureSchema,
