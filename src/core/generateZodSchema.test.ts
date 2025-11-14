@@ -1935,6 +1935,26 @@ describe("generateZodSchema", () => {
       });"
     `);
   });
+
+  it("should deal with date-time strings with min length", () => {
+    const source = `
+      /**
+       * @format date-time
+       * @minLength 1
+       */
+      export type ThisIsADate = string;
+    `;
+
+    expect(generate(source, "zod")).toMatchInlineSnapshot(
+      `
+      "/**
+       * @format date-time
+       * @minLength 1
+       */
+      export const thisIsADateSchema = zod.iso.datetime();"
+    `
+    );
+  });
 });
 
 /**
