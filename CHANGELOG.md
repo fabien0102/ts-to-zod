@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.1.1](https://github.com/fabien0102/ts-to-zod/compare/v5.1.0...v5.1.1) (2025-11-14)
+
+
+### Bug Fixes
+
+* format date-time did not work with minLength ([#348](https://github.com/fabien0102/ts-to-zod/issues/348)) ([6563ca2](https://github.com/fabien0102/ts-to-zod/commit/6563ca2d92b63cb3eb83cf6833676100f1ce1516))
+
 ## [5.1.0](https://github.com/fabien0102/ts-to-zod/compare/v5.0.1...v5.1.0) (2025-11-14)
 
 
