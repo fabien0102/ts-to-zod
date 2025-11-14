@@ -321,16 +321,6 @@ describe("generateZodSchema", () => {
     );
   });
 
-  it("should throw on not supported interface with extends and index signature", () => {
-    const source = `export interface Superman extends Clark {
-      [key: string]: any;
-    };`;
-
-    expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
-      `[Error: interface with \`extends\` and index signature are not supported!]`
-    );
-  });
-
   it("should throw on not supported key in omit (union)", () => {
     const source = `export type UnsupportedType = Omit<Superman, Krytonite | LoisLane>;`;
     expect(() => generate(source)).toThrowErrorMatchingInlineSnapshot(
@@ -750,6 +740,38 @@ describe("generateZodSchema", () => {
     const source = `export type Movies = {[title: string]: Movie};`;
     expect(generate(source)).toMatchInlineSnapshot(
       `"export const moviesSchema = z.record(z.string(), movieSchema);"`
+    );
+  });
+
+  it("should deal with index signature (number key)", () => {
+    const source = `export type Movies = {[title: number]: Movie};`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const moviesSchema = z.record(z.number(), movieSchema);"`
+    );
+  });
+
+  it("should deal with extended interface with index signature", () => {
+    const source = `export interface Superman extends Clark {
+      [key: string]: any;
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const supermanSchema = clarkSchema.and(z.record(z.string(), z.any()));"`
+    );
+  });
+
+  it("should deal with extended interface with index signature and properties", () => {
+    const source = `export interface Superman extends Clark {
+      name: string;
+      [key: string]: any;
+    };`;
+
+    expect(generate(source)).toMatchInlineSnapshot(
+      `
+      "export const supermanSchema = clarkSchema.extend({
+          name: z.string()
+      }).and(z.record(z.string(), z.any()));"
+    `
     );
   });
 
