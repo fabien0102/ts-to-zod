@@ -1955,6 +1955,135 @@ describe("generateZodSchema", () => {
     `
     );
   });
+
+  it("should generate string refine validation for numeric formats on string types", () => {
+    const source = `export interface NumericStringFormats {
+      /**
+       * @format int64
+       */
+      int64Value: string;
+
+      /**
+       * @format uint64
+       */
+      uint64Value: string;
+
+      /**
+       * @format int32
+       */
+      int32Value: string;
+
+      /**
+       * @format float32
+       */
+      float32Value: string;
+
+      /**
+       * @format int64 Custom error message
+       */
+      customErrorValue: string;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const numericStringFormatsSchema = z.object({
+          /**
+           * @format int64
+           */
+          int64Value: z.string().refine(val => { try {
+              z.int64().parse(BigInt(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid int64 string" }),
+          /**
+           * @format uint64
+           */
+          uint64Value: z.string().refine(val => { try {
+              z.uint64().parse(BigInt(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid uint64 string" }),
+          /**
+           * @format int32
+           */
+          int32Value: z.string().refine(val => { try {
+              z.int32().parse(Number(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid int32 string" }),
+          /**
+           * @format float32
+           */
+          float32Value: z.string().refine(val => { try {
+              z.float32().parse(Number(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid float32 string" }),
+          /**
+           * @format int64 Custom error message
+           */
+          customErrorValue: z.string().refine(val => { try {
+              z.int64().parse(BigInt(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Custom error message" })
+      });"
+    `);
+  });
+
+  it("should generate direct numeric schemas for numeric formats on number types", () => {
+    const source = `export interface NumericFormats {
+      /**
+       * @format int64
+       */
+      int64Value: number;
+
+      /**
+       * @format uint64
+       */
+      uint64Value: number;
+
+      /**
+       * @format int32
+       */
+      int32Value: number;
+
+      /**
+       * @format float32
+       */
+      float32Value: number;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const numericFormatsSchema = z.object({
+          /**
+           * @format int64
+           */
+          int64Value: z.int64(),
+          /**
+           * @format uint64
+           */
+          uint64Value: z.uint64(),
+          /**
+           * @format int32
+           */
+          int32Value: z.int32(),
+          /**
+           * @format float32
+           */
+          float32Value: z.float32()
+      });"
+    `);
+  });
 });
 
 /**
