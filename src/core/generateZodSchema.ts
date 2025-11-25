@@ -1105,7 +1105,15 @@ function buildZodPrimitiveInternal({
       // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
-        const numericFormats = ["int", "float32", "float64", "int32", "uint32"];
+        const numericFormats = [
+          "int",
+          "float32",
+          "float64",
+          "int32",
+          "uint32",
+          "int64",
+          "uint64",
+        ];
 
         if (numericFormats.includes(formatValue)) {
           const nonFormatProperties = zodProperties.filter(
@@ -1126,26 +1134,6 @@ function buildZodPrimitiveInternal({
     case ts.SyntaxKind.AnyKeyword:
       return buildZodSchema(z, "any", [], zodProperties);
     case ts.SyntaxKind.BigIntKeyword:
-      // Check for bigint format in JSDoc tags and generate appropriate Zod v4 schema
-      if (jsDocTags.format) {
-        const formatValue = jsDocTags.format.value;
-        const bigintFormats = ["int64", "uint64"];
-
-        if (bigintFormats.includes(formatValue)) {
-          const nonFormatProperties = zodProperties.filter(
-            (prop) => prop.identifier !== formatValue
-          );
-          const formatArgs = jsDocTags.format.errorMessage
-            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
-            : [];
-          return buildZodSchema(
-            z,
-            formatValue,
-            formatArgs,
-            nonFormatProperties
-          );
-        }
-      }
       return buildZodSchema(z, "bigint", [], zodProperties);
     case ts.SyntaxKind.VoidKeyword:
       return buildZodSchema(z, "void", [], zodProperties);
