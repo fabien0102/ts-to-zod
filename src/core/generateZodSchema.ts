@@ -1058,6 +1058,97 @@ function buildZodPrimitiveInternal({
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
 
+        // Handle numeric format types on strings - these need custom validation
+        const numericFormats = [
+          "int",
+          "float32",
+          "float64",
+          "int32",
+          "uint32",
+          "int64",
+          "uint64",
+        ];
+
+        if (numericFormats.includes(formatValue)) {
+          // Generate z.string().refine() for numeric formats on string types
+          const refineFunction = f.createArrowFunction(
+            undefined,
+            undefined,
+            [
+              f.createParameterDeclaration(
+                undefined,
+                undefined,
+                f.createIdentifier("val")
+              ),
+            ],
+            undefined,
+            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            f.createBlock([
+              f.createTryStatement(
+                f.createBlock([
+                  f.createExpressionStatement(
+                    f.createCallExpression(
+                      f.createPropertyAccessExpression(
+                        f.createCallExpression(
+                          f.createPropertyAccessExpression(
+                            f.createIdentifier(z),
+                            f.createIdentifier(formatValue)
+                          ),
+                          undefined,
+                          []
+                        ),
+                        f.createIdentifier("parse")
+                      ),
+                      undefined,
+                      formatValue === "int64" || formatValue === "uint64"
+                        ? [
+                            f.createCallExpression(
+                              f.createIdentifier("BigInt"),
+                              undefined,
+                              [f.createIdentifier("val")]
+                            ),
+                          ]
+                        : [
+                            f.createCallExpression(
+                              f.createIdentifier("Number"),
+                              undefined,
+                              [f.createIdentifier("val")]
+                            ),
+                          ]
+                    )
+                  ),
+                  f.createReturnStatement(f.createTrue()),
+                ]),
+                f.createCatchClause(
+                  undefined,
+                  f.createBlock([f.createReturnStatement(f.createFalse())])
+                ),
+                undefined
+              ),
+            ])
+          );
+
+          const errorMessage =
+            jsDocTags.format.errorMessage ||
+            `Must be a valid ${formatValue} string`;
+          const refineOptions = f.createObjectLiteralExpression([
+            f.createPropertyAssignment(
+              f.createIdentifier("message"),
+              f.createStringLiteral(errorMessage)
+            ),
+          ]);
+
+          const stringSchema = buildZodSchema(z, "string", [], []);
+          return f.createCallExpression(
+            f.createPropertyAccessExpression(
+              stringSchema,
+              f.createIdentifier("refine")
+            ),
+            undefined,
+            [refineFunction, refineOptions]
+          );
+        }
+
         // Handle direct format validators (Zod v4 standalone methods)
         const directFormatMethods = [
           "email",
