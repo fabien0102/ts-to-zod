@@ -1982,6 +1982,11 @@ describe("generateZodSchema", () => {
        * @format int64 Custom error message
        */
       customErrorValue: string;
+
+      /**
+       * @format int32
+       */
+      optionalInt32?: string;
     }`;
 
     expect(generate(source)).toMatchInlineSnapshot(`
@@ -2035,7 +2040,17 @@ describe("generateZodSchema", () => {
           }
           catch {
               return false;
-          } }, { message: "Custom error message" })
+          } }, { message: "Custom error message" }),
+          /**
+           * @format int32
+           */
+          optionalInt32: z.string().refine(val => { try {
+              z.int32().parse(Number(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid int32 string" }).optional()
       });"
     `);
   });
@@ -2081,6 +2096,60 @@ describe("generateZodSchema", () => {
            * @format float32
            */
           float32Value: z.float32()
+      });"
+    `);
+  });
+
+  it("should handle optional and nullable properties with numeric formats on strings", () => {
+    const source = `export interface OptionalNumericStringFormats {
+      /**
+       * @format int64
+       */
+      optionalInt64?: string;
+
+      /**
+       * @format uint32
+       */
+      nullableUint32: string | null;
+
+      /**
+       * @format float32
+       */
+      optionalNullableFloat32?: string | null;
+    }`;
+
+    expect(generate(source)).toMatchInlineSnapshot(`
+      "export const optionalNumericStringFormatsSchema = z.object({
+          /**
+           * @format int64
+           */
+          optionalInt64: z.string().refine(val => { try {
+              z.int64().parse(BigInt(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid int64 string" }).optional(),
+          /**
+           * @format uint32
+           */
+          nullableUint32: z.string().refine(val => { try {
+              z.uint32().parse(Number(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid uint32 string" }).nullable(),
+          /**
+           * @format float32
+           */
+          optionalNullableFloat32: z.string().refine(val => { try {
+              z.float32().parse(Number(val));
+              return true;
+          }
+          catch {
+              return false;
+          } }, { message: "Must be a valid float32 string" }).optional().nullable()
       });"
     `);
   });

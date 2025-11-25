@@ -1139,7 +1139,7 @@ function buildZodPrimitiveInternal({
           ]);
 
           const stringSchema = buildZodSchema(z, "string", [], []);
-          return f.createCallExpression(
+          const refineCall = f.createCallExpression(
             f.createPropertyAccessExpression(
               stringSchema,
               f.createIdentifier("refine")
@@ -1147,6 +1147,23 @@ function buildZodPrimitiveInternal({
             undefined,
             [refineFunction, refineOptions]
           );
+
+          // Filter out format-related properties since we're handling the format validation with refine
+          const nonFormatProperties = zodProperties.filter(
+            (prop) =>
+              ![
+                "int",
+                "int32",
+                "uint32",
+                "int64",
+                "uint64",
+                "float32",
+                "float64",
+              ].includes(prop.identifier)
+          );
+
+          // Apply zodProperties (like .optional(), .nullable(), etc.) to the refine call
+          return withZodProperties(refineCall, nonFormatProperties);
         }
 
         // Handle direct format validators (Zod v4 standalone methods)
