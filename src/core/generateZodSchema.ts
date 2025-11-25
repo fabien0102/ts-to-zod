@@ -1105,7 +1105,15 @@ function buildZodPrimitiveInternal({
       // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
-        const numericFormats = ["int", "float32", "float64", "int32", "uint32"];
+        const numericFormats = [
+          "int",
+          "float32",
+          "float64",
+          "int32",
+          "uint32",
+          "int64",
+          "uint64",
+        ];
 
         if (numericFormats.includes(formatValue)) {
           const nonFormatProperties = zodProperties.filter(
