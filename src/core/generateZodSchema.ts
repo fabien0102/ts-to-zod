@@ -13,6 +13,28 @@ import {
 import { uniq } from "../utils/uniq.js";
 import { camelCase, lowerCase } from "text-case";
 
+/**
+ * Numeric format types that require special handling for string types
+ */
+const NUMERIC_FORMATS = [
+  "int",
+  "int32",
+  "uint32",
+  "int64",
+  "uint64",
+  "float32",
+  "float64",
+] as const;
+
+/**
+ * Type guard to check if a format value is a numeric format
+ */
+function isNumericFormat(
+  formatValue: string
+): formatValue is (typeof NUMERIC_FORMATS)[number] {
+  return (NUMERIC_FORMATS as readonly string[]).includes(formatValue);
+}
+
 export interface GenerateZodSchemaProps {
   /**
    * Name of the exported variable
@@ -1059,17 +1081,7 @@ function buildZodPrimitiveInternal({
         const formatValue = jsDocTags.format.value;
 
         // Handle numeric format types on strings - these need custom validation
-        const numericFormats = [
-          "int",
-          "float32",
-          "float64",
-          "int32",
-          "uint32",
-          "int64",
-          "uint64",
-        ];
-
-        if (numericFormats.includes(formatValue)) {
+        if (isNumericFormat(formatValue)) {
           // Generate z.string().refine() for numeric formats on string types
           const refineFunction = f.createArrowFunction(
             undefined,
@@ -1150,16 +1162,7 @@ function buildZodPrimitiveInternal({
 
           // Filter out format-related properties since we're handling the format validation with refine
           const nonFormatProperties = zodProperties.filter(
-            (prop) =>
-              ![
-                "int",
-                "int32",
-                "uint32",
-                "int64",
-                "uint64",
-                "float32",
-                "float64",
-              ].includes(prop.identifier)
+            (prop) => !isNumericFormat(prop.identifier)
           );
 
           // Apply zodProperties (like .optional(), .nullable(), etc.) to the refine call
@@ -1213,17 +1216,8 @@ function buildZodPrimitiveInternal({
       // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
-        const numericFormats = [
-          "int",
-          "float32",
-          "float64",
-          "int32",
-          "uint32",
-          "int64",
-          "uint64",
-        ];
 
-        if (numericFormats.includes(formatValue)) {
+        if (isNumericFormat(formatValue)) {
           const nonFormatProperties = zodProperties.filter(
             (prop) => prop.identifier !== formatValue
           );
