@@ -385,6 +385,16 @@ function buildZodPrimitiveInternal({
 
     // Deal with `Partial<>` syntax
     if (identifierName === "Partial" && typeNode.typeArguments) {
+      let isPartial = true;
+      if (
+        typeNode.typeArguments.length > 0 &&
+        ts.isTypeReferenceNode(typeNode.typeArguments[0]) &&
+        ts.isIdentifier(typeNode.typeArguments[0].typeName) &&
+        typeNode.typeArguments[0].typeName.text == "Record"
+      ) {
+        // This is a Partial<Record<>>, so we actually CAN NOT append .partial() to .record(...).
+        isPartial = false;
+      }
       return buildZodPrimitive({
         z,
         typeNode: typeNode.typeArguments[0],
@@ -393,7 +403,7 @@ function buildZodPrimitiveInternal({
         jsDocTags,
         customJSDocFormatTypes,
         sourceFile,
-        isPartial: true,
+        isPartial,
         dependencies,
         getDependencyName,
         skipParseJSDoc,

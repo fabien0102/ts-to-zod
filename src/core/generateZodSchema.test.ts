@@ -282,6 +282,13 @@ describe("generateZodSchema", () => {
     );
   });
 
+  it("should generate a record schema (partial)", () => {
+    const source = `export type PowerUnlockLevel = Partial<Record<PowerType, number>>;`;
+    expect(generate(source)).toMatchInlineSnapshot(
+      `"export const powerUnlockLevelSchema = z.record(powerTypeSchema, z.number());"`
+    );
+  });
+
   it("should generate a set schema", () => {
     const source = `export type EnemiesPowers = Set<string>;`;
     expect(generate(source)).toMatchInlineSnapshot(
