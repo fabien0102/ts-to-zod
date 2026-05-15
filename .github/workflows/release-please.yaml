@@ -21,13 +21,13 @@ jobs:
           release-type: node
       # The logic below handles the npm publication:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         if: ${{ steps.release.outputs.release_created }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         if: ${{ steps.release.outputs.release_created }}
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         if: ${{ steps.release.outputs.release_created }}
         with:
           node-version: 20

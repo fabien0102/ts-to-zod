@@ -17,14 +17,17 @@ jobs:
           - windows-latest
         node_version:
           - 20
+          - 22
+          - 24
+          - 26
         architecture:
           - x64
     name: tests on ${{ matrix.node_version }} - ${{ matrix.architecture }} on ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install pnpm
         uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node_version }}
           architecture: ${{ matrix.architecture }}
