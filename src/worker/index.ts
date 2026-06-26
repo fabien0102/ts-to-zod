@@ -22,6 +22,10 @@ export async function validateGeneratedTypesInWorker(
       join(import.meta.dirname, "./validator.worker.js"),
       {
         workerData: props,
+        // Prevent inheriting --inspect/--inspect-brk from the parent process.
+        // Without this, worker threads pause waiting for a debugger to attach
+        // to their own port, causing validation to hang in IDEs like WebStorm.
+        execArgv: [],
       }
     );
 
