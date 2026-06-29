@@ -13,6 +13,28 @@ import {
 import { uniq } from "../utils/uniq.js";
 import { camelCase, lowerCase } from "text-case";
 
+/**
+ * Numeric format types that require special handling for string types
+ */
+const NUMERIC_FORMATS = [
+  "int",
+  "int32",
+  "uint32",
+  "int64",
+  "uint64",
+  "float32",
+  "float64",
+] as const;
+
+/**
+ * Type guard to check if a format value is a numeric format
+ */
+function isNumericFormat(
+  formatValue: string
+): formatValue is (typeof NUMERIC_FORMATS)[number] {
+  return (NUMERIC_FORMATS as readonly string[]).includes(formatValue);
+}
+
 export interface GenerateZodSchemaProps {
   /**
    * Name of the exported variable
@@ -1058,6 +1080,95 @@ function buildZodPrimitiveInternal({
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
 
+        // Handle numeric format types on strings - these need custom validation
+        if (isNumericFormat(formatValue)) {
+          // Generate z.string().refine() for numeric formats on string types
+          const refineFunction = f.createArrowFunction(
+            undefined,
+            undefined,
+            [
+              f.createParameterDeclaration(
+                undefined,
+                undefined,
+                f.createIdentifier("val")
+              ),
+            ],
+            undefined,
+            f.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
+            f.createBlock([
+              f.createTryStatement(
+                f.createBlock([
+                  f.createExpressionStatement(
+                    f.createCallExpression(
+                      f.createPropertyAccessExpression(
+                        f.createCallExpression(
+                          f.createPropertyAccessExpression(
+                            f.createIdentifier(z),
+                            f.createIdentifier(formatValue)
+                          ),
+                          undefined,
+                          []
+                        ),
+                        f.createIdentifier("parse")
+                      ),
+                      undefined,
+                      formatValue === "int64" || formatValue === "uint64"
+                        ? [
+                            f.createCallExpression(
+                              f.createIdentifier("BigInt"),
+                              undefined,
+                              [f.createIdentifier("val")]
+                            ),
+                          ]
+                        : [
+                            f.createCallExpression(
+                              f.createIdentifier("Number"),
+                              undefined,
+                              [f.createIdentifier("val")]
+                            ),
+                          ]
+                    )
+                  ),
+                  f.createReturnStatement(f.createTrue()),
+                ]),
+                f.createCatchClause(
+                  undefined,
+                  f.createBlock([f.createReturnStatement(f.createFalse())])
+                ),
+                undefined
+              ),
+            ])
+          );
+
+          const errorMessage =
+            jsDocTags.format.errorMessage ||
+            `Must be a valid ${formatValue} string`;
+          const refineOptions = f.createObjectLiteralExpression([
+            f.createPropertyAssignment(
+              f.createIdentifier("message"),
+              f.createStringLiteral(errorMessage)
+            ),
+          ]);
+
+          const stringSchema = buildZodSchema(z, "string", [], []);
+          const refineCall = f.createCallExpression(
+            f.createPropertyAccessExpression(
+              stringSchema,
+              f.createIdentifier("refine")
+            ),
+            undefined,
+            [refineFunction, refineOptions]
+          );
+
+          // Filter out format-related properties since we're handling the format validation with refine
+          const nonFormatProperties = zodProperties.filter(
+            (prop) => !isNumericFormat(prop.identifier)
+          );
+
+          // Apply zodProperties (like .optional(), .nullable(), etc.) to the refine call
+          return withZodProperties(refineCall, nonFormatProperties);
+        }
+
         // Handle direct format validators (Zod v4 standalone methods)
         const directFormatMethods = [
           "email",
@@ -1105,9 +1216,8 @@ function buildZodPrimitiveInternal({
       // Check for numeric format in JSDoc tags and generate appropriate Zod v4 schema
       if (jsDocTags.format) {
         const formatValue = jsDocTags.format.value;
-        const numericFormats = ["int", "float32", "float64", "int32", "uint32"];
 
-        if (numericFormats.includes(formatValue)) {
+        if (isNumericFormat(formatValue)) {
           const nonFormatProperties = zodProperties.filter(
             (prop) => prop.identifier !== formatValue
           );
@@ -1126,26 +1236,6 @@ function buildZodPrimitiveInternal({
     case ts.SyntaxKind.AnyKeyword:
       return buildZodSchema(z, "any", [], zodProperties);
     case ts.SyntaxKind.BigIntKeyword:
-      // Check for bigint format in JSDoc tags and generate appropriate Zod v4 schema
-      if (jsDocTags.format) {
-        const formatValue = jsDocTags.format.value;
-        const bigintFormats = ["int64", "uint64"];
-
-        if (bigintFormats.includes(formatValue)) {
-          const nonFormatProperties = zodProperties.filter(
-            (prop) => prop.identifier !== formatValue
-          );
-          const formatArgs = jsDocTags.format.errorMessage
-            ? [f.createStringLiteral(jsDocTags.format.errorMessage)]
-            : [];
-          return buildZodSchema(
-            z,
-            formatValue,
-            formatArgs,
-            nonFormatProperties
-          );
-        }
-      }
       return buildZodSchema(z, "bigint", [], zodProperties);
     case ts.SyntaxKind.VoidKeyword:
       return buildZodSchema(z, "void", [], zodProperties);
