@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.1.1](https://github.com/fabien0102/ts-to-zod/compare/v5.1.0...v5.1.1) (2026-06-29)
+
+
+### Bug Fixes
+
+* format date-time did not work with minLength ([#348](https://github.com/fabien0102/ts-to-zod/issues/348)) ([6563ca2](https://github.com/fabien0102/ts-to-zod/commit/6563ca2d92b63cb3eb83cf6833676100f1ce1516))
+* prevent worker thread from inheriting inspector flags ([#365](https://github.com/fabien0102/ts-to-zod/issues/365)) ([6f3b3ae](https://github.com/fabien0102/ts-to-zod/commit/6f3b3ae2c0f4795cf6a0f12687f97e7b7e4b644d))
+* robust reading of moduleResolution from tsconfig.json ([#361](https://github.com/fabien0102/ts-to-zod/issues/361)) ([f503e13](https://github.com/fabien0102/ts-to-zod/commit/f503e135a55a7f9e722c0802d7d59e8876a30791))
+
 ## [5.1.0](https://github.com/fabien0102/ts-to-zod/compare/v5.0.1...v5.1.0) (2025-11-14)
 
 
