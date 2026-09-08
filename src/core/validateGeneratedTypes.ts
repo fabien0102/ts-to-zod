@@ -7,12 +7,6 @@ import ts from "typescript";
 import { join, sep, posix } from "path";
 
 import { resolveDefaultProperties } from "../utils/resolveDefaultProperties.js";
-import { fixOptionalAny } from "../utils/fixOptionalAny.js";
-import { getImportIdentifiers } from "../utils/importHandling.js";
-import {
-  getImportPath,
-  areImportPathsEqualIgnoringExtension,
-} from "../utils/getImportPath.js";
 
 interface File {
   sourceText: string;
@@ -50,42 +44,12 @@ export function validateGeneratedTypes({
     ts.ScriptTarget.Latest
   );
 
-  // Extracting imports that should be handled as any
-  const importsToHandleAsAny = new Set<string>();
-  const extractImportIdentifiers = (node: ts.Node) => {
-    if (
-      ts.isImportDeclaration(node) &&
-      ts.isStringLiteral(node.moduleSpecifier) &&
-      // If the import declaration is referenced in the extraFiles, it should not be "fixed"
-      !extraFiles.find((file) => {
-        if (!ts.isStringLiteral(node.moduleSpecifier))
-          throw new Error("node.moduleSpecifier must be a StringLiteral");
-
-        return areImportPathsEqualIgnoringExtension(
-          getImportPath(sourceTypes.relativePath, file.relativePath),
-          node.moduleSpecifier.text
-        );
-      })
-    ) {
-      if (node.importClause) {
-        const identifiers = getImportIdentifiers(node);
-        identifiers.forEach(({ name }) => importsToHandleAsAny.add(name));
-      }
-    }
-  };
-  ts.forEachChild(sourceFile, extractImportIdentifiers);
-
-  const fixedSourceForValidation = fixOptionalAny(
-    sourceFile,
-    importsToHandleAsAny
-  );
-
   // Create virtual files system with our files
   const fsMap = createDefaultMapFromNodeModules({
     target: compilerOptions.target,
   });
 
-  fsMap.set(getPath(sourceTypes), fixedSourceForValidation);
+  fsMap.set(getPath(sourceTypes), sourceFile.getFullText());
   fsMap.set(getPath(zodSchemas), zodSchemas.sourceText);
   fsMap.set(getPath(integrationTests), integrationTests.sourceText);
 
